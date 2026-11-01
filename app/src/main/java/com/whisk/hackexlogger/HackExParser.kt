@@ -96,6 +96,14 @@ object HackExParser {
     )
 
     /**
+     * Parsed Process Screen containing IPs.
+     */
+    data class ProcessScreen(
+        val ips: List<String>,
+        val invalidatedIps: List<String>
+    )
+
+    /**
      * Truncates long wallet address strings for UI display (e.g., "hx1234...5678").
      */
     fun shortenWallet(wallet: String): String {
@@ -373,5 +381,32 @@ object HackExParser {
 
         if (ips.isEmpty()) return null
         return CrewScreen(ips)
+    }
+
+    /**
+     * Parses the process screen to extract IPs.
+     */
+    fun parseProcessScreen(rawText: String): ProcessScreen? {
+        if (!rawText.contains("// PROCESSES")) return null
+
+        val ips = mutableListOf<String>()
+        val invalidatedIps = mutableListOf<String>()
+        val lines = rawText.split(Regex("""\r?\n""")).map { it.trim() }
+        for (i in lines.indices) {
+            val line = lines[i]
+            val ip = extractIp(line)
+            // 0.0.0.0 is the player's own local device in the log, ignore it
+            if (ip != null && ip != "0.0.0.0") {
+                val prevLine = if (i > 0) lines[i - 1] else ""
+                if (prevLine == "INVALIDATED") {
+                    invalidatedIps.add(ip)
+                } else {
+                    ips.add(ip)
+                }
+            }
+        }
+
+        if (ips.isEmpty() && invalidatedIps.isEmpty()) return null
+        return ProcessScreen(ips.distinct(), invalidatedIps.distinct())
     }
 }

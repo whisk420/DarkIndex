@@ -79,4 +79,39 @@ MEMBER
         assertEquals("214.19.182.187", result?.members?.get(1))
         assertEquals("92.196.181.208", result?.members?.get(2))
     }
+
+    @Test
+    fun testParseProcessScreen() {
+        val simulatedScreenText = """
+< back
+DISCONNECT
+// PROCESSES
+41 active tasks
+Antivirus Scan 
+Lv.4
+DONE
+0.0.0.0
+Password Crack 
+Lv.3
+DONE
+252.170.3.29
+Password Crack 
+Lv.3
+INVALIDATED
+95.127.223.107
+Password Crack 
+Lv.2
+DONE
+254.7.137.239
+        """.trimIndent()
+        
+        val result = HackExParser.parseProcessScreen(simulatedScreenText)
+        assertNotNull(result)
+        assertEquals(2, result?.ips?.size)
+        assertEquals("252.170.3.29", result?.ips?.get(0))
+        assertEquals("254.7.137.239", result?.ips?.get(1))
+        
+        assertEquals(1, result?.invalidatedIps?.size)
+        assertEquals("95.127.223.107", result?.invalidatedIps?.get(0))
+    }
 }

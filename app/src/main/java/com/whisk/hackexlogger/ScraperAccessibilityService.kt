@@ -125,6 +125,14 @@ class ScraperAccessibilityService : AccessibilityService() {
             DatabaseManager.processCrewScreen(crewScreen)
             savedItems.add("Crew")
         }
+
+        // Attempt parsing for HackEx Process screen format
+        val processScreen = HackExParser.parseProcessScreen(combinedText)
+        if (processScreen != null) {
+            Log.d("DOSSIER", "Parsed ProcessScreen: $processScreen")
+            DatabaseManager.processProcessScreen(processScreen)
+            savedItems.add("Processes")
+        }
         
         if (savedItems.isNotEmpty()) {
             val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST")

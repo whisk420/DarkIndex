@@ -655,6 +655,43 @@ object DatabaseManager {
     }
 
     /**
+     * Processes a parsed Process Screen, adding any unknown IPs to the database.
+     */
+    fun processProcessScreen(processScreen: HackExParser.ProcessScreen) {
+        val map = cachedRecords.associateBy { it.ip }.toMutableMap()
+        var changed = false
+        val now = getCurrentTimestamp()
+
+        val allIps = processScreen.ips + processScreen.invalidatedIps
+
+        for (ip in allIps) {
+            if (!map.containsKey(ip)) {
+                val isInvalidated = processScreen.invalidatedIps.contains(ip) && !processScreen.ips.contains(ip)
+                val newRecord = TargetRecord(
+                    ip = ip,
+                    username = null,
+                    clan = null,
+                    level = null,
+                    hardware = null,
+                    firewall = null,
+                    encryptor = null,
+                    wallets = mutableListOf(),
+                    downloads = mutableMapOf(),
+                    walletThefts = mutableMapOf(),
+                    lastValidated = if (isInvalidated) null else now
+                )
+                map[ip] = newRecord
+                changed = true
+            }
+        }
+
+        if (changed) {
+            saveAllRecords(map.values.toList())
+            reconcileDatabase()
+        }
+    }
+
+    /**
      * Merges non-null fields from an incoming record into a base target record.
      */
     private fun mergeRecords(base: TargetRecord, incoming: TargetRecord): TargetRecord {
