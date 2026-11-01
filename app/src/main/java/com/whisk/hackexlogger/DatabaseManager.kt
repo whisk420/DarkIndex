@@ -685,6 +685,17 @@ object DatabaseManager {
             }
         }
 
+        for (download in processScreen.downloads) {
+            val record = map[download.ip]
+            if (record != null) {
+                val existing = record.downloads[download.name]
+                if (existing == null || existing.level < download.level) {
+                    record.downloads[download.name] = SoftwareEntry(download.level, "Unknown", now)
+                    changed = true
+                }
+            }
+        }
+
         if (changed) {
             saveAllRecords(map.values.toList())
             reconcileDatabase()

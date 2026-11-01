@@ -95,6 +95,18 @@ Password Crack
 Lv.3
 DONE
 252.170.3.29
+Download 
+Lv.3
+DONE
+DL:
+Software
+189.9.36.37
+Download 
+Lv.4
+DONE
+DL:
+Spam
+189.9.36.38
 Password Crack 
 Lv.3
 INVALIDATED
@@ -107,11 +119,18 @@ DONE
         
         val result = HackExParser.parseProcessScreen(simulatedScreenText)
         assertNotNull(result)
-        assertEquals(2, result?.ips?.size)
+        assertEquals(4, result?.ips?.size)
         assertEquals("252.170.3.29", result?.ips?.get(0))
-        assertEquals("254.7.137.239", result?.ips?.get(1))
+        assertEquals("189.9.36.37", result?.ips?.get(1))
+        assertEquals("189.9.36.38", result?.ips?.get(2))
+        assertEquals("254.7.137.239", result?.ips?.get(3))
         
         assertEquals(1, result?.invalidatedIps?.size)
         assertEquals("95.127.223.107", result?.invalidatedIps?.get(0))
+        
+        assertEquals(1, result?.downloads?.size)
+        assertEquals("189.9.36.38", result?.downloads?.get(0)?.ip)
+        assertEquals("Spam", result?.downloads?.get(0)?.name)
+        assertEquals(4, result?.downloads?.get(0)?.level)
     }
 }

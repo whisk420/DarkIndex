@@ -96,11 +96,21 @@ object HackExParser {
     )
 
     /**
+     * Parsed software item extracted from the Process Screen.
+     */
+    data class ProcessDownloadedSoftware(
+        val ip: String,
+        val name: String,
+        val level: Int
+    )
+
+    /**
      * Parsed Process Screen containing IPs.
      */
     data class ProcessScreen(
         val ips: List<String>,
-        val invalidatedIps: List<String>
+        val invalidatedIps: List<String>,
+        val downloads: List<ProcessDownloadedSoftware>
     )
 
     /**
@@ -391,14 +401,28 @@ object HackExParser {
 
         val ips = mutableListOf<String>()
         val invalidatedIps = mutableListOf<String>()
+        val downloads = mutableListOf<ProcessDownloadedSoftware>()
         val lines = rawText.split(Regex("""\r?\n""")).map { it.trim() }
         for (i in lines.indices) {
             val line = lines[i]
             val ip = extractIp(line)
             // 0.0.0.0 is the player's own local device in the log, ignore it
             if (ip != null && ip != "0.0.0.0") {
-                val prevLine = if (i > 0) lines[i - 1] else ""
-                if (prevLine == "INVALIDATED") {
+                var status = ""
+                if (i >= 2 && lines[i - 2] == "DL:") {
+                    status = if (i >= 3) lines[i - 3] else ""
+                    val softwareName = lines[i - 1]
+                    val levelStr = if (i >= 4) lines[i - 4] else ""
+                    val level = levelStr.replace("Lv.", "").trim().toIntOrNull() ?: 0
+                    
+                    if (softwareName != "Software" && softwareName.isNotBlank() && level > 0) {
+                        downloads.add(ProcessDownloadedSoftware(ip, softwareName, level))
+                    }
+                } else {
+                    status = if (i > 0) lines[i - 1] else ""
+                }
+                
+                if (status == "INVALIDATED") {
                     invalidatedIps.add(ip)
                 } else {
                     ips.add(ip)
@@ -407,6 +431,6 @@ object HackExParser {
         }
 
         if (ips.isEmpty() && invalidatedIps.isEmpty()) return null
-        return ProcessScreen(ips.distinct(), invalidatedIps.distinct())
+        return ProcessScreen(ips.distinct(), invalidatedIps.distinct(), downloads.distinct())
     }
 }
