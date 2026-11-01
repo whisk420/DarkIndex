@@ -1,10 +1,21 @@
-name: Build Android APKs
+name: Build & Publish Release v1.1
 
 on:
-  workflow_dispatch: # Only runs when you manually click "Run workflow"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version Tag'
+        required: true
+        default: 'v1.1'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,25 +32,43 @@ jobs:
     - name: Grant Execute Permission to Gradlew
       run: chmod +x gradlew
 
-    - name: Assemble Debug APKs
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Assemble Release APKs
+      run: ./gradlew assembleRelease --stacktrace
 
-    - name: Prepare APKs
+    - name: Prepare Release APK Artifacts
       run: |
         mkdir -p build-outputs
-        cp app/build/outputs/apk/standalone/debug/app-standalone-debug.apk build-outputs/HackExHarvester-Standalone.apk
-        cp app/build/outputs/apk/googlePlay/debug/app-googlePlay-debug.apk build-outputs/HackExHarvester-GooglePlay.apk
+        cp app/build/outputs/apk/standalone/release/app-standalone-release.apk build-outputs/HackExHarvester-Standalone.apk
+        cp app/build/outputs/apk/googlePlay/release/app-googlePlay-release.apk build-outputs/HackExHarvester-GooglePlay.apk
 
-    - name: Upload Standalone APK
+    - name: Upload Standalone Artifact
       uses: actions/upload-artifact@v4
       with:
         name: HackExHarvester-Standalone
         path: build-outputs/HackExHarvester-Standalone.apk
         retention-days: 14
 
-    - name: Upload GooglePlay APK
+    - name: Upload GooglePlay Artifact
       uses: actions/upload-artifact@v4
       with:
         name: HackExHarvester-GooglePlay
         path: build-outputs/HackExHarvester-GooglePlay.apk
         retention-days: 14
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ inputs.version || github.ref_name || 'v1.1' }}
+        name: "HackExLogger ${{ inputs.version || github.ref_name || 'v1.1' }}"
+        body: |
+          ### HackExLogger Release ${{ inputs.version || github.ref_name || 'v1.1' }}
+          
+          This release introduces dual build variants and optional Google Account sign-in & cloud backup support:
+          
+          - **`HackExHarvester-Standalone.apk`**: 100% offline standalone build with zero internet permissions.
+          - **`HackExHarvester-GooglePlay.apk`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your personal Google Account storage space.
+        files: |
+          build-outputs/HackExHarvester-Standalone.apk
+          build-outputs/HackExHarvester-GooglePlay.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
