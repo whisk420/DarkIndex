@@ -76,11 +76,14 @@ class ScraperAccessibilityService : AccessibilityService() {
         // Split extracted UI text into discrete lines for log parsing
         val allLines = combinedText.split(Regex("""\r?\n"""))
 
+        val savedItems = mutableListOf<String>()
+
         // Attempt parsing for HackEx Home/Profile screen format
         val homeScreen = HackExParser.parseHomeScreen(combinedText)
         if (homeScreen != null) {
             Log.d("DOSSIER", "Parsed HomeScreen: $homeScreen")
             DatabaseManager.processHomeScreen(homeScreen)
+            savedItems.add("Target Profile")
         }
 
         // Attempt parsing for HackEx Software screen format
@@ -88,6 +91,7 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (softwareScreen != null) {
             Log.d("DOSSIER", "Parsed SoftwareScreen: $softwareScreen")
             DatabaseManager.processSoftwareScreen(softwareScreen)
+            savedItems.add("Software Inventory")
         }
 
         // Attempt parsing for HackEx Wallet screen format
@@ -95,6 +99,7 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (walletScreen != null) {
             Log.d("DOSSIER", "Parsed WalletScreen: $walletScreen")
             DatabaseManager.processWalletScreen(walletScreen)
+            savedItems.add("Wallet")
         }
 
         // Attempt parsing for Game Activity Log screens
@@ -102,6 +107,7 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (logUpdates.isNotEmpty()) {
             Log.d("DOSSIER", "Parsed ${logUpdates.size} Log Updates")
             DatabaseManager.processUpdates(logUpdates)
+            savedItems.add("${logUpdates.size} Log Events")
         }
 
         // Attempt parsing for HackEx Siphon screen format
@@ -109,6 +115,19 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (siphonScreen != null) {
             Log.d("DOSSIER", "Parsed SiphonScreen: $siphonScreen")
             DatabaseManager.processSiphonScreen(siphonScreen)
+            savedItems.add("Siphons")
+        }
+        
+        if (savedItems.isNotEmpty()) {
+            val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST")
+            toastIntent.setPackage(packageName)
+            toastIntent.putExtra("message", "Saved: " + savedItems.joinToString(", "))
+            sendBroadcast(toastIntent)
+        } else {
+            val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST")
+            toastIntent.setPackage(packageName)
+            toastIntent.putExtra("message", "Nothing found to save")
+            sendBroadcast(toastIntent)
         }
         
         // Notify MainActivity to update the target list UI

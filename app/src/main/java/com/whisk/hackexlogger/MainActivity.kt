@@ -163,6 +163,7 @@ class MainActivity : AppCompatActivity() {
             popup.menu.add(0, 1, 0, "Export Data")
             popup.menu.add(0, 2, 0, "Import Data")
             popup.menu.add(0, 3, 0, "Wipe Database")
+            popup.menu.add(0, 4, 0, "Reset Siphon Tracker")
 
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -179,6 +180,11 @@ class MainActivity : AppCompatActivity() {
                         DatabaseManager.wipeDatabase()
                         refreshData()
                         android.widget.Toast.makeText(this, "Database wiped", android.widget.Toast.LENGTH_SHORT).show()
+                        true
+                    }
+                    4 -> {
+                        DatabaseManager.clearSiphonTracking()
+                        android.widget.Toast.makeText(this, "Siphon tracker reset", android.widget.Toast.LENGTH_SHORT).show()
                         true
                     }
                     else -> false

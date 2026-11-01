@@ -15,6 +15,12 @@ import android.os.IBinder
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.animation.AlphaAnimation
+import android.os.Handler
+import android.os.Looper
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.view.ViewConfiguration
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -46,6 +52,16 @@ class OverlayService : Service() {
 
     private var isCloseTargetVisible = false
     private var closeTargetView: TextView? = null
+    
+    private var toastView: TextView? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    
+    private val saveReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val message = intent.getStringExtra("message") ?: return
+            showMinimalToast(message)
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -56,6 +72,13 @@ class OverlayService : Service() {
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupCameraFloatingButton()
+        
+        androidx.core.content.ContextCompat.registerReceiver(
+            this,
+            saveReceiver,
+            IntentFilter("com.whisk.hackexlogger.SHOW_TOAST"),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -109,6 +132,8 @@ class OverlayService : Service() {
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
+        var isDragging = false
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
 
         // Touch listener enables dragging the overlay button anywhere on screen
         cameraFloatingButton.setOnTouchListener { view, event ->
@@ -121,38 +146,44 @@ class OverlayService : Service() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
-                    showCloseTarget()
+                    isDragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(cameraFloatingButton, params)
+                    val diffX = Math.abs(event.rawX - initialTouchX)
+                    val diffY = Math.abs(event.rawY - initialTouchY)
                     
-                    if (event.rawY > closeThresholdY) {
-                        closeTargetView?.background = android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.OVAL
-                            setColor(Color.parseColor("#CCFF0000")) // Semi-transparent red highlight
-                        }
-                    } else {
-                        closeTargetView?.background = android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.OVAL
-                            setColor(Color.parseColor("#80000000")) // Semi-transparent black default
+                    if (!isDragging && (diffX > touchSlop || diffY > touchSlop)) {
+                        isDragging = true
+                        showCloseTarget()
+                    }
+
+                    if (isDragging) {
+                        params.x = initialX + (event.rawX - initialTouchX).toInt()
+                        params.y = initialY + (event.rawY - initialTouchY).toInt()
+                        windowManager.updateViewLayout(cameraFloatingButton, params)
+                        
+                        if (event.rawY > closeThresholdY) {
+                            closeTargetView?.background = android.graphics.drawable.GradientDrawable().apply {
+                                shape = android.graphics.drawable.GradientDrawable.OVAL
+                                setColor(Color.parseColor("#CCFF0000")) // Semi-transparent red highlight
+                            }
+                        } else {
+                            closeTargetView?.background = android.graphics.drawable.GradientDrawable().apply {
+                                shape = android.graphics.drawable.GradientDrawable.OVAL
+                                setColor(Color.parseColor("#80000000")) // Semi-transparent black default
+                            }
                         }
                     }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    hideCloseTarget()
-                    
-                    if (event.rawY > closeThresholdY) {
-                        stopSelf()
-                        return@setOnTouchListener true
-                    }
-                    
-                    val diffX = Math.abs(event.rawX - initialTouchX)
-                    val diffY = Math.abs(event.rawY - initialTouchY)
-                    if (diffX < 10 && diffY < 10) {
+                    if (isDragging) {
+                        hideCloseTarget()
+                        if (event.rawY > closeThresholdY) {
+                            stopSelf()
+                        }
+                    } else {
                         view.performClick()
                     }
                     true
@@ -297,6 +328,49 @@ class OverlayService : Service() {
         }
     }
 
+    private fun showMinimalToast(text: String) {
+        if (toastView == null) {
+            toastView = TextView(this).apply {
+                setTextColor(Color.parseColor("#4ade80")) // Bright green text
+                textSize = 12f
+                gravity = Gravity.CENTER
+                setPadding(32, 16, 32, 16)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Color.parseColor("#FF000000")) // Solid black
+                    cornerRadius = 20f
+                }
+            }
+            
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                y = (40 * resources.displayMetrics.density).toInt()
+                windowAnimations = android.R.style.Animation_Toast
+            }
+            
+            windowManager.addView(toastView, params)
+        }
+        
+        toastView?.text = text
+        toastView?.alpha = 1f
+        toastView?.visibility = View.VISIBLE
+        
+        mainHandler.removeCallbacksAndMessages(null)
+        mainHandler.postDelayed({
+            val fadeOut = AlphaAnimation(1f, 0f)
+            fadeOut.duration = 500
+            toastView?.startAnimation(fadeOut)
+            mainHandler.postDelayed({
+                toastView?.visibility = View.GONE
+            }, 500)
+        }, 1500)
+    }
+
     private fun showCloseTarget() {
         if (isCloseTargetVisible) return
         if (closeTargetView == null) {
@@ -366,7 +440,9 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        unregisterReceiver(saveReceiver)
         hideCloseTarget()
+        toastView?.let { try { windowManager.removeView(it) } catch (e: Exception) {} }
         if (::cameraFloatingButton.isInitialized) {
             try { windowManager.removeView(cameraFloatingButton) } catch (e: Exception) {}
         }

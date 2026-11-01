@@ -31,6 +31,8 @@ object DatabaseManager {
     // Set of IPs that were removed (alerted)
     private val siphonAlerts = mutableSetOf<String>()
     
+    private val recentlyScrapedSiphons = mutableMapOf<String, Long>()
+    
     @Volatile private var isInitialized = false
 
     /**
@@ -520,29 +522,55 @@ object DatabaseManager {
     }
 
     /**
+     * Clears all internal tracking for Siphons, used when prestiging.
+     */
+    fun clearSiphonTracking() {
+        knownSiphons.clear()
+        siphonAlerts.clear()
+        recentlyScrapedSiphons.clear()
+        saveSiphonData()
+    }
+
+    /**
      * Processes a parsed Siphon Earnings screen, updates tracking, generates alerts, 
      * and logs history to an exportable file.
      */
     fun processSiphonScreen(siphonScreen: HackExParser.SiphonScreen) {
-        if (siphonScreen.items.isEmpty()) return
+        if (siphonScreen.items.isEmpty() && siphonScreen.deployedCount > 0) return
         
-        val currentScrapeIps = siphonScreen.items.map { it.ip }.toSet()
         val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }
         val nowStr = isoFormat.format(Date())
-        
         val exportFile = File(appContext.filesDir, "siphon_history.jsonl")
         
+        val currentTime = System.currentTimeMillis()
+        val iterator = recentlyScrapedSiphons.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (currentTime - entry.value > 15 * 60 * 1000) {
+                iterator.remove()
+            }
+        }
+        
+        for (item in siphonScreen.items) {
+            recentlyScrapedSiphons[item.ip] = currentTime
+        }
+
         // 1. Check for removed siphons
-        // Only safely assume items were wiped if we scanned a significant amount (e.g. >10 items or all items)
-        if (siphonScreen.items.size > 10 || siphonScreen.items.size >= (siphonScreen.deployedCount - 5)) {
-            val missingIps = knownSiphons.keys - currentScrapeIps
+        if (siphonScreen.deployedCount == 0) {
+            val missingIps = knownSiphons.keys.toList()
             for (missingIp in missingIps) {
                 siphonAlerts.add(missingIp)
                 knownSiphons.remove(missingIp)
-                
-                // Log removal
+                val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
+                exportFile.appendText("$logLine\n")
+            }
+        } else if (recentlyScrapedSiphons.size >= siphonScreen.deployedCount) {
+            val missingIps = knownSiphons.keys - recentlyScrapedSiphons.keys
+            for (missingIp in missingIps) {
+                siphonAlerts.add(missingIp)
+                knownSiphons.remove(missingIp)
                 val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
                 exportFile.appendText("$logLine\n")
             }
