@@ -161,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         // Settings popup menu
         findViewById<ImageButton>(R.id.settingsBtn).setOnClickListener { view ->
             val popup = PopupMenu(this, view)
+            popup.menu.add(0, 0, 0, "Settings & Account")
             popup.menu.add(0, 1, 0, "Export Data")
             popup.menu.add(0, 2, 0, "Import Data")
             popup.menu.add(0, 3, 0, "Database Maintenance")
@@ -169,6 +170,10 @@ class MainActivity : AppCompatActivity() {
 
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
+                    0 -> {
+                        startActivity(Intent(this, SettingsActivity::class.java))
+                        true
+                    }
                     1 -> {
                         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
                         exportLauncher.launch("target_console_$dateStr.json")

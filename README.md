@@ -46,8 +46,11 @@ If you are a developer, security-conscious, or simply want to tinker with the co
 3. **Open the Project**: Launch Android Studio, select **Open**, and select the `HackExLogger` directory you just cloned.
 4. **Sync Gradle**: Let Android Studio automatically download the required Gradle dependencies and sync the project structure.
 5. **Build and Install**:
-   - **Run on Device**: Connect your Android device via USB (with USB Debugging enabled), select it in the target device dropdown, and click the green **Play/Run** button at the top.
-   - **Generate APK**: Go to the top menu and select **Build** > **Build Bundle(s) / APK(s)** > **Build APK(s)**. The compiled `.apk` will be output to `app/build/outputs/apk/debug/`.
+   - **Run on Device**: Connect your Android device via USB (with USB Debugging enabled), select `standaloneDebug` or `googlePlayDebug` in Android Studio's **Build Variants** panel, and click the green **Play/Run** button.
+   - **Generate APKs via Command Line**:
+     - **Standalone (100% Offline)**: `./gradlew assembleStandaloneDebug`
+     - **Google Play (Opt-In Cloud Backup)**: `./gradlew assembleGooglePlayDebug`
+     - **Both Variants**: `./gradlew assembleDebug`
 
 ---
 
@@ -87,9 +90,13 @@ com.whisk.hackexlogger
 
 ---
 
-## Privacy & Local Storage
+## Privacy & Build Flavors
 
-All target data created or parsed by HackExLogger is stored **100% locally on your device** inside private app storage. No external servers or remote telemetry APIs are used.
+All target data created or parsed by HackExLogger is stored **100% locally on your device** inside private app storage by default. No external telemetry or third-party servers exist.
+
+HackExLogger provides two build variants:
+- **`standalone`**: 100% offline build. Excludes all Google Play Services dependencies and omits internet permissions entirely.
+- **`googlePlay`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your personal Google Account storage space with zero third-party server involvement.
 
 ---
 
