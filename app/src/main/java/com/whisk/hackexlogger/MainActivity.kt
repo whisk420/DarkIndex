@@ -314,7 +314,8 @@ class MainActivity : AppCompatActivity() {
                 }.sortedByDescending { record ->
                     val lvl = (record.level ?: 0).toDouble()
                     val fw = (record.firewall ?: 0).toDouble()
-                    lvl - Math.pow(fw, 1.5)
+                    // Increased emphasis on player level: squaring the level to heavily prioritize high-level targets.
+                    Math.pow(lvl, 2.0) - Math.pow(fw, 1.5)
                 }
             }
 
