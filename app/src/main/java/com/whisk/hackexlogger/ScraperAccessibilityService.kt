@@ -117,6 +117,14 @@ class ScraperAccessibilityService : AccessibilityService() {
             DatabaseManager.processSiphonScreen(siphonScreen)
             savedItems.add("Siphons")
         }
+
+        // Attempt parsing for HackEx Crew screen format
+        val crewScreen = HackExParser.parseCrewScreen(combinedText)
+        if (crewScreen != null) {
+            Log.d("DOSSIER", "Parsed CrewScreen: $crewScreen")
+            DatabaseManager.processCrewScreen(crewScreen)
+            savedItems.add("Crew")
+        }
         
         if (savedItems.isNotEmpty()) {
             val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST")

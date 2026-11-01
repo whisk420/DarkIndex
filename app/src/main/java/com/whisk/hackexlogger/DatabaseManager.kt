@@ -599,6 +599,62 @@ object DatabaseManager {
     }
 
     /**
+     * Processes a parsed Crew Screen, matching known clan tags to unknown IPs.
+     */
+    fun processCrewScreen(crewScreen: HackExParser.CrewScreen) {
+        val map = cachedRecords.associateBy { it.ip }.toMutableMap()
+        var foundClanTag: String? = null
+
+        // Try to find a clan tag from existing known members
+        for (ip in crewScreen.members) {
+            val record = map[ip]
+            if (record != null && !record.clan.isNullOrBlank()) {
+                foundClanTag = record.clan
+                break
+            }
+        }
+
+        // If no clan tag is found in the database, we discard the data
+        if (foundClanTag == null) {
+            return
+        }
+
+        var changed = false
+        val now = getCurrentTimestamp()
+
+        for (ip in crewScreen.members) {
+            val existing = map[ip]
+            if (existing != null) {
+                if (existing.clan != foundClanTag) {
+                    existing.clan = foundClanTag
+                    changed = true
+                }
+            } else {
+                val newRecord = TargetRecord(
+                    ip = ip,
+                    username = null,
+                    clan = foundClanTag,
+                    level = null,
+                    hardware = null,
+                    firewall = null,
+                    encryptor = null,
+                    wallets = mutableListOf(),
+                    downloads = mutableMapOf(),
+                    walletThefts = mutableMapOf(),
+                    lastValidated = now
+                )
+                map[ip] = newRecord
+                changed = true
+            }
+        }
+
+        if (changed) {
+            saveAllRecords(map.values.toList())
+            reconcileDatabase()
+        }
+    }
+
+    /**
      * Merges non-null fields from an incoming record into a base target record.
      */
     private fun mergeRecords(base: TargetRecord, incoming: TargetRecord): TargetRecord {

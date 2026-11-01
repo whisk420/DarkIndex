@@ -8,7 +8,7 @@ package com.whisk.hackexlogger
 object HackExParser {
     
     private val REGEX_IP = Regex("""\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b""")
-    private val REGEX_MASKED_IP = Regex("""\b(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\b""")
+    private val REGEX_MASKED_IP = Regex("""\b(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\b""", RegexOption.IGNORE_CASE)
 
     /**
      * Parsed software item detail.
@@ -88,6 +88,13 @@ object HackExParser {
         val items: List<SiphonItem>
     )
     
+    /**
+     * Parsed Crew Screen containing members.
+     */
+    data class CrewScreen(
+        val members: List<String>
+    )
+
     /**
      * Truncates long wallet address strings for UI display (e.g., "hx1234...5678").
      */
@@ -340,5 +347,31 @@ object HackExParser {
         }
 
         return SiphonScreen(deployedCount, items)
+    }
+
+    /**
+     * Parses the crew screen to extract member IPs.
+     */
+    fun parseCrewScreen(rawText: String): CrewScreen? {
+        val lines = rawText.split(Regex("""\r?\n""")).map { it.trim() }
+        var isCrewScreen = false
+        for (line in lines) {
+            if (line.startsWith("// ") && line.endsWith(" Members")) {
+                isCrewScreen = true
+                break
+            }
+        }
+        if (!isCrewScreen) return null
+
+        val ips = mutableListOf<String>()
+        for (line in lines) {
+            val ip = extractIp(line)
+            if (ip != null) {
+                ips.add(ip)
+            }
+        }
+
+        if (ips.isEmpty()) return null
+        return CrewScreen(ips)
     }
 }

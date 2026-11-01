@@ -57,4 +57,26 @@ class HackExParserTest {
         assertEquals(10, result?.firewall)
         assertEquals(5, result?.encryptor)
     }
+
+    @Test
+    fun testParseCrewScreen() {
+        val simulatedScreenText = """
+< back
+DISCONNECT
+// The Squirtle Squad Members
+4.226.131.111
+LEADER
+214.19.182.187
+OFFICER
+92.196.181.208
+MEMBER
+        """.trimIndent()
+
+        val result = HackExParser.parseCrewScreen(simulatedScreenText)
+        assertNotNull(result)
+        assertEquals(3, result?.members?.size)
+        assertEquals("4.226.131.111", result?.members?.get(0))
+        assertEquals("214.19.182.187", result?.members?.get(1))
+        assertEquals("92.196.181.208", result?.members?.get(2))
+    }
 }
