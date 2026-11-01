@@ -21,7 +21,7 @@ class HackExParserTest {
         assertEquals("10.20.xxx.xxx", maskedIp)
         
         val unknownIp = HackExParser.extractIp("Device accessed from [UNKNOWN]")
-        assertEquals(null, unknownIp)
+        assertEquals("[UNKNOWN]", unknownIp)
     }
 
     @Test

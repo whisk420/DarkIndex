@@ -43,10 +43,10 @@ data class TargetRecord(
     var lastValidated: String? = null
 ) {
     /**
-     * True if the target IP address contains masked components (e.g., "192.168.xxx.12").
+     * True if the target IP address contains masked components (e.g., "192.168.xxx.12" or "[UNKNOWN]").
      */
     val isMasked: Boolean
-        get() = ip.contains("xxx")
+        get() = (ip.contains("xxx", ignoreCase = true) || ip.contains("UNKNOWN", ignoreCase = true)) && !ip.startsWith("unknown:")
 
     /**
      * True if this record was created without a known IP address and assigned a temporary placeholder key.

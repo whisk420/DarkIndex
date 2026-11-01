@@ -10,18 +10,19 @@ object HackExParser {
     // Core IP and Masked IP Patterns
     private val REGEX_IP = Regex("""\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b""")
     private val REGEX_MASKED_IP = Regex("""\b(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\b""", RegexOption.IGNORE_CASE)
+    private val REGEX_UNKNOWN_IP = Regex("""\b\[?UNKNOWN\]?\b""", RegexOption.IGNORE_CASE)
 
     // Log Parsing Patterns
     private val REGEX_LOG_PREFIX = Regex("""^\[.+?\]""")
     private val REGEX_TIME_HEADER = Regex("""^\[([^\]]+)\]""")
-    private val REGEX_LOG_ACCESS = Regex("""(?:Device accessed from|Accessed device at)\s+((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_ACCESS = Regex("""(?:Device accessed from|Accessed device at)\s+((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
     private val REGEX_LOG_SOFTWARE = Regex("""(Downloaded|Uploaded|Downloading|Uploading)\s+Lv(\d+)\s+(.+?)(?:\s+(?:from|to)\b|\.|\.\.|\s*$)""", RegexOption.IGNORE_CASE)
     private val REGEX_LOG_WALLET = Regex("""(?:Stole\s+([\d,]+)\s+Crypto\s+from|([\d,]+)\s+Crypto\s+transferred\s+to)\s+([a-zA-Z0-9.]{6,})""", RegexOption.IGNORE_CASE)
-    private val REGEX_LOG_CRACK = Regex("""(Cracking|Cracked)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
-    private val REGEX_LOG_FIREWALL = Regex("""(Bypassed|Failed to bypass)\s+firewall\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_CRACK = Regex("""(Cracking|Cracked)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_FIREWALL = Regex("""(Bypassed|Failed to bypass)\s+firewall\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
 
     // Screen Entity Extraction Patterns
-    private val REGEX_PROFILE_IP = Regex("""IP\s+([0-9]{1,3}(?:\.[0-9]{1,3}|\.xxx){3})""", RegexOption.IGNORE_CASE)
+    private val REGEX_PROFILE_IP = Regex("""IP\s+([0-9]{1,3}(?:\.[0-9]{1,3}|\.xxx){3}|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
     private val REGEX_USER_HEADER = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE)
     private val REGEX_CLAN_TAG = Regex("""\[([^\]]{2,10})\]""")
     private val REGEX_LEVEL = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE)
@@ -155,13 +156,14 @@ object HackExParser {
      * @return Extracted IP address string, or null if no match found.
      */
     fun extractIp(text: String): String? {
-        if (text.contains("[UNKNOWN]")) return null
-        
         val ipMatch = REGEX_IP.find(text)
         if (ipMatch != null) return ipMatch.value
         
         val maskedIpMatch = REGEX_MASKED_IP.find(text)
         if (maskedIpMatch != null) return maskedIpMatch.value
+
+        val unknownMatch = REGEX_UNKNOWN_IP.find(text)
+        if (unknownMatch != null) return "[UNKNOWN]"
         
         return null
     }

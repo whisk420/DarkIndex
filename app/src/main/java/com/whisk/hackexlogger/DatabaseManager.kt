@@ -323,10 +323,11 @@ object DatabaseManager {
     private fun applyUpdatesToMap(recordMap: MutableMap<String, TargetRecord>, updates: List<HackExParser.ParsedUpdate>) {
         for (update in updates) {
             var ip = update.ip
+            val isIpMasked = ip.isEmpty() || ip.contains("xxx", ignoreCase = true) || ip.contains("UNKNOWN", ignoreCase = true)
             
             if (update.wallet != null) {
                 val existingOwner = recordMap.values.find { it.wallets.contains(update.wallet) }
-                if (ip.isEmpty()) {
+                if (isIpMasked) {
                     if (existingOwner != null) {
                         ip = existingOwner.ip
                     } else {
@@ -369,11 +370,14 @@ object DatabaseManager {
             }
 
             if (update.software != null && update.isOwnedSoftware) {
-                record.downloads[update.software.name] = SoftwareEntry(
-                    level = update.software.level,
-                    status = update.software.action,
-                    lastSeen = update.time
-                )
+                // Do not attach software from logs if the log target IP is masked
+                if (!record.isMasked) {
+                    record.downloads[update.software.name] = SoftwareEntry(
+                        level = update.software.level,
+                        status = update.software.action,
+                        lastSeen = update.time
+                    )
+                }
             }
         }
     }
@@ -710,19 +714,40 @@ object DatabaseManager {
         val incomingIsMasked = incoming.isMasked
         val canonicalIp = if ((!incomingIsMasked && baseIsMasked) || (base.isTemporary && !incoming.isTemporary)) incoming.ip else base.ip
 
-        val distinctWallets = (base.wallets + incoming.wallets).distinct()
-        val finalWallets = if (distinctWallets.size > 1) {
-            logWalletConflict(canonicalIp, distinctWallets[0], distinctWallets[1], "MergeRecords")
-            mutableListOf(distinctWallets[0])
+        // When merging an unmasked target with a masked generic target placeholder,
+        // do not contaminate the unmasked target with software/wallet data from the masked placeholder.
+        val ignoreMaskedData = (baseIsMasked != incomingIsMasked)
+
+        val finalWallets = if (ignoreMaskedData) {
+            val unmasked = if (!baseIsMasked) base else incoming
+            unmasked.wallets.toMutableList()
         } else {
-            distinctWallets.toMutableList()
+            val distinctWallets = (base.wallets + incoming.wallets).distinct()
+            if (distinctWallets.size > 1) {
+                logWalletConflict(canonicalIp, distinctWallets[0], distinctWallets[1], "MergeRecords")
+                mutableListOf(distinctWallets[0])
+            } else {
+                distinctWallets.toMutableList()
+            }
         }
 
-        val mergedThefts = (base.walletThefts.keys + incoming.walletThefts.keys).distinct().associateWith { wallet ->
-            val listA = base.walletThefts[wallet] ?: emptyList()
-            val listB = incoming.walletThefts[wallet] ?: emptyList()
-            (listA + listB).distinctBy { "${it.timestampMs}_${it.amount}" }.sortedBy { it.timestampMs }.toMutableList()
-        }.toMutableMap()
+        val mergedDownloads = if (ignoreMaskedData) {
+            val unmasked = if (!baseIsMasked) base else incoming
+            unmasked.downloads.toMutableMap()
+        } else {
+            (base.downloads + incoming.downloads).toMutableMap()
+        }
+
+        val mergedThefts = if (ignoreMaskedData) {
+            val unmasked = if (!baseIsMasked) base else incoming
+            unmasked.walletThefts.toMutableMap()
+        } else {
+            (base.walletThefts.keys + incoming.walletThefts.keys).distinct().associateWith { wallet ->
+                val listA = base.walletThefts[wallet] ?: emptyList()
+                val listB = incoming.walletThefts[wallet] ?: emptyList()
+                (listA + listB).distinctBy { "${it.timestampMs}_${it.amount}" }.sortedBy { it.timestampMs }.toMutableList()
+            }.toMutableMap()
+        }
 
         return TargetRecord(
             ip = canonicalIp,
@@ -733,7 +758,7 @@ object DatabaseManager {
             firewall = incoming.firewall ?: base.firewall,
             encryptor = incoming.encryptor ?: base.encryptor,
             wallets = finalWallets,
-            downloads = (base.downloads + incoming.downloads).toMutableMap(),
+            downloads = mergedDownloads,
             walletThefts = mergedThefts,
             lastValidated = incoming.lastValidated ?: base.lastValidated
         )
