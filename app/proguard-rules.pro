@@ -5,26 +5,8 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
 # --- Production Logging Configuration ---
-# This rule tells R8/ProGuard to remove all android.util.Log calls from the release APK.
-# This ensures that debug and trace logs are completely stripped in production,
-# improving performance and keeping your intelligence logging logic private,
-# while still allowing developers to see all logs during debug builds.
+# Removes Log calls in production release builds
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
@@ -33,3 +15,25 @@
     public static int d(...);
     public static int e(...);
 }
+
+# --- Gson Serialization Keep Rules ---
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep class com.google.gson.** { *; }
+
+# Preserve HackEx Logger Data Models from R8 Obfuscation
+-keep class com.whisk.hackexlogger.TargetRecord { *; }
+-keep class com.whisk.hackexlogger.SoftwareEntry { *; }
+-keep class com.whisk.hackexlogger.TheftEvent { *; }
+-keep class com.whisk.hackexlogger.ConsoleBundle { *; }
+-keep class com.whisk.hackexlogger.ConsoleIngest { *; }
+-keep class com.whisk.hackexlogger.ImportResult { *; }
+-keep class com.whisk.hackexlogger.GoogleAccountUser { *; }
+
+# --- Google Identity & Credential Manager Keep Rules ---
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
+-dontwarn androidx.credentials.**
+-dontwarn com.google.android.libraries.identity.googleid.**

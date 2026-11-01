@@ -117,8 +117,9 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Initialize local database storage
+        // Initialize local database storage & account manager
         DatabaseManager.init(this)
+        AccountManager.init(this)
         setupUI()
         
         // Register local broadcast receiver for UI data update events

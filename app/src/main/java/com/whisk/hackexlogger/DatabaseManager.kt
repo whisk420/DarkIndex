@@ -88,13 +88,16 @@ object DatabaseManager {
         val fields = TargetRecord::class.java.declaredFields
         for (field in fields) {
             field.isAccessible = true
-            if (field.get(record) == null) {
-                when (field.name) {
-                    "wallets" -> field.set(record, mutableListOf<String>())
-                    "downloads" -> field.set(record, mutableMapOf<String, SoftwareEntry>())
-                    "walletThefts" -> field.set(record, mutableMapOf<String, MutableList<TheftEvent>>())
+            try {
+                if (field.get(record) == null) {
+                    val fieldType = field.type
+                    if (List::class.java.isAssignableFrom(fieldType)) {
+                        field.set(record, mutableListOf<String>())
+                    } else if (Map::class.java.isAssignableFrom(fieldType)) {
+                        field.set(record, mutableMapOf<String, Any>())
+                    }
                 }
-            }
+            } catch (_: Exception) {}
         }
     }
 

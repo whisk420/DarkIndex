@@ -28,25 +28,35 @@ object FlavorAccountProvider : AccountProvider {
     private const val KEY_CLOUD_SYNC_ENABLED = "cloud_sync_enabled"
     private const val KEY_LAST_SYNC_TIME = "last_sync_time"
 
-    private lateinit var prefs: SharedPreferences
+    @Volatile
+    private var prefs: SharedPreferences? = null
+
+    private fun getPrefs(context: Context): SharedPreferences {
+        var p = prefs
+        if (p == null) {
+            p = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs = p
+        }
+        return p
+    }
 
     override fun init(context: Context) {
-        prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        getPrefs(context)
     }
 
     override fun getCurrentUser(): GoogleAccountUser? {
-        if (!::prefs.isInitialized) return null
-        val email = prefs.getString(KEY_EMAIL, null) ?: return null
-        val displayName = prefs.getString(KEY_DISPLAY_NAME, null)
-        val photoUrl = prefs.getString(KEY_PHOTO_URL, null)
-        val idToken = prefs.getString(KEY_ID_TOKEN, null)
+        val p = prefs ?: return null
+        val email = p.getString(KEY_EMAIL, null) ?: return null
+        val displayName = p.getString(KEY_DISPLAY_NAME, null)
+        val photoUrl = p.getString(KEY_PHOTO_URL, null)
+        val idToken = p.getString(KEY_ID_TOKEN, null)
         return GoogleAccountUser(displayName, email, photoUrl, idToken)
     }
 
     override fun isSignedIn(): Boolean = getCurrentUser() != null
 
-    private fun saveUser(user: GoogleAccountUser) {
-        prefs.edit()
+    private fun saveUser(context: Context, user: GoogleAccountUser) {
+        getPrefs(context).edit()
             .putString(KEY_DISPLAY_NAME, user.displayName)
             .putString(KEY_EMAIL, user.email)
             .putString(KEY_PHOTO_URL, user.photoUrl)
@@ -54,8 +64,8 @@ object FlavorAccountProvider : AccountProvider {
             .apply()
     }
 
-    private fun clearUser() {
-        prefs.edit()
+    private fun clearUser(context: Context) {
+        getPrefs(context).edit()
             .remove(KEY_DISPLAY_NAME)
             .remove(KEY_EMAIL)
             .remove(KEY_PHOTO_URL)
@@ -65,8 +75,7 @@ object FlavorAccountProvider : AccountProvider {
     }
 
     override suspend fun signOut(context: Context) = withContext(Dispatchers.IO) {
-        if (!::prefs.isInitialized) init(context)
-        clearUser()
+        clearUser(context)
         try {
             val credentialManager = CredentialManager.create(context)
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
@@ -76,23 +85,19 @@ object FlavorAccountProvider : AccountProvider {
     }
 
     override fun isCloudSyncEnabled(context: Context): Boolean {
-        if (!::prefs.isInitialized) init(context)
-        return prefs.getBoolean(KEY_CLOUD_SYNC_ENABLED, false)
+        return getPrefs(context).getBoolean(KEY_CLOUD_SYNC_ENABLED, false)
     }
 
     override fun setCloudSyncEnabled(context: Context, enabled: Boolean) {
-        if (!::prefs.isInitialized) init(context)
-        prefs.edit().putBoolean(KEY_CLOUD_SYNC_ENABLED, enabled).apply()
+        getPrefs(context).edit().putBoolean(KEY_CLOUD_SYNC_ENABLED, enabled).apply()
     }
 
     override fun getLastSyncTime(context: Context): Long {
-        if (!::prefs.isInitialized) init(context)
-        return prefs.getLong(KEY_LAST_SYNC_TIME, 0L)
+        return getPrefs(context).getLong(KEY_LAST_SYNC_TIME, 0L)
     }
 
     override fun setLastSyncTime(context: Context, timestamp: Long) {
-        if (!::prefs.isInitialized) init(context)
-        prefs.edit().putLong(KEY_LAST_SYNC_TIME, timestamp).apply()
+        getPrefs(context).edit().putLong(KEY_LAST_SYNC_TIME, timestamp).apply()
     }
 
     override suspend fun signInWithGoogle(activity: Activity): Result<GoogleAccountUser> = withContext(Dispatchers.IO) {
@@ -101,7 +106,6 @@ object FlavorAccountProvider : AccountProvider {
 
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setFilterByAuthorizedAccounts(false)
-                .setServerClientId("dummy-client-id-for-google-auth.apps.googleusercontent.com")
                 .setAutoSelectEnabled(false)
                 .build()
 
@@ -120,7 +124,7 @@ object FlavorAccountProvider : AccountProvider {
                     photoUrl = googleIdTokenCredential.profilePictureUri?.toString(),
                     idToken = googleIdTokenCredential.idToken
                 )
-                saveUser(user)
+                saveUser(activity, user)
                 Result.success(user)
             } else {
                 Result.failure(IllegalStateException("Unrecognized credential type received."))
