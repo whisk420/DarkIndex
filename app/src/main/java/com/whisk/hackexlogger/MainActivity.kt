@@ -21,6 +21,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -162,8 +163,9 @@ class MainActivity : AppCompatActivity() {
             val popup = PopupMenu(this, view)
             popup.menu.add(0, 1, 0, "Export Data")
             popup.menu.add(0, 2, 0, "Import Data")
-            popup.menu.add(0, 3, 0, "Wipe Database")
-            popup.menu.add(0, 4, 0, "Reset Siphon Tracker")
+            popup.menu.add(0, 3, 0, "Database Maintenance")
+            popup.menu.add(0, 4, 0, "Wipe Database")
+            popup.menu.add(0, 5, 0, "Reset Siphon Tracker")
 
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
@@ -177,12 +179,28 @@ class MainActivity : AppCompatActivity() {
                         true
                     }
                     3 -> {
+                        val result = DatabaseManager.runDatabaseMaintenance()
+                        refreshData()
+                        AlertDialog.Builder(this)
+                            .setTitle("Database Maintenance Complete")
+                            .setMessage(
+                                "A backup copy was saved to:\n${result.backupFilePath}\n\n" +
+                                "Summary of actions taken:\n" +
+                                "• ${result.multiWalletRecordsFixed} multi-wallet target records cleared\n" +
+                                "• ${result.maskedSoftwareCleared} masked software inventories cleared\n" +
+                                "• ${result.maskedWalletsMigrated} masked wallets migrated to placeholders"
+                            )
+                            .setPositiveButton("OK", null)
+                            .show()
+                        true
+                    }
+                    4 -> {
                         DatabaseManager.wipeDatabase()
                         refreshData()
                         android.widget.Toast.makeText(this, "Database wiped", android.widget.Toast.LENGTH_SHORT).show()
                         true
                     }
-                    4 -> {
+                    5 -> {
                         DatabaseManager.clearSiphonTracking()
                         android.widget.Toast.makeText(this, "Siphon tracker reset", android.widget.Toast.LENGTH_SHORT).show()
                         true

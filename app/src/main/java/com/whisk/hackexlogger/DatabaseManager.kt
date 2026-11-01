@@ -146,6 +146,114 @@ object DatabaseManager {
         prefs.edit().remove(KEY_TARGETS).apply()
     }
 
+    data class MaintenanceResult(
+        val backupFilePath: String,
+        val multiWalletRecordsFixed: Int,
+        val maskedSoftwareCleared: Int,
+        val maskedWalletsMigrated: Int
+    )
+
+    /**
+     * Performs a one-time maintenance pass over local database targets to clean up legacy bugs:
+     * - Saves a pre-maintenance backup file to internal storage.
+     * - Clears ALL wallets from multi-wallet records (since ownership is uncertain), migrating them to standalone placeholders.
+     * - Removes software inventories from generic masked target placeholders.
+     * - Migrates wallets attached to generic masked target placeholders to standalone placeholders.
+     */
+    fun runDatabaseMaintenance(): MaintenanceResult {
+        // 1. Create a guaranteed pre-maintenance backup file
+        val backupJson = exportDataBundle()
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val backupFile = File(appContext.filesDir, "maintenance_backup_$timestamp.json")
+        backupFile.writeText(backupJson)
+
+        val records = getAllRecords().toMutableList()
+        val recordMap = records.associateBy { it.ip }.toMutableMap()
+
+        var multiWalletCount = 0
+        var maskedSoftwareCount = 0
+        var maskedWalletsMigratedCount = 0
+
+        for (record in recordMap.values.toList()) {
+            // 2. Clean up multiple wallets on a single target (clear ALL wallets since true owner is uncertain)
+            if (record.wallets.size > 1) {
+                val walletsToDrop = record.wallets.toList()
+                record.wallets.clear()
+                multiWalletCount++
+
+                for (w in walletsToDrop) {
+                    logWalletConflict(record.ip, walletsToDrop[0], w, "MaintenanceCleanupAllDropped")
+                    
+                    // Move dropped wallets to standalone placeholders so wallet/theft stats aren't lost
+                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(w) }
+                    if (owner == null) {
+                        val placeholderIp = "unknown:wallet_$w"
+                        var placeholder = recordMap[placeholderIp]
+                        if (placeholder == null) {
+                            placeholder = TargetRecord(
+                                ip = placeholderIp,
+                                wallets = mutableListOf(w)
+                            )
+                            recordMap[placeholderIp] = placeholder
+                        } else if (!placeholder.wallets.contains(w)) {
+                            placeholder.wallets.add(w)
+                        }
+
+                        val thefts = record.walletThefts.remove(w)
+                        if (thefts != null) {
+                            placeholder.walletThefts.getOrPut(w) { mutableListOf() }.addAll(thefts)
+                        }
+                    }
+                }
+            }
+
+            // 3. Clean up generic masked records
+            if (record.isMasked) {
+                if (record.downloads.isNotEmpty()) {
+                    record.downloads.clear()
+                    maskedSoftwareCount++
+                }
+
+                // 4. Migrate wallets on generic masked records to standalone wallet placeholders
+                if (record.wallets.isNotEmpty()) {
+                    val walletToMigrate = record.wallets.first()
+                    record.wallets.clear()
+                    maskedWalletsMigratedCount++
+
+                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(walletToMigrate) }
+                    if (owner == null) {
+                        val placeholderIp = "unknown:wallet_$walletToMigrate"
+                        var placeholder = recordMap[placeholderIp]
+                        if (placeholder == null) {
+                            placeholder = TargetRecord(
+                                ip = placeholderIp,
+                                wallets = mutableListOf(walletToMigrate)
+                            )
+                            recordMap[placeholderIp] = placeholder
+                        } else if (!placeholder.wallets.contains(walletToMigrate)) {
+                            placeholder.wallets.add(walletToMigrate)
+                        }
+
+                        val thefts = record.walletThefts.remove(walletToMigrate)
+                        if (thefts != null) {
+                            placeholder.walletThefts.getOrPut(walletToMigrate) { mutableListOf() }.addAll(thefts)
+                        }
+                    }
+                }
+            }
+        }
+
+        saveAllRecords(recordMap.values.toList())
+        reconcileDatabase()
+
+        return MaintenanceResult(
+            backupFilePath = backupFile.absolutePath,
+            multiWalletRecordsFixed = multiWalletCount,
+            maskedSoftwareCleared = maskedSoftwareCount,
+            maskedWalletsMigrated = maskedWalletsMigratedCount
+        )
+    }
+
     /**
      * Finds the next unmasked target record that requires verification/validation in-game.
      * Prioritizes unmasked targets that have never been validated, followed by the oldest validated.

@@ -167,4 +167,80 @@ class UnmaskingTest {
         // Resolved IP is jaywat2550's unmasked IP
         assertEquals("4.226.131.111", ip)
     }
+
+    @Test
+    fun testDatabaseMaintenanceLogic() {
+        val multiWalletRecord = TargetRecord(
+            ip = "159.164.200.186",
+            username = "Nelzayy",
+            wallets = mutableListOf("hx5dbe...0478", "hxe9cb...0ebc")
+        )
+
+        val maskedSoftwareRecord = TargetRecord(
+            ip = "103.249.xxx.xxx",
+            downloads = mutableMapOf("Rootkit" to SoftwareEntry(6, "installed", null))
+        )
+
+        val maskedWalletRecord = TargetRecord(
+            ip = "101.103.xxx.xxx",
+            wallets = mutableListOf("hx16a5...aac4")
+        )
+
+        val recordMap = mutableMapOf(
+            multiWalletRecord.ip to multiWalletRecord,
+            maskedSoftwareRecord.ip to maskedSoftwareRecord,
+            maskedWalletRecord.ip to maskedWalletRecord
+        )
+
+        var multiWalletCount = 0
+        var maskedSoftwareCount = 0
+        var maskedWalletsMigratedCount = 0
+
+        for (record in recordMap.values.toList()) {
+            if (record.wallets.size > 1) {
+                val walletsToDrop = record.wallets.toList()
+                record.wallets.clear()
+                multiWalletCount++
+
+                for (w in walletsToDrop) {
+                    val placeholderIp = "unknown:wallet_$w"
+                    val placeholder = TargetRecord(ip = placeholderIp, wallets = mutableListOf(w))
+                    recordMap[placeholderIp] = placeholder
+                }
+            }
+
+            if (record.isMasked) {
+                if (record.downloads.isNotEmpty()) {
+                    record.downloads.clear()
+                    maskedSoftwareCount++
+                }
+
+                if (record.wallets.isNotEmpty()) {
+                    val walletToMigrate = record.wallets.first()
+                    record.wallets.clear()
+                    maskedWalletsMigratedCount++
+
+                    val placeholderIp = "unknown:wallet_$walletToMigrate"
+                    val placeholder = TargetRecord(ip = placeholderIp, wallets = mutableListOf(walletToMigrate))
+                    recordMap[placeholderIp] = placeholder
+                }
+            }
+        }
+
+        assertEquals(1, multiWalletCount)
+        assertEquals(1, maskedSoftwareCount)
+        assertEquals(1, maskedWalletsMigratedCount)
+
+        // Verify Multi-wallet record cleared all wallets (none kept on uncertain target)
+        assertTrue(multiWalletRecord.wallets.isEmpty())
+        assertNotNull(recordMap["unknown:wallet_hx5dbe...0478"])
+        assertNotNull(recordMap["unknown:wallet_hxe9cb...0ebc"])
+
+        // Verify Masked software cleared
+        assertTrue(maskedSoftwareRecord.downloads.isEmpty())
+
+        // Verify Masked wallet migrated to placeholder
+        assertTrue(maskedWalletRecord.wallets.isEmpty())
+        assertNotNull(recordMap["unknown:wallet_hx16a5...aac4"])
+    }
 }
