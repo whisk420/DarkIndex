@@ -119,7 +119,7 @@ class ScraperAccessibilityService : AccessibilityService() {
         }
 
         // Attempt parsing for HackEx Crew screen format
-        val crewScreen = HackExParser.parseCrewScreen(combinedText)
+        val crewScreen = HackExParser.parseCrewScreen(allLines)
         if (crewScreen != null) {
             Log.d("DOSSIER", "Parsed CrewScreen: $crewScreen")
             DatabaseManager.processCrewScreen(crewScreen)
@@ -127,7 +127,7 @@ class ScraperAccessibilityService : AccessibilityService() {
         }
 
         // Attempt parsing for HackEx Process screen format
-        val processScreen = HackExParser.parseProcessScreen(combinedText)
+        val processScreen = HackExParser.parseProcessScreen(allLines)
         if (processScreen != null) {
             Log.d("DOSSIER", "Parsed ProcessScreen: $processScreen")
             DatabaseManager.processProcessScreen(processScreen)

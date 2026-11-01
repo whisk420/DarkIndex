@@ -7,8 +7,33 @@ package com.whisk.hackexlogger
  */
 object HackExParser {
     
+    // Core IP and Masked IP Patterns
     private val REGEX_IP = Regex("""\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b""")
     private val REGEX_MASKED_IP = Regex("""\b(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\.(?:\d{1,3}|xxx)\b""", RegexOption.IGNORE_CASE)
+
+    // Log Parsing Patterns
+    private val REGEX_LOG_PREFIX = Regex("""^\[.+?\]""")
+    private val REGEX_TIME_HEADER = Regex("""^\[([^\]]+)\]""")
+    private val REGEX_LOG_ACCESS = Regex("""(?:Device accessed from|Accessed device at)\s+((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_SOFTWARE = Regex("""(Downloaded|Uploaded|Downloading|Uploading)\s+Lv(\d+)\s+(.+?)(?:\s+(?:from|to)\b|\.|\.\.|\s*$)""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_WALLET = Regex("""(?:Stole\s+([\d,]+)\s+Crypto\s+from|([\d,]+)\s+Crypto\s+transferred\s+to)\s+([a-zA-Z0-9.]{6,})""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_CRACK = Regex("""(Cracking|Cracked)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_FIREWALL = Regex("""(Bypassed|Failed to bypass)\s+firewall\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE)
+
+    // Screen Entity Extraction Patterns
+    private val REGEX_PROFILE_IP = Regex("""IP\s+([0-9]{1,3}(?:\.[0-9]{1,3}|\.xxx){3})""", RegexOption.IGNORE_CASE)
+    private val REGEX_USER_HEADER = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE)
+    private val REGEX_CLAN_TAG = Regex("""\[([^\]]{2,10})\]""")
+    private val REGEX_LEVEL = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_DEVICE = Regex("""DEVICE\s+([^\n\r]+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_NETWORK = Regex("""NETWORK\s+([^\n\r]+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_FIREWALL = Regex("""FIREWALL\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_ENCRYPTOR = Regex("""ENCRYPTOR\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_SOFTWARE_HEADER = Regex("""^([^\r\n]+?)['’]s installed software\s*$""", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
+    private val REGEX_WALLET_HEADER = Regex("""^([^\r\n]+?)['’]s wallet\s*$""", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
+    private val REGEX_WALLET_ADDRESS = Regex("""WALLET ADDRESS\s+([a-zA-Z0-9]{20,})""", RegexOption.IGNORE_CASE)
+    private val REGEX_SIPHON_DEPLOYED = Regex("""DEPLOYED\s+(\d+)""")
+    private val REGEX_SIPHON_ITEM = Regex("""((?:\d{1,3}\.){3}\d{1,3})\s+LV\.(\d+)\s+([\d.]+[%])\s+([\d,]+)\s+siphoned\s+([a-zA-Z0-9]+ ago)""", RegexOption.IGNORE_CASE)
 
     /**
      * Parsed software item detail.
@@ -153,15 +178,15 @@ object HackExParser {
         var lastAccessTime: String? = null
 
         val validLines = rawLines.filter { line ->
-            line.trim().isNotEmpty() && Regex("""^\[.+?\]""").containsMatchIn(line.trim())
+            val trimmed = line.trim()
+            trimmed.isNotEmpty() && REGEX_LOG_PREFIX.containsMatchIn(trimmed)
         }
 
         for (i in validLines.indices.reversed()) {
             val line = validLines[i].trim()
             if (line.isEmpty()) continue
 
-            val timeMatch = Regex("""^\[([^\]]+)\]""").find(line)
-            val time = timeMatch?.groupValues?.get(1)
+            val time = REGEX_TIME_HEADER.find(line)?.groupValues?.get(1)
 
             if (line.contains("[UNKNOWN]")) {
                 lastAccessIp = null
@@ -169,7 +194,7 @@ object HackExParser {
             }
 
             // Catch "Device accessed from IP" or "Accessed device at IP"
-            val accessMatch = Regex("""(?:Device accessed from|Accessed device at)\s+((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE).find(line)
+            val accessMatch = REGEX_LOG_ACCESS.find(line)
             if (accessMatch != null) {
                 val ip = extractIp(accessMatch.groupValues[1])
                 if (ip != null && ip != "[UNKNOWN]") {
@@ -187,7 +212,7 @@ object HackExParser {
             var isOwned = false
 
             // Software Actions
-            val softMatch = Regex("""(Downloaded|Uploaded|Downloading|Uploading)\s+Lv(\d+)\s+(.+?)(?:\s+(?:from|to)\b|\.|\.\.|\s*$)""", RegexOption.IGNORE_CASE).find(line)
+            val softMatch = REGEX_LOG_SOFTWARE.find(line)
             if (softMatch != null) {
                 action = softMatch.groupValues[1].lowercase()
                 level = softMatch.groupValues[2].toIntOrNull()
@@ -201,7 +226,7 @@ object HackExParser {
             }
 
             // Wallets
-            val walletMatch = Regex("""(?:Stole\s+([\d,]+)\s+Crypto\s+from|([\d,]+)\s+Crypto\s+transferred\s+to)\s+([a-zA-Z0-9.]{6,})""", RegexOption.IGNORE_CASE).find(line)
+            val walletMatch = REGEX_LOG_WALLET.find(line)
             if (walletMatch != null) {
                 val rawAmt = if (walletMatch.groupValues[1].isNotEmpty()) walletMatch.groupValues[1] else walletMatch.groupValues[2]
                 val amount = rawAmt.replace(",", "").toIntOrNull()
@@ -221,14 +246,14 @@ object HackExParser {
             }
 
             // Cracking / Firewall
-            val crackMatch = Regex("""(Cracking|Cracked)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE).find(line)
+            val crackMatch = REGEX_LOG_CRACK.find(line)
             if (crackMatch != null) {
                 val ip = extractIp(crackMatch.groupValues[2])
                 updates.add(ParsedUpdate(ip = ip ?: (targetIp ?: ""), time = time, raw = line))
                 continue
             }
 
-            val firewallMatch = Regex("""(Bypassed|Failed to bypass)\s+firewall\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx))""", RegexOption.IGNORE_CASE).find(line)
+            val firewallMatch = REGEX_LOG_FIREWALL.find(line)
             if (firewallMatch != null) {
                 val ip = extractIp(firewallMatch.groupValues[2])
                 updates.add(ParsedUpdate(ip = ip ?: (targetIp ?: ""), time = time, raw = line))
@@ -256,16 +281,15 @@ object HackExParser {
      * scraped from a HackEx profile/home screen.
      */
     fun parseHomeScreen(text: String): HomeScreen? {
-        val ipMatch = Regex("""IP\s+([0-9]{1,3}(?:\.[0-9]{1,3}|\.xxx){3})""", RegexOption.IGNORE_CASE).find(text)
-        if (ipMatch == null) return null
+        val ipMatch = REGEX_PROFILE_IP.find(text) ?: return null
         val ip = ipMatch.groupValues[1].trim()
 
-        val userLineMatch = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE).find(text)
+        val userLineMatch = REGEX_USER_HEADER.find(text)
         var username = userLineMatch?.groupValues?.get(1)?.trim()
 
         var clan: String? = null
         if (username != null) {
-            val clanMatch = Regex("""\[([^\]]{2,10})\]""").find(username)
+            val clanMatch = REGEX_CLAN_TAG.find(username)
             if (clanMatch != null) {
                 clan = clanMatch.groupValues[1].trim()
                 username = username.replace(clanMatch.value, "").trim()
@@ -274,24 +298,15 @@ object HackExParser {
         }
         
         if (clan == null) {
-            val genericClanMatch = Regex("""\[([^\]]{2,10})\]""").find(text)
+            val genericClanMatch = REGEX_CLAN_TAG.find(text)
             clan = genericClanMatch?.groupValues?.get(1)?.trim()
         }
 
-        val lvlMatch = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE).find(text)
-        val level = lvlMatch?.groupValues?.get(1)?.toIntOrNull()
-
-        val devMatch = Regex("""DEVICE\s+([^\n\r]+)""", RegexOption.IGNORE_CASE).find(text)
-        val device = devMatch?.groupValues?.get(1)?.trim()
-
-        val netMatch = Regex("""NETWORK\s+([^\n\r]+)""", RegexOption.IGNORE_CASE).find(text)
-        val network = netMatch?.groupValues?.get(1)?.trim()
-
-        val fwMatch = Regex("""FIREWALL\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE).find(text)
-        val firewall = fwMatch?.groupValues?.get(1)?.toIntOrNull()
-
-        val encMatch = Regex("""ENCRYPTOR\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE).find(text)
-        val encryptor = encMatch?.groupValues?.get(1)?.toIntOrNull()
+        val level = REGEX_LEVEL.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        val device = REGEX_DEVICE.find(text)?.groupValues?.get(1)?.trim()
+        val network = REGEX_NETWORK.find(text)?.groupValues?.get(1)?.trim()
+        val firewall = REGEX_FIREWALL.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        val encryptor = REGEX_ENCRYPTOR.find(text)?.groupValues?.get(1)?.toIntOrNull()
 
         val hardware = if (device != null && network != null) "$device • $network" else device ?: network
 
@@ -302,8 +317,8 @@ object HackExParser {
      * Parses installed software levels from text scraped from a HackEx software screen.
      */
     fun parseSoftwareScreen(text: String): SoftwareScreen? {
-        val userMatch = Regex("""^([^\r\n]+?)['’]s installed software\s*$""", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE)).find(text)
-        val username = userMatch?.groupValues?.get(1)?.trim()
+        val userMatch = REGEX_SOFTWARE_HEADER.find(text) ?: return null
+        val username = userMatch.groupValues[1].trim()
 
         val softwareItems = mutableMapOf<String, SoftwareScreenItem>()
         val validNames = listOf(
@@ -321,7 +336,7 @@ object HackExParser {
             }
         }
 
-        if (username == null && softwareItems.isEmpty()) return null
+        if (softwareItems.isEmpty()) return null
         return SoftwareScreen(username, softwareItems)
     }
 
@@ -329,13 +344,13 @@ object HackExParser {
      * Parses username and wallet address from text scraped from a HackEx wallet screen.
      */
     fun parseWalletScreen(text: String): WalletScreen? {
-        val userMatch = Regex("""^([^\r\n]+?)['’]s wallet\s*$""", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE)).find(text)
-        val username = userMatch?.groupValues?.get(1)?.trim()
+        val userMatch = REGEX_WALLET_HEADER.find(text) ?: return null
+        val username = userMatch.groupValues[1].trim()
 
-        val walletMatch = Regex("""WALLET ADDRESS\s+([a-zA-Z0-9]{20,})""", RegexOption.IGNORE_CASE).find(text)
+        val walletMatch = REGEX_WALLET_ADDRESS.find(text)
         val rawWallet = walletMatch?.groupValues?.get(1)?.trim()
 
-        if (username != null && rawWallet != null) {
+        if (rawWallet != null) {
             return WalletScreen(username, shortenWallet(rawWallet))
         }
         return null
@@ -347,13 +362,10 @@ object HackExParser {
     fun parseSiphonScreen(text: String): SiphonScreen? {
         if (!text.contains("SIPHON EARNINGS")) return null
 
-        val deployedMatch = Regex("""DEPLOYED\s+(\d+)""").find(text)
-        val deployedCount = deployedMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val deployedCount = REGEX_SIPHON_DEPLOYED.find(text)?.groupValues?.get(1)?.toIntOrNull() ?: 0
 
         val items = mutableListOf<SiphonItem>()
-        // Match structure: IP, LV.x, y%, z siphoned, w ago
-        val pattern = Regex("""((?:\d{1,3}\.){3}\d{1,3})\s+LV\.(\d+)\s+([\d.]+[%])\s+([\d,]+)\s+siphoned\s+([a-zA-Z0-9]+ ago)""", RegexOption.IGNORE_CASE)
-        val matches = pattern.findAll(text)
+        val matches = REGEX_SIPHON_ITEM.findAll(text)
 
         for (match in matches) {
             val ip = match.groupValues[1]
@@ -370,11 +382,14 @@ object HackExParser {
     /**
      * Parses the crew screen to extract member IPs.
      */
-    fun parseCrewScreen(rawText: String): CrewScreen? {
-        val lines = rawText.split(Regex("""\r?\n""")).map { it.trim() }
+    fun parseCrewScreen(rawText: String): CrewScreen? =
+        parseCrewScreen(rawText.split(Regex("""\r?\n""")))
+
+    fun parseCrewScreen(lines: List<String>): CrewScreen? {
         var isCrewScreen = false
         for (line in lines) {
-            if (line.startsWith("// ") && line.endsWith(" Members")) {
+            val trimmed = line.trim()
+            if (trimmed.startsWith("// ") && trimmed.endsWith(" Members")) {
                 isCrewScreen = true
                 break
             }
@@ -383,7 +398,7 @@ object HackExParser {
 
         val ips = mutableListOf<String>()
         for (line in lines) {
-            val ip = extractIp(line)
+            val ip = extractIp(line.trim())
             if (ip != null) {
                 ips.add(ip)
             }
@@ -396,30 +411,40 @@ object HackExParser {
     /**
      * Parses the process screen to extract IPs.
      */
-    fun parseProcessScreen(rawText: String): ProcessScreen? {
-        if (!rawText.contains("// PROCESSES")) return null
+    fun parseProcessScreen(rawText: String): ProcessScreen? =
+        parseProcessScreen(rawText.split(Regex("""\r?\n""")))
+
+    fun parseProcessScreen(lines: List<String>): ProcessScreen? {
+        var isProcessScreen = false
+        for (line in lines) {
+            if (line.trim().contains("// PROCESSES")) {
+                isProcessScreen = true
+                break
+            }
+        }
+        if (!isProcessScreen) return null
 
         val ips = mutableListOf<String>()
         val invalidatedIps = mutableListOf<String>()
         val downloads = mutableListOf<ProcessDownloadedSoftware>()
-        val lines = rawText.split(Regex("""\r?\n""")).map { it.trim() }
+
         for (i in lines.indices) {
-            val line = lines[i]
+            val line = lines[i].trim()
             val ip = extractIp(line)
             // 0.0.0.0 is the player's own local device in the log, ignore it
             if (ip != null && ip != "0.0.0.0") {
                 var status = ""
-                if (i >= 2 && lines[i - 2] == "DL:") {
-                    status = if (i >= 3) lines[i - 3] else ""
-                    val softwareName = lines[i - 1]
-                    val levelStr = if (i >= 4) lines[i - 4] else ""
+                if (i >= 2 && lines[i - 2].trim() == "DL:") {
+                    status = if (i >= 3) lines[i - 3].trim() else ""
+                    val softwareName = lines[i - 1].trim()
+                    val levelStr = if (i >= 4) lines[i - 4].trim() else ""
                     val level = levelStr.replace("Lv.", "").trim().toIntOrNull() ?: 0
                     
-                    if (softwareName != "Software" && softwareName.isNotBlank() && level > 0) {
+                    if (!softwareName.equals("Software", ignoreCase = true) && softwareName.isNotBlank() && level > 0) {
                         downloads.add(ProcessDownloadedSoftware(ip, softwareName, level))
                     }
                 } else {
-                    status = if (i > 0) lines[i - 1] else ""
+                    status = if (i > 0) lines[i - 1].trim() else ""
                 }
                 
                 if (status == "INVALIDATED") {

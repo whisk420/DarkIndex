@@ -133,4 +133,39 @@ DONE
         assertEquals("Spam", result?.downloads?.get(0)?.name)
         assertEquals(4, result?.downloads?.get(0)?.level)
     }
+
+    @Test
+    fun testParseWalletScreen() {
+        val text = """
+            < back
+            DISCONNECT
+            Pizaaparty's wallet
+            BALANCE $100,000
+            WALLET ADDRESS hx1234567890abcdef123456
+        """.trimIndent()
+
+        val result = HackExParser.parseWalletScreen(text)
+        assertNotNull(result)
+        assertEquals("Pizaaparty", result?.username)
+        assertEquals("hx1234...3456", result?.wallet)
+    }
+
+    @Test
+    fun testParseSoftwareScreen() {
+        val text = """
+            < back
+            DISCONNECT
+            Pizaaparty's installed software
+            Spam
+            LVL 10
+            Firewall
+            LVL 5
+        """.trimIndent()
+
+        val result = HackExParser.parseSoftwareScreen(text)
+        assertNotNull(result)
+        assertEquals("Pizaaparty", result?.username)
+        assertEquals(10, result?.softwareItems?.get("Spam")?.level)
+        assertEquals(5, result?.softwareItems?.get("Firewall")?.level)
+    }
 }
