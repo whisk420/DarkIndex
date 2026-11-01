@@ -92,11 +92,12 @@ class MainActivity : AppCompatActivity() {
                 }
                 val result = DatabaseManager.importDataBundle(jsonString)
                 refreshData()
-                Toast.makeText(
-                    this,
-                    "Imported ${result.targetCount} targets and ${result.ingestCount} archived ingests.",
-                    Toast.LENGTH_LONG
-                ).show()
+                val msg = if (result.ingestCount > 0) {
+                    "Imported ${result.targetCount} targets and ${result.ingestCount} raw logs."
+                } else {
+                    "Imported ${result.targetCount} targets."
+                }
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 androidx.appcompat.app.AlertDialog.Builder(this)
                     .setTitle("Import Failed")
@@ -382,9 +383,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        refreshData()
         if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
             startService(Intent(this, OverlayService::class.java))
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CloudBackupManager.flushPendingBackup(this)
     }
 
     /**

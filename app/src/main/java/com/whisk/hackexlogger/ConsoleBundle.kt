@@ -13,8 +13,8 @@ data class ConsoleBundle(
     val format: String = "target-intelligence-console",
     val version: Int = 1,
     val exportedAt: String? = null,
-    val targets: List<TargetRecord>? = null,
-    val ingests: List<ConsoleIngest>? = null
+    val targets: Array<TargetRecord>? = null,
+    val ingests: Array<ConsoleIngest>? = null
 )
 
 /**

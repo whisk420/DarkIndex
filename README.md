@@ -92,11 +92,11 @@ com.whisk.hackexlogger
 
 ## Privacy & Build Flavors
 
-All target data created or parsed by HackExLogger is stored **100% locally on your device** inside private app storage by default. No external telemetry or third-party servers exist.
+Your data is **100% under your exclusive control**. Nobody else—including the developer—can ever view, access, or touch your data.
 
 HackExLogger provides two build variants:
 - **`standalone`**: 100% offline build. Excludes all Google Play Services dependencies and omits internet permissions entirely.
-- **`googlePlay`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your personal Google Account storage space with zero third-party server involvement.
+- **`googlePlay`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your own personal Google Account storage space.
 
 ---
 

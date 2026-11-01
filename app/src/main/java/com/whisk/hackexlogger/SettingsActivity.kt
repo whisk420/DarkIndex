@@ -9,12 +9,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * Activity for managing app settings, Google Account sign-in, and cloud data preferences.
@@ -33,6 +35,29 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var lastSyncTv: TextView
     private lateinit var backupNowBtn: Button
     private lateinit var restoreNowBtn: Button
+
+    private val googleAccountPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val accountName = result.data?.getStringExtra(android.accounts.AccountManager.KEY_ACCOUNT_NAME)
+            if (!accountName.isNullOrEmpty()) {
+                val rawName = accountName.substringBefore("@")
+                val displayName = rawName.split(".", "_", "-")
+                    .joinToString(" ") { part -> part.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } }
+                val user = GoogleAccountUser(
+                    displayName = displayName,
+                    email = accountName,
+                    photoUrl = null,
+                    idToken = null
+                )
+                AccountManager.saveUser(this, user)
+                CloudBackupManager.flushPendingBackup(this)
+                Toast.makeText(this, "Signed in as $accountName", Toast.LENGTH_SHORT).show()
+                updateUiState()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,11 +103,24 @@ class SettingsActivity : AppCompatActivity() {
                 signInBtn.isEnabled = true
                 if (result.isSuccess) {
                     Toast.makeText(this@SettingsActivity, "Signed in successfully", Toast.LENGTH_SHORT).show()
+                    updateUiState()
                 } else {
-                    val msg = result.exceptionOrNull()?.message ?: "Sign-in failed"
-                    Toast.makeText(this@SettingsActivity, msg, Toast.LENGTH_LONG).show()
+                    val msg = result.exceptionOrNull()?.message ?: ""
+                    if (msg.contains("cancel", ignoreCase = true)) {
+                        Toast.makeText(this@SettingsActivity, "Sign-in cancelled", Toast.LENGTH_SHORT).show()
+                        updateUiState()
+                    } else {
+                        // Fallback to native System Google Account Chooser
+                        try {
+                            val intent = android.accounts.AccountManager.newChooseAccountIntent(
+                                null, null, arrayOf("com.google"), false, null, null, null, null
+                            )
+                            googleAccountPickerLauncher.launch(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(this@SettingsActivity, "Sign-in error: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 }
-                updateUiState()
             }
         }
 
@@ -96,38 +134,37 @@ class SettingsActivity : AppCompatActivity() {
 
         autoSyncCheckBox.setOnCheckedChangeListener { _, isChecked ->
             AccountManager.setCloudSyncEnabled(this, isChecked)
+            if (isChecked) {
+                CloudBackupManager.performBackup(this)
+                updateUiState()
+            }
         }
 
         backupNowBtn.setOnClickListener {
             try {
-                val bundleJson = CloudBackupManager.createBackupBundle()
-                if (bundleJson.isNotEmpty()) {
-                    CloudBackupManager.recordSync(this)
-                    updateUiState()
-                    Toast.makeText(this, "Data backup prepared successfully.", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "No data to backup.", Toast.LENGTH_SHORT).show()
-                }
+                val count = CloudBackupManager.performBackup(this)
+                updateUiState()
+                Toast.makeText(this, "Backed up $count target records to account space.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
 
         restoreNowBtn.setOnClickListener {
+            val savedCount = CloudBackupManager.getSavedBackupTargetCount(this)
             AlertDialog.Builder(this)
                 .setTitle("Restore Cloud Data")
-                .setMessage("Restore data bundle to local database?")
+                .setMessage("Restore account backup ($savedCount target records) into your local database?")
                 .setPositiveButton("Restore") { _, _ ->
                     try {
-                        val currentBundle = CloudBackupManager.createBackupBundle()
-                        val result = CloudBackupManager.restoreFromBundle(currentBundle)
-                        CloudBackupManager.recordSync(this)
+                        val result = CloudBackupManager.performRestore(this)
                         updateUiState()
-                        Toast.makeText(
-                            this,
-                            "Restored ${result.targetCount} targets and ${result.ingestCount} ingests.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        val msg = if (result.ingestCount > 0) {
+                            "Restored ${result.targetCount} targets and ${result.ingestCount} raw logs."
+                        } else {
+                            "Restored ${result.targetCount} targets."
+                        }
+                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                     } catch (e: Exception) {
                         Toast.makeText(this, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
                     }
@@ -168,7 +205,9 @@ class SettingsActivity : AppCompatActivity() {
             backupNowBtn.isEnabled = true
             restoreNowBtn.isEnabled = true
 
-            lastSyncTv.text = "Last Synced: ${CloudBackupManager.getFormattedLastSyncTime(this)}"
+            val savedCount = CloudBackupManager.getSavedBackupTargetCount(this)
+            val lastSyncTime = CloudBackupManager.getFormattedLastSyncTime(this)
+            lastSyncTv.text = "Last Synced: $lastSyncTime ($savedCount records stored)"
         } else {
             userInfoLayout.visibility = View.GONE
             signInBtn.visibility = View.VISIBLE

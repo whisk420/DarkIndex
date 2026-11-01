@@ -51,33 +51,43 @@ object DatabaseManager {
      * Deserializes target records stored in app-private [SharedPreferences] into memory.
      */
     private fun loadCacheFromDisk() {
-        val json = prefs.getString(KEY_TARGETS, "[]")
-        val type = object : TypeToken<List<TargetRecord>>() {}.type
-        val loaded: List<TargetRecord>? = gson.fromJson(json, type)
-        synchronized(cachedRecords) {
-            cachedRecords.clear()
-            if (loaded != null) {
-                for (record in loaded) {
-                    sanitizeRecord(record)
+        try {
+            val json = prefs.getString(KEY_TARGETS, "[]")
+            val loadedArray: Array<TargetRecord>? = gson.fromJson(json, Array<TargetRecord>::class.java)
+            synchronized(cachedRecords) {
+                cachedRecords.clear()
+                if (loadedArray != null) {
+                    for (record in loadedArray) {
+                        sanitizeRecord(record)
+                        cachedRecords.add(record)
+                    }
                 }
-                cachedRecords.addAll(loaded)
             }
+        } catch (e: Exception) {
+            android.util.Log.e("DatabaseManager", "Error loading target records cache: ${e.message}", e)
         }
-        
-        val alertsJson = prefs.getString(KEY_SIPHON_ALERTS, "[]")
-        val alertsType = object : TypeToken<Set<String>>() {}.type
-        val loadedAlerts: Set<String>? = gson.fromJson(alertsJson, alertsType)
-        if (loadedAlerts != null) {
-            siphonAlerts.clear()
-            siphonAlerts.addAll(loadedAlerts)
+
+        try {
+            val alertsJson = prefs.getString(KEY_SIPHON_ALERTS, "[]")
+            val loadedAlertsArray: Array<String>? = gson.fromJson(alertsJson, Array<String>::class.java)
+            if (loadedAlertsArray != null) {
+                siphonAlerts.clear()
+                siphonAlerts.addAll(loadedAlertsArray)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DatabaseManager", "Error loading siphon alerts cache: ${e.message}", e)
         }
-        
-        val siphonsJson = prefs.getString(KEY_KNOWN_SIPHONS, "{}")
-        val siphonsType = object : TypeToken<Map<String, Int>>() {}.type
-        val loadedSiphons: Map<String, Int>? = gson.fromJson(siphonsJson, siphonsType)
-        if (loadedSiphons != null) {
-            knownSiphons.clear()
-            knownSiphons.putAll(loadedSiphons)
+
+        try {
+            val siphonsJson = prefs.getString(KEY_KNOWN_SIPHONS, "{}")
+            val siphonsType = object : TypeToken<Map<String, Int>>() {}.type
+            val loadedSiphons: Map<String, Int>? = gson.fromJson(siphonsJson, siphonsType)
+            if (loadedSiphons != null) {
+                knownSiphons.clear()
+                knownSiphons.putAll(loadedSiphons)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DatabaseManager", "Error loading known siphons cache: ${e.message}", e)
         }
     }
 
@@ -120,6 +130,16 @@ object DatabaseManager {
         }
     }
 
+    private fun notifyDataUpdated() {
+        if (::appContext.isInitialized) {
+            try {
+                val intent = android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED")
+                    .setPackage(appContext.packageName)
+                appContext.sendBroadcast(intent)
+            } catch (_: Exception) {}
+        }
+    }
+
     /**
      * Saves the provided target list to the in-memory cache and persists it to disk via [SharedPreferences].
      */
@@ -130,8 +150,19 @@ object DatabaseManager {
         }
         val json = gson.toJson(records)
         prefs.edit().putString(KEY_TARGETS, json).apply()
+
+        // Auto-sync cloud backup if enabled (debounced to prevent rate-limiting during rapid screen captures)
+        try {
+            if (::appContext.isInitialized && AccountManager.isCloudSyncEnabled(appContext) && records.isNotEmpty()) {
+                CloudBackupManager.scheduleDebouncedAutoSync(appContext)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DatabaseManager", "Auto-sync backup scheduling failed: ${e.message}", e)
+        }
+
+        notifyDataUpdated()
     }
-    
+
     private fun saveSiphonData() {
         prefs.edit()
             .putString(KEY_SIPHON_ALERTS, gson.toJson(siphonAlerts))
@@ -147,6 +178,7 @@ object DatabaseManager {
             cachedRecords.clear()
         }
         prefs.edit().remove(KEY_TARGETS).apply()
+        notifyDataUpdated()
     }
 
     data class MaintenanceResult(
@@ -326,8 +358,8 @@ object DatabaseManager {
             format = "target-intelligence-console",
             version = 1,
             exportedAt = isoFormat.format(Date()),
-            targets = records,
-            ingests = emptyList()
+            targets = records.toTypedArray(),
+            ingests = emptyArray()
         )
         val exportGson = GsonBuilder()
             .setPrettyPrinting()
@@ -354,35 +386,40 @@ object DatabaseManager {
             throw IllegalArgumentException("This is not a Target Intelligence Console export.")
         }
 
-        val importedTargets = bundle.targets ?: emptyList()
-        val importedIngests = bundle.ingests ?: emptyList()
+        val importedTargets = bundle.targets ?: emptyArray()
+        val importedIngests = bundle.ingests ?: emptyArray()
 
         val currentRecords = getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
 
         // Merge imported target records with existing database records
         for (imported in importedTargets) {
-            val ip = imported.ip
-            if (ip.isBlank()) continue
+            try {
+                sanitizeRecord(imported)
+                val ip = imported.ip
+                if (ip.isBlank()) continue
 
-            val existing = recordMap[ip]
-            if (existing != null) {
-                val merged = mergeRecords(existing, imported)
-                recordMap[ip] = merged
-            } else {
-                val previousMatch = recordMap.values.find { candidate ->
-                    (imported.username != null && candidate.username != null && candidate.username.equals(imported.username, ignoreCase = true)) ||
-                    (imported.wallets.isNotEmpty() && candidate.wallets.any { imported.wallets.contains(it) })
-                }
-
-                if (previousMatch != null) {
-                    val merged = mergeRecords(previousMatch, imported)
-                    merged.ip = if (!imported.isMasked && previousMatch.isMasked) imported.ip else merged.ip
-                    recordMap.remove(previousMatch.ip)
-                    recordMap[merged.ip] = merged
+                val existing = recordMap[ip]
+                if (existing != null) {
+                    val merged = mergeRecords(existing, imported)
+                    recordMap[ip] = merged
                 } else {
-                    recordMap[ip] = imported
+                    val previousMatch = recordMap.values.find { candidate ->
+                        (imported.username != null && candidate.username != null && candidate.username.equals(imported.username, ignoreCase = true)) ||
+                        (imported.wallets.isNotEmpty() && candidate.wallets.any { imported.wallets.contains(it) })
+                    }
+
+                    if (previousMatch != null) {
+                        val merged = mergeRecords(previousMatch, imported)
+                        merged.ip = if (!imported.isMasked && previousMatch.isMasked) imported.ip else merged.ip
+                        recordMap.remove(previousMatch.ip)
+                        recordMap[merged.ip] = merged
+                    } else {
+                        recordMap[ip] = imported
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseManager", "Error merging target record: ${e.message}", e)
             }
         }
 
@@ -390,29 +427,40 @@ object DatabaseManager {
         for (ingest in importedIngests) {
             val raw = ingest.raw
             if (raw.isNullOrEmpty()) continue
-            when (ingest.type) {
-                "logs" -> {
-                    val lines = raw.lines()
-                    val updates = HackExParser.parseLogs(lines)
-                    applyUpdatesToMap(recordMap, updates)
-                }
-                "home" -> {
-                    val homeScreen = HackExParser.parseHomeScreen(raw)
-                    if (homeScreen != null) {
-                        applyHomeScreenToMap(recordMap, homeScreen)
+            try {
+                when (ingest.type) {
+                    "logs" -> {
+                        val lines = raw.lines()
+                        val updates = HackExParser.parseLogs(lines)
+                        applyUpdatesToMap(recordMap, updates)
+                    }
+                    "home" -> {
+                        val homeScreen = HackExParser.parseHomeScreen(raw)
+                        if (homeScreen != null) {
+                            applyHomeScreenToMap(recordMap, homeScreen)
+                        }
+                    }
+                    "software" -> {
+                        val softwareScreen = HackExParser.parseSoftwareScreen(raw)
+                        if (softwareScreen != null) {
+                            applySoftwareScreenToMap(recordMap, softwareScreen)
+                        }
                     }
                 }
-                "software" -> {
-                    val softwareScreen = HackExParser.parseSoftwareScreen(raw)
-                    if (softwareScreen != null) {
-                        applySoftwareScreenToMap(recordMap, softwareScreen)
-                    }
-                }
+            } catch (e: Exception) {
+                android.util.Log.e("DatabaseManager", "Error processing ingest: ${e.message}", e)
             }
         }
 
         saveAllRecords(recordMap.values.toList())
         reconcileDatabase()
+
+        // Broadcast local update event so UI screens refresh automatically
+        if (::appContext.isInitialized) {
+            try {
+                appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
+            } catch (_: Exception) {}
+        }
 
         return ImportResult(importedTargets.size, importedIngests.size)
     }

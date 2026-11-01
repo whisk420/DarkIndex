@@ -43,7 +43,7 @@ class ConsoleBundleTest {
         assertEquals("target-intelligence-console", bundle.format)
         assertEquals(1, bundle.version)
         assertNotNull(bundle.targets)
-        val targets = bundle.targets ?: emptyList()
+        val targets = bundle.targets ?: emptyArray()
         assertEquals(1, targets.size)
 
         val target = targets[0]

@@ -1,12 +1,8 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
 
 # --- Production Logging Configuration ---
-# Removes Log calls in production release builds
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
@@ -16,21 +12,22 @@
     public static int e(...);
 }
 
-# --- Gson Serialization Keep Rules ---
--keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+# --- Preserve Generic Signatures & Gson Reflections ---
+-keepattributes Signature, *Annotation*, EnclosingMethod, InnerClasses
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;
 }
 -keep class com.google.gson.** { *; }
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
 
-# Preserve HackEx Logger Data Models from R8 Obfuscation
--keep class com.whisk.hackexlogger.TargetRecord { *; }
--keep class com.whisk.hackexlogger.SoftwareEntry { *; }
--keep class com.whisk.hackexlogger.TheftEvent { *; }
--keep class com.whisk.hackexlogger.ConsoleBundle { *; }
--keep class com.whisk.hackexlogger.ConsoleIngest { *; }
--keep class com.whisk.hackexlogger.ImportResult { *; }
--keep class com.whisk.hackexlogger.GoogleAccountUser { *; }
+# --- Keep All App Classes & Data Models ---
+-keep class com.whisk.hackexlogger.** { *; }
+-keepclassmembers class com.whisk.hackexlogger.** { *; }
+
+# --- Keep Services & Accessibility Components ---
+-keep class com.whisk.hackexlogger.ScraperAccessibilityService { *; }
+-keep class com.whisk.hackexlogger.OverlayService { *; }
 
 # --- Google Identity & Credential Manager Keep Rules ---
 -keep class com.google.android.libraries.identity.googleid.** { *; }

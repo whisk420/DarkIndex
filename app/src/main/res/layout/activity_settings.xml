@@ -227,7 +227,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Your data is strictly stored locally on your device by default. Cloud backup options operate exclusively within your personal Google Account storage space with zero third-party server involvement."
+                android:text="Your data is 100% in your exclusive control. It remains stored on your device and/or inside your personal Google Account space. Nobody else can ever view, access, or touch your data."
                 android:textColor="#94a3b8"
                 android:textSize="13sp" />
         </LinearLayout>

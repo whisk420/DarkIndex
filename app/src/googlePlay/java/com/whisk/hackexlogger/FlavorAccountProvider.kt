@@ -27,6 +27,7 @@ object FlavorAccountProvider : AccountProvider {
     private const val KEY_ID_TOKEN = "google_id_token"
     private const val KEY_CLOUD_SYNC_ENABLED = "cloud_sync_enabled"
     private const val KEY_LAST_SYNC_TIME = "last_sync_time"
+    private const val KEY_CLOUD_BACKUP_JSON = "cloud_backup_json"
 
     @Volatile
     private var prefs: SharedPreferences? = null
@@ -55,7 +56,7 @@ object FlavorAccountProvider : AccountProvider {
 
     override fun isSignedIn(): Boolean = getCurrentUser() != null
 
-    private fun saveUser(context: Context, user: GoogleAccountUser) {
+    override fun saveUser(context: Context, user: GoogleAccountUser) {
         getPrefs(context).edit()
             .putString(KEY_DISPLAY_NAME, user.displayName)
             .putString(KEY_EMAIL, user.email)
@@ -71,6 +72,7 @@ object FlavorAccountProvider : AccountProvider {
             .remove(KEY_PHOTO_URL)
             .remove(KEY_ID_TOKEN)
             .remove(KEY_CLOUD_SYNC_ENABLED)
+            .remove(KEY_CLOUD_BACKUP_JSON)
             .apply()
     }
 
@@ -100,11 +102,25 @@ object FlavorAccountProvider : AccountProvider {
         getPrefs(context).edit().putLong(KEY_LAST_SYNC_TIME, timestamp).apply()
     }
 
+    override fun saveCloudBackup(context: Context, jsonString: String) {
+        getPrefs(context).edit().putString(KEY_CLOUD_BACKUP_JSON, jsonString).apply()
+        setLastSyncTime(context, System.currentTimeMillis())
+    }
+
+    override fun getCloudBackup(context: Context): String? {
+        return getPrefs(context).getString(KEY_CLOUD_BACKUP_JSON, null)
+    }
+
+    override fun clearCloudBackup(context: Context) {
+        getPrefs(context).edit().remove(KEY_CLOUD_BACKUP_JSON).apply()
+    }
+
     override suspend fun signInWithGoogle(activity: Activity): Result<GoogleAccountUser> = withContext(Dispatchers.IO) {
         try {
             val credentialManager = CredentialManager.create(activity)
 
             val googleIdOption = GetGoogleIdOption.Builder()
+                .setServerClientId("1000000000000-hackexlogger.apps.googleusercontent.com")
                 .setFilterByAuthorizedAccounts(false)
                 .setAutoSelectEnabled(false)
                 .build()
@@ -119,7 +135,7 @@ object FlavorAccountProvider : AccountProvider {
             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val user = GoogleAccountUser(
-                    displayName = googleIdTokenCredential.displayName,
+                    displayName = googleIdTokenCredential.displayName ?: googleIdTokenCredential.id,
                     email = googleIdTokenCredential.id,
                     photoUrl = googleIdTokenCredential.profilePictureUri?.toString(),
                     idToken = googleIdTokenCredential.idToken
@@ -130,7 +146,12 @@ object FlavorAccountProvider : AccountProvider {
                 Result.failure(IllegalStateException("Unrecognized credential type received."))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            val msg = e.message ?: "Sign-in error"
+            if (msg.contains("cancel", ignoreCase = true)) {
+                Result.failure(IllegalStateException("Sign-in cancelled by user."))
+            } else {
+                Result.failure(e)
+            }
         }
     }
 }

@@ -18,6 +18,8 @@ object AccountManager : AccountProvider {
 
     override fun isSignedIn(): Boolean = delegate.isSignedIn()
 
+    override fun saveUser(context: Context, user: GoogleAccountUser) = delegate.saveUser(context, user)
+
     override suspend fun signOut(context: Context) = delegate.signOut(context)
 
     override fun isCloudSyncEnabled(context: Context): Boolean = delegate.isCloudSyncEnabled(context)
@@ -27,6 +29,12 @@ object AccountManager : AccountProvider {
     override fun getLastSyncTime(context: Context): Long = delegate.getLastSyncTime(context)
 
     override fun setLastSyncTime(context: Context, timestamp: Long) = delegate.setLastSyncTime(context, timestamp)
+
+    override fun saveCloudBackup(context: Context, jsonString: String) = delegate.saveCloudBackup(context, jsonString)
+
+    override fun getCloudBackup(context: Context): String? = delegate.getCloudBackup(context)
+
+    override fun clearCloudBackup(context: Context) = delegate.clearCloudBackup(context)
 
     override suspend fun signInWithGoogle(activity: Activity): Result<GoogleAccountUser> = delegate.signInWithGoogle(activity)
 }

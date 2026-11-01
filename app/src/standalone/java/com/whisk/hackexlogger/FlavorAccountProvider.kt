@@ -19,6 +19,10 @@ object FlavorAccountProvider : AccountProvider {
 
     override fun isSignedIn(): Boolean = false
 
+    override fun saveUser(context: Context, user: GoogleAccountUser) {
+        // No-op in standalone build
+    }
+
     override suspend fun signOut(context: Context) {
         // No-op in standalone build
     }
@@ -32,6 +36,16 @@ object FlavorAccountProvider : AccountProvider {
     override fun getLastSyncTime(context: Context): Long = 0L
 
     override fun setLastSyncTime(context: Context, timestamp: Long) {
+        // No-op in standalone build
+    }
+
+    override fun saveCloudBackup(context: Context, jsonString: String) {
+        // No-op in standalone build
+    }
+
+    override fun getCloudBackup(context: Context): String? = null
+
+    override fun clearCloudBackup(context: Context) {
         // No-op in standalone build
     }
 
