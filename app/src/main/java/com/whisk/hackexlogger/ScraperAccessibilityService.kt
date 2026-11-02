@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * On-demand UI screen reader service utilizing Android's Accessibility APIs.
@@ -64,6 +65,7 @@ class ScraperAccessibilityService : AccessibilityService() {
      * Inspects the active window node hierarchy, extracts visible text, and parses game entity details.
      */
     private fun scrapeAndParse() {
+        val totalStartNanos = System.nanoTime()
         Log.d("DOSSIER", "scrapeAndParse() called. Attempting to get root window...")
         val rootNode = rootInActiveWindow
         if (rootNode == null) {
@@ -73,12 +75,14 @@ class ScraperAccessibilityService : AccessibilityService() {
 
         // Instantly offload ALL node tree traversal, IPC querying, Regex parsing, and storage to background thread
         serviceScope.launch(Dispatchers.Default) {
+            val extractStartNanos = System.nanoTime()
             val extractedTextList = mutableListOf<String>()
             try {
                 extractText(rootNode, extractedTextList)
             } catch (e: Exception) {
                 Log.e("DOSSIER", "Error extracting text nodes: ${e.message}", e)
             }
+            val extractDurationMs = (System.nanoTime() - extractStartNanos) / 1_000_000.0
 
             if (extractedTextList.isEmpty()) {
                 val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
@@ -90,67 +94,90 @@ class ScraperAccessibilityService : AccessibilityService() {
             }
 
             val combinedText = extractedTextList.joinToString("\n")
-            Log.d("DOSSIER", "Scraped ${extractedTextList.size} text nodes.")
+            Log.i("DOSSIER_RAW", "--- RAW SCRAPED TEXT START ---\n$combinedText\n--- RAW SCRAPED TEXT END ---")
 
             // Split extracted UI text into discrete lines for log parsing
             val allLines = combinedText.split(Regex("""\r?\n"""))
             val savedItems = mutableListOf<String>()
 
-            // Attempt parsing for HackEx Home/Profile screen format
-            val homeScreen = HackExParser.parseHomeScreen(combinedText)
-            if (homeScreen != null) {
-                Log.d("DOSSIER", "Parsed HomeScreen: $homeScreen")
-                DatabaseManager.processHomeScreen(homeScreen)
-                savedItems.add("Target Profile")
-            }
+            // 1. Benchmark Screen Type Detection
+            val detectStartNanos = System.nanoTime()
+            val detectedType = HackExParser.detectScreenType(combinedText, allLines)
+            val detectDurationMs = (System.nanoTime() - detectStartNanos) / 1_000_000.0
 
-            // Attempt parsing for HackEx Software screen format
-            val softwareScreen = HackExParser.parseSoftwareScreen(combinedText)
-            if (softwareScreen != null) {
-                Log.d("DOSSIER", "Parsed SoftwareScreen: $softwareScreen")
-                DatabaseManager.processSoftwareScreen(softwareScreen)
-                savedItems.add("Software Inventory")
+            // 2. Benchmark Regex Parsing & Database Processing
+            val parseStartNanos = System.nanoTime()
+            when (detectedType) {
+                HackExParser.ScreenType.HOME -> {
+                    val homeScreen = HackExParser.parseHomeScreen(combinedText)
+                    if (homeScreen != null) {
+                        Log.d("DOSSIER", "Parsed HomeScreen: $homeScreen")
+                        DatabaseManager.processHomeScreen(homeScreen)
+                        savedItems.add("Target Profile")
+                    }
+                }
+                HackExParser.ScreenType.SOFTWARE -> {
+                    val softwareScreen = HackExParser.parseSoftwareScreen(combinedText)
+                    if (softwareScreen != null) {
+                        Log.d("DOSSIER", "Parsed SoftwareScreen: $softwareScreen")
+                        DatabaseManager.processSoftwareScreen(softwareScreen)
+                        savedItems.add("Software Inventory")
+                    }
+                }
+                HackExParser.ScreenType.WALLET -> {
+                    val walletScreen = HackExParser.parseWalletScreen(combinedText)
+                    if (walletScreen != null) {
+                        Log.d("DOSSIER", "Parsed WalletScreen: $walletScreen")
+                        DatabaseManager.processWalletScreen(walletScreen)
+                        savedItems.add("Wallet")
+                    }
+                }
+                HackExParser.ScreenType.LOGS -> {
+                    val logUpdates = HackExParser.parseLogs(allLines)
+                    if (logUpdates.isNotEmpty()) {
+                        Log.d("DOSSIER", "Parsed ${logUpdates.size} Log Updates")
+                        DatabaseManager.processUpdates(logUpdates)
+                        savedItems.add("${logUpdates.size} Log Events")
+                    }
+                }
+                HackExParser.ScreenType.SIPHON -> {
+                    val siphonScreen = HackExParser.parseSiphonScreen(combinedText)
+                    if (siphonScreen != null) {
+                        Log.d("DOSSIER", "Parsed SiphonScreen: $siphonScreen")
+                        DatabaseManager.processSiphonScreen(siphonScreen)
+                        savedItems.add("Siphons")
+                    }
+                }
+                HackExParser.ScreenType.CREW -> {
+                    val crewScreen = HackExParser.parseCrewScreen(allLines)
+                    if (crewScreen != null) {
+                        Log.d("DOSSIER", "Parsed CrewScreen: $crewScreen")
+                        DatabaseManager.processCrewScreen(crewScreen)
+                        savedItems.add("Crew")
+                    }
+                }
+                HackExParser.ScreenType.PROCESS -> {
+                    val processScreen = HackExParser.parseProcessScreen(allLines)
+                    if (processScreen != null) {
+                        Log.d("DOSSIER", "Parsed ProcessScreen: $processScreen")
+                        DatabaseManager.processProcessScreen(processScreen)
+                        savedItems.add("Processes")
+                    }
+                }
+                HackExParser.ScreenType.UNKNOWN -> {
+                    // Fallback to evaluating all parsers if screen type signature was ambiguous
+                    parseAllScreensFallback(combinedText, allLines, savedItems)
+                }
             }
+            val parseDurationMs = (System.nanoTime() - parseStartNanos) / 1_000_000.0
+            val totalPipelineMs = (System.nanoTime() - totalStartNanos) / 1_000_000.0
 
-            // Attempt parsing for HackEx Wallet screen format
-            val walletScreen = HackExParser.parseWalletScreen(combinedText)
-            if (walletScreen != null) {
-                Log.d("DOSSIER", "Parsed WalletScreen: $walletScreen")
-                DatabaseManager.processWalletScreen(walletScreen)
-                savedItems.add("Wallet")
-            }
-
-            // Attempt parsing for Game Activity Log screens
-            val logUpdates = HackExParser.parseLogs(allLines)
-            if (logUpdates.isNotEmpty()) {
-                Log.d("DOSSIER", "Parsed ${logUpdates.size} Log Updates")
-                DatabaseManager.processUpdates(logUpdates)
-                savedItems.add("${logUpdates.size} Log Events")
-            }
-
-            // Attempt parsing for HackEx Siphon screen format
-            val siphonScreen = HackExParser.parseSiphonScreen(combinedText)
-            if (siphonScreen != null) {
-                Log.d("DOSSIER", "Parsed SiphonScreen: $siphonScreen")
-                DatabaseManager.processSiphonScreen(siphonScreen)
-                savedItems.add("Siphons")
-            }
-
-            // Attempt parsing for HackEx Crew screen format
-            val crewScreen = HackExParser.parseCrewScreen(allLines)
-            if (crewScreen != null) {
-                Log.d("DOSSIER", "Parsed CrewScreen: $crewScreen")
-                DatabaseManager.processCrewScreen(crewScreen)
-                savedItems.add("Crew")
-            }
-
-            // Attempt parsing for HackEx Process screen format
-            val processScreen = HackExParser.parseProcessScreen(allLines)
-            if (processScreen != null) {
-                Log.d("DOSSIER", "Parsed ProcessScreen: $processScreen")
-                DatabaseManager.processProcessScreen(processScreen)
-                savedItems.add("Processes")
-            }
+            // Output Precision Benchmark Report to Logcat
+            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "⏱️ [PERFORMANCE BENCHMARK] Screen: %s", detectedType))
+            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Node Extraction: %.2f ms (%d text nodes)", extractDurationMs, extractedTextList.size))
+            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Screen Type Detection: %.2f ms", detectDurationMs))
+            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Parsing & Database Processing: %.2f ms", parseDurationMs))
+            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "└─ TOTAL PIPELINE TIME: %.2f ms", totalPipelineMs))
 
             val toastMessage = if (savedItems.isNotEmpty()) {
                 "Saved: " + savedItems.joinToString(", ")
@@ -169,6 +196,44 @@ class ScraperAccessibilityService : AccessibilityService() {
                 setPackage(packageName)
             }
             sendBroadcast(updateIntent)
+        }
+    }
+
+    private fun parseAllScreensFallback(combinedText: String, allLines: List<String>, savedItems: MutableList<String>) {
+        val homeScreen = HackExParser.parseHomeScreen(combinedText)
+        if (homeScreen != null) {
+            DatabaseManager.processHomeScreen(homeScreen)
+            savedItems.add("Target Profile")
+        }
+        val softwareScreen = HackExParser.parseSoftwareScreen(combinedText)
+        if (softwareScreen != null) {
+            DatabaseManager.processSoftwareScreen(softwareScreen)
+            savedItems.add("Software Inventory")
+        }
+        val walletScreen = HackExParser.parseWalletScreen(combinedText)
+        if (walletScreen != null) {
+            DatabaseManager.processWalletScreen(walletScreen)
+            savedItems.add("Wallet")
+        }
+        val logUpdates = HackExParser.parseLogs(allLines)
+        if (logUpdates.isNotEmpty()) {
+            DatabaseManager.processUpdates(logUpdates)
+            savedItems.add("${logUpdates.size} Log Events")
+        }
+        val siphonScreen = HackExParser.parseSiphonScreen(combinedText)
+        if (siphonScreen != null) {
+            DatabaseManager.processSiphonScreen(siphonScreen)
+            savedItems.add("Siphons")
+        }
+        val crewScreen = HackExParser.parseCrewScreen(allLines)
+        if (crewScreen != null) {
+            DatabaseManager.processCrewScreen(crewScreen)
+            savedItems.add("Crew")
+        }
+        val processScreen = HackExParser.parseProcessScreen(allLines)
+        if (processScreen != null) {
+            DatabaseManager.processProcessScreen(processScreen)
+            savedItems.add("Processes")
         }
     }
 
