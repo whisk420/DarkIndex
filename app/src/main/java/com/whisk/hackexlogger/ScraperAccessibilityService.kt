@@ -73,31 +73,34 @@ class ScraperAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Instantly offload ALL node tree traversal, IPC querying, Regex parsing, and storage to background thread
+        // IMMEDIATELY traverse the node tree on the main thread to capture the exact current screen state.
+        // Offloading tree traversal to a background thread causes race conditions if the user navigates away quickly.
+        val extractStartNanos = System.nanoTime()
+        val extractedTextList = mutableListOf<String>()
+        try {
+            extractText(rootNode, extractedTextList)
+        } catch (e: Exception) {
+            Log.e("DOSSIER", "Error extracting text nodes: ${e.message}", e)
+        }
+        val extractDurationMs = (System.nanoTime() - extractStartNanos) / 1_000_000.0
+
+        if (extractedTextList.isEmpty()) {
+            val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
+                setPackage(packageName)
+                putExtra("message", "Nothing found to save")
+            }
+            sendBroadcast(toastIntent)
+            return
+        }
+
+        val combinedText = extractedTextList.joinToString("\n")
+        Log.i("DOSSIER_RAW", "--- RAW SCRAPED TEXT START ---\n$combinedText\n--- RAW SCRAPED TEXT END ---")
+
+        // Split extracted UI text into discrete lines for log parsing
+        val allLines = combinedText.split(Regex("""\r?\n"""))
+
+        // Offload ALL Regex parsing and storage to background thread
         serviceScope.launch(Dispatchers.Default) {
-            val extractStartNanos = System.nanoTime()
-            val extractedTextList = mutableListOf<String>()
-            try {
-                extractText(rootNode, extractedTextList)
-            } catch (e: Exception) {
-                Log.e("DOSSIER", "Error extracting text nodes: ${e.message}", e)
-            }
-            val extractDurationMs = (System.nanoTime() - extractStartNanos) / 1_000_000.0
-
-            if (extractedTextList.isEmpty()) {
-                val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
-                    setPackage(packageName)
-                    putExtra("message", "Nothing found to save")
-                }
-                sendBroadcast(toastIntent)
-                return@launch
-            }
-
-            val combinedText = extractedTextList.joinToString("\n")
-            Log.i("DOSSIER_RAW", "--- RAW SCRAPED TEXT START ---\n$combinedText\n--- RAW SCRAPED TEXT END ---")
-
-            // Split extracted UI text into discrete lines for log parsing
-            val allLines = combinedText.split(Regex("""\r?\n"""))
             val savedItems = mutableListOf<String>()
 
             // 1. Benchmark Screen Type Detection
