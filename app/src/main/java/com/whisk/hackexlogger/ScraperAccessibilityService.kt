@@ -38,6 +38,7 @@ class ScraperAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instance = this
         Log.d("DOSSIER", "Accessibility Service successfully Connected to OS")
         val filter = IntentFilter(ACTION_TRIGGER_SCRAPE)
         androidx.core.content.ContextCompat.registerReceiver(
@@ -50,6 +51,7 @@ class ScraperAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        instance = null
         unregisterReceiver(triggerReceiver)
     }
 
@@ -64,7 +66,7 @@ class ScraperAccessibilityService : AccessibilityService() {
     /**
      * Inspects the active window node hierarchy, extracts visible text, and parses game entity details.
      */
-    private fun scrapeAndParse() {
+    fun scrapeAndParse() {
         val totalStartNanos = System.nanoTime()
         Log.d("DOSSIER", "scrapeAndParse() called. Attempting to get root window...")
         val rootNode = rootInActiveWindow
@@ -262,5 +264,6 @@ class ScraperAccessibilityService : AccessibilityService() {
 
     companion object {
         const val ACTION_TRIGGER_SCRAPE = "com.whisk.hackexlogger.TRIGGER_SCRAPE"
+        var instance: ScraperAccessibilityService? = null
     }
 }

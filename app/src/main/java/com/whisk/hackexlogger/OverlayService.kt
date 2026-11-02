@@ -136,7 +136,7 @@ class OverlayService : Service() {
         val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
 
         // Touch listener enables dragging the overlay button anywhere on screen
-        cameraFloatingButton.setOnTouchListener { view, event ->
+        cameraFloatingButton.setOnTouchListener { _, event ->
             val displayMetrics = resources.displayMetrics
             val closeThresholdY = displayMetrics.heightPixels - (150 * displayMetrics.density)
 
@@ -153,7 +153,8 @@ class OverlayService : Service() {
                     val diffX = Math.abs(event.rawX - initialTouchX)
                     val diffY = Math.abs(event.rawY - initialTouchY)
                     
-                    if (!isDragging && (diffX > touchSlop || diffY > touchSlop)) {
+                    // Multiply touchSlop by 1.5 to make tapping more forgiving (less accidental drags)
+                    if (!isDragging && (diffX > touchSlop * 1.5f || diffY > touchSlop * 1.5f)) {
                         isDragging = true
                         showCloseTarget()
                     }
@@ -184,7 +185,15 @@ class OverlayService : Service() {
                             stopSelf()
                         }
                     } else {
-                        view.performClick()
+                        // User intentionally tapped. Bypassing broadcast queue for instantaneous capture.
+                        val service = ScraperAccessibilityService.instance
+                        if (service != null) {
+                            service.scrapeAndParse()
+                        } else {
+                            val scrapeIntent = Intent(ScraperAccessibilityService.ACTION_TRIGGER_SCRAPE)
+                            scrapeIntent.setPackage(packageName)
+                            sendBroadcast(scrapeIntent)
+                        }
                     }
                     true
                 }
@@ -192,12 +201,8 @@ class OverlayService : Service() {
             }
         }
 
-        // Tapping the floating button triggers an on-demand screen scrape
-        cameraFloatingButton.setOnClickListener {
-            val scrapeIntent = Intent(ScraperAccessibilityService.ACTION_TRIGGER_SCRAPE)
-            scrapeIntent.setPackage(packageName)
-            sendBroadcast(scrapeIntent)
-        }
+        // We don't use OnClickListener since we handle taps in ACTION_UP
+        cameraFloatingButton.setOnClickListener(null)
 
         windowManager.addView(cameraFloatingButton, params)
     }
