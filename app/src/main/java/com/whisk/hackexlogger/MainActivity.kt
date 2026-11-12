@@ -127,18 +127,36 @@ class MainActivity : AppCompatActivity() {
         registerReceiver(dataUpdateReceiver, IntentFilter("com.whisk.hackexlogger.DATA_UPDATED"), RECEIVER_NOT_EXPORTED)
 
         showPermissionDialog(force = false)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        
+        val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
+        val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
+        val validateBtn = findViewById<Button>(R.id.validateBtn)
+        validateBtn.text = if (isAdvancedTargetingMode) "Target" else "Validate"
+        validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isAdvancedTargetingMode) "#f59e0b" else "#16a34a"))
+        
         refreshData()
+        if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
+            startService(Intent(this, OverlayService::class.java))
+        }
     }
 
     private fun setupUI() {
         targetAdapter = TargetAdapter(this::onEditTarget, this::onDeleteTarget, this::onTogglePartial)
         findViewById<RecyclerView>(R.id.targetsRecycler).adapter = targetAdapter
 
-        // Validation mode toggle button
-        findViewById<Button>(R.id.validateBtn).setOnClickListener {
+        val validateBtn = findViewById<Button>(R.id.validateBtn)
+
+        // Validation / Advanced Targeting mode toggle button
+        validateBtn.setOnClickListener {
             if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
+                val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
+                val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
                 val intent = Intent(this, OverlayService::class.java).apply {
-                    action = OverlayService.ACTION_TOGGLE_VALIDATION
+                    action = if (isAdvancedTargetingMode) OverlayService.ACTION_TOGGLE_ADVANCED_TARGETING else OverlayService.ACTION_TOGGLE_VALIDATION
                 }
                 startService(intent)
             } else {
@@ -195,7 +213,8 @@ class MainActivity : AppCompatActivity() {
                                 "Summary of actions taken:\n" +
                                 "• ${result.multiWalletRecordsFixed} multi-wallet target records cleared\n" +
                                 "• ${result.maskedSoftwareCleared} masked software inventories cleared\n" +
-                                "• ${result.maskedWalletsMigrated} masked wallets migrated to placeholders"
+                                "• ${result.maskedWalletsMigrated} masked wallets migrated to placeholders\n" +
+                                "• ${result.oldTheftsCleared} old theft events purged (24h+ gaps)"
                             )
                             .setPositiveButton("OK", null)
                             .show()
@@ -236,7 +255,7 @@ class MainActivity : AppCompatActivity() {
         maxFirewallSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 maxFirewallLevel = progress
-                maxFirewallValue.text = progress.toString()
+                maxFirewallValue.text = if (progress == 31) "Uncapped" else progress.toString()
                 if (isGoodSpamEnabled) {
                     searchJob?.cancel()
                     searchJob = lifecycleScope.launch {
@@ -281,7 +300,14 @@ class MainActivity : AppCompatActivity() {
     private fun refreshData() {
         lifecycleScope.launch(Dispatchers.Default) {
             val allRecords = DatabaseManager.getAllRecords()
-            var filtered = allRecords
+            val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
+            val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
+            
+            var filtered = if (isAdvancedTargetingMode) {
+                allRecords.filter { it.needsAdvancedTargeting }
+            } else {
+                allRecords
+            }
 
             if (currentSearchQuery.isNotEmpty()) {
                 val query = currentSearchQuery.lowercase()
@@ -333,14 +359,18 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (isGoodSpamEnabled) {
+                val maxFw = if (maxFirewallLevel == 31) Int.MAX_VALUE else maxFirewallLevel
                 filtered = filtered.filter { record ->
                     val fw = record.firewall ?: 0
-                    fw <= maxFirewallLevel
+                    fw <= maxFw
                 }.sortedByDescending { record ->
                     val lvl = (record.level ?: 0).toDouble()
                     val fw = (record.firewall ?: 0).toDouble()
-                    // Increased emphasis on player level: squaring the level to heavily prioritize high-level targets.
-                    Math.pow(lvl, 2.0) - Math.pow(fw, 1.5)
+                    val hwPenalty = getHardwarePenalty(record.hardware)
+                    
+                    // High emphasis on player level (Spam payout), but explicitly placing weight on lower hardware tiers
+                    // (faster upload speeds) and lower firewalls.
+                    (lvl * 5.0) - hwPenalty - (fw * 1.5)
                 }
             }
 
@@ -376,17 +406,74 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Extracts the target's device name, computes its equivalent power tier index, 
+     * and maps it to an upload difficulty penalty. (Target's network speed only affects their own
+     * downloads, while target's CPU/Device governs how fast attackers can crack/upload to them).
+     * 
+     * Base Devices:
+     * - Raider: 1
+     * - Bolt: 4
+     * - Nova: 7
+     * 
+     * Special Devices (Mirror standard progression, offset by numeral):
+     * - Vector: Matches Bolt 1 (Power 4)
+     * - Scythe X: Scythe 1 = Raider 1 (Power 1). Thus Scythe IV = Power 4.
+     */
+    private fun getHardwarePenalty(hardware: String?): Double {
+        if (hardware == null) return 0.0
+        val deviceStr = hardware.substringBefore(" • ").trim().lowercase()
+        
+        var basePower = 0.0
+        
+        when {
+            deviceStr.contains("scythe") -> {
+                // Scythe 1 is equivalent to Raider 1 (Power 1).
+                basePower = 1.0
+            }
+            deviceStr.contains("raider") -> basePower = 1.0
+            deviceStr.contains("vector") -> basePower = 4.0 // Equivalent to Bolt
+            deviceStr.contains("bolt") -> basePower = 4.0
+            deviceStr.contains("nova") -> {
+                basePower = 7.0
+                if (deviceStr.contains(" s")) basePower += 3.0 // Nova S
+                if (deviceStr.contains(" x")) basePower += 4.0 // Nova X
+            }
+        }
+        
+        // Add modifier for roman numeral iterations (II, III, IV, etc.)
+        val romanNumeralMap = mapOf(
+            " ii" to 1.0,
+            " iii" to 2.0,
+            " iv" to 3.0,
+            " v" to 4.0,
+            " vi" to 5.0,
+            " vii" to 6.0,
+            " viii" to 7.0,
+            " ix" to 8.0,
+            " x" to 9.0
+        )
+        
+        for ((numeral, power) in romanNumeralMap) {
+            // Match the numeral exactly at the end of the string
+            // Skip applying the " x" modifier again if we already applied it specifically to Nova
+            if (deviceStr.endsWith(numeral)) {
+                if (deviceStr.contains("nova x") && numeral == " x") {
+                    // Already handled in the base block (+4 for Nova X vs Nova)
+                    break
+                }
+                basePower += power
+                break
+            }
+        }
+
+        // We only penalize target's CPU/Device speed, as their Network speed doesn't affect our uploads to them.
+        return basePower
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(dataUpdateReceiver)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refreshData()
-        if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
-            startService(Intent(this, OverlayService::class.java))
-        }
     }
 
     override fun onStop() {

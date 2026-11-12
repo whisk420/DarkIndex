@@ -48,6 +48,15 @@ object HackExParser {
 
     /**
      * Data update parsed from a HackEx log line.
+     *
+     * @property ip Target IP address.
+     * @property time Log timestamp (e.g. "10-16 1:16").
+     * @property wallet Wallet address if present.
+     * @property software Software details if present.
+     * @property isOwnedSoftware True if the software belongs to the target (download), false if uploaded by the player.
+     * @property raw The raw scraped string for this log event.
+     * @property stolenAmount Crypto amount stolen/transferred if present.
+     * @property isOwnLogTheft True if the theft event was an outbound "Stole" action (own log), false if inbound "transferred to" (victim log).
      */
     data class ParsedUpdate(
         val ip: String,
@@ -56,7 +65,8 @@ object HackExParser {
         val software: Software? = null,
         val isOwnedSoftware: Boolean = false,
         val raw: String,
-        val stolenAmount: Int? = null
+        val stolenAmount: Int? = null,
+        val isOwnLogTheft: Boolean = false
     )
 
     /**
@@ -326,7 +336,10 @@ object HackExParser {
             // Wallets
             val walletMatch = REGEX_LOG_WALLET.find(line)
             if (walletMatch != null) {
-                val rawAmt = if (walletMatch.groupValues[1].isNotEmpty()) walletMatch.groupValues[1] else walletMatch.groupValues[2]
+                // Determine if this is an outbound theft ("Stole") vs inbound ("transferred to")
+                // This is critical for filtering out passive income calculations on victim logs.
+                val isStole = walletMatch.groupValues[1].isNotEmpty()
+                val rawAmt = if (isStole) walletMatch.groupValues[1] else walletMatch.groupValues[2]
                 val amount = rawAmt.replace(",", "").toIntOrNull()
                 val wallet = shortenWallet(walletMatch.groupValues[3])
                 updates.add(
@@ -335,7 +348,8 @@ object HackExParser {
                         time = timeStr,
                         wallet = wallet,
                         stolenAmount = amount,
-                        raw = line
+                        raw = line,
+                        isOwnLogTheft = isStole
                     )
                 )
                 // Clear the access IP so subsequent Siphon collections don't falsely claim this IP

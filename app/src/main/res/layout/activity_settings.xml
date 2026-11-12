@@ -39,6 +39,47 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical">
+
+                <!-- Display Mode Settings -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#050811"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Display Mode"
+                        android:textColor="#38bdf8"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Switch between Traditional Display and Advanced Targeting mode."
+                        android:textColor="#94a3b8"
+                        android:textSize="13sp" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/advancedTargetingSwitch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Advanced Targeting Mode"
+                        android:textColor="#ffffff"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
         <!-- Google Account Card -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -230,7 +271,7 @@
                 android:text="Your data is 100% in your exclusive control. It remains stored on your device and/or inside your personal Google Account space. Nobody else can ever view, access, or touch your data."
                 android:textColor="#94a3b8"
                 android:textSize="13sp" />
+            </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 </ScrollView>

@@ -58,6 +58,8 @@
             android:src="@android:drawable/ic_popup_reminder"
             app:tint="#e2e8f0" />
 
+
+
         <ImageButton
             android:id="@+id/settingsBtn"
             android:layout_width="36dp"
@@ -135,13 +137,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:max="100"
+            android:max="31"
             android:progress="20"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/maxFirewallValue"
-            android:layout_width="32dp"
+            android:layout_width="70dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="20"

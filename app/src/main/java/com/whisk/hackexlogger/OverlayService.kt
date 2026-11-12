@@ -41,6 +41,8 @@ class OverlayService : Service() {
         const val ACTION_TOGGLE_VALIDATION = "com.whisk.hackexlogger.TOGGLE_VALIDATION"
         const val ACTION_START_VALIDATION = "com.whisk.hackexlogger.START_VALIDATION"
         const val ACTION_STOP_VALIDATION = "com.whisk.hackexlogger.STOP_VALIDATION"
+        
+        const val ACTION_TOGGLE_ADVANCED_TARGETING = "com.whisk.hackexlogger.TOGGLE_ADVANCED_TARGETING"
     }
 
     private lateinit var windowManager: WindowManager
@@ -49,6 +51,10 @@ class OverlayService : Service() {
     private var isValidating = false
     private var currentValidatingTarget: TargetRecord? = null
     private var validationView: View? = null
+    
+    private var isTargetingMode = false
+    private var currentTargetingTarget: TargetRecord? = null
+    private var targetingView: View? = null
 
     private var isCloseTargetVisible = false
     private var closeTargetView: TextView? = null
@@ -91,6 +97,9 @@ class OverlayService : Service() {
             }
             ACTION_STOP_VALIDATION -> {
                 stopValidationMode()
+            }
+            ACTION_TOGGLE_ADVANCED_TARGETING -> {
+                if (isTargetingMode) stopTargetingMode() else startTargetingMode()
             }
         }
         return START_STICKY
@@ -328,9 +337,144 @@ class OverlayService : Service() {
             validationView = null
         }
 
+        if (::cameraFloatingButton.isInitialized && !isTargetingMode) {
+            cameraFloatingButton.visibility = View.VISIBLE
+        }
+    }
+
+    private fun startTargetingMode() {
+        if (isTargetingMode) return
+        isTargetingMode = true
+        if (isValidating) stopValidationMode()
+
+        if (::cameraFloatingButton.isInitialized) {
+            cameraFloatingButton.visibility = View.GONE
+        }
+        showTargetingUI()
+    }
+
+    private fun stopTargetingMode() {
+        if (!isTargetingMode) return
+        isTargetingMode = false
+        targetingView?.let {
+            try { windowManager.removeView(it) } catch (e: Exception) {}
+        }
+        targetingView = null
+        currentTargetingTarget = null
+
         if (::cameraFloatingButton.isInitialized) {
             cameraFloatingButton.visibility = View.VISIBLE
         }
+    }
+
+    private fun showTargetingUI() {
+        if (targetingView != null) return
+
+        val inflater = LayoutInflater.from(this)
+        val view = inflater.inflate(R.layout.overlay_targeting, null)
+        targetingView = view
+
+        val closeBtn = view.findViewById<View>(R.id.overlayCloseBtn)
+        val ipBadge = view.findViewById<TextView>(R.id.overlayIpBadge)
+        val skipBtn = view.findViewById<Button>(R.id.overlaySkipBtn)
+        val validBtn = view.findViewById<Button>(R.id.overlayValidBtn)
+        val invalidBtn = view.findViewById<Button>(R.id.overlayInvalidBtn)
+
+        closeBtn?.setOnClickListener {
+            stopTargetingMode()
+        }
+
+        ipBadge?.setOnClickListener {
+            currentTargetingTarget?.let { target ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("Target IP", target.ip)
+                clipboard.setPrimaryClip(clip)
+                showMinimalToast("Copied: ${target.ip}")
+            }
+        }
+
+        skipBtn?.setOnClickListener {
+            val ip = currentTargetingTarget?.ip
+            if (ip != null) {
+                DatabaseManager.markTargetValidated(ip)
+                showMinimalToast("Skipped: $ip")
+                loadNextTargetingTarget()
+            }
+        }
+
+        validBtn.setOnClickListener {
+            val ip = currentTargetingTarget?.ip
+            if (ip != null) {
+                DatabaseManager.markTargetValidated(ip)
+                showMinimalToast("Completed: $ip")
+                loadNextTargetingTarget()
+            }
+        }
+
+        invalidBtn.setOnClickListener {
+            val ip = currentTargetingTarget?.ip
+            if (ip != null) {
+                DatabaseManager.deleteTarget(ip)
+                showMinimalToast("Deleted (Not Found): $ip")
+                loadNextTargetingTarget()
+            }
+        }
+
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 20
+            y = 100
+        }
+
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+
+        ipBadge.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params.x
+                    initialY = params.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    params.x = initialX + (event.rawX - initialTouchX).toInt()
+                    params.y = initialY + (event.rawY - initialTouchY).toInt()
+                    windowManager.updateViewLayout(view, params)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        windowManager.addView(view, params)
+        loadNextTargetingTarget()
+    }
+
+    private fun loadNextTargetingTarget() {
+        val next = DatabaseManager.getNextTargetForAdvancedTargeting()
+        if (next == null) {
+            Toast.makeText(this, "Queue Empty: All targets have info!", Toast.LENGTH_SHORT).show()
+            stopTargetingMode()
+            return
+        }
+
+        currentTargetingTarget = next
+        val ipBadge = targetingView?.findViewById<TextView>(R.id.overlayIpBadge)
+        ipBadge?.text = next.ip
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Target IP", next.ip)
+        clipboard.setPrimaryClip(clip)
+        showMinimalToast("Copied Target: ${next.ip}")
     }
 
     private fun showMinimalToast(text: String) {

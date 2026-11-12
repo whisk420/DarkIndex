@@ -9,10 +9,12 @@ Vibe-coded to the moon and back, just like the game.
 ## Features
 
 - **On-Demand Game Screen Scraper**: Captures visible text from the HackEx game interface when manually triggered via a floating quick-action overlay button.
-- **In-Game Overlay Toolbar**: Floating camera button and target validation controls overlay the game window for fast target clipboard copying and validation tracking.
+- **In-Game Overlay Toolbar**: Floating camera button and advanced targeting/validation controls overlay the game window for fast target clipboard copying and status tracking.
 - **Local On-Device Database**: Persists collected target intelligence locally on-device using Android `SharedPreferences` with thread-safe access.
 - **Regex Game Text Parser**: Extracts in-game target profiles, software inventories, and activity logs using pattern matching tailored to HackEx UI text layouts.
-- **Search & Filtering**: Quick filter target records by virtual IP address, username, software name, or software level.
+- **Passive Wallet Income Estimator**: Intelligently parses your personal log thefts, filters out outdated events with >24h gaps, and calculates highly accurate passive hourly crypto generation for every target's wallet.
+- **Advanced Targeting Mode**: Optional dashboard mode that filters your list to only show targets lacking critical scraping information, paired with a specialized overlay toolbar to cycle through incomplete targets and skip time-consuming bypasses.
+- **Search & Filtering**: Quick filter target records by virtual IP address, username, software name, or software level (including tiered `±2` level fuzzing).
 - **JSON Import & Export**: Export your target database to JSON or import target bundles using Android's Storage Access Framework.
 
 ---

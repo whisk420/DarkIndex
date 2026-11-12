@@ -141,6 +141,36 @@ object DatabaseManager {
     }
 
     /**
+     * Gets the next target that requires advanced targeting (missing wallet or core software),
+     * sorted by oldest validation timestamp.
+     */
+    fun getNextTargetForAdvancedTargeting(): TargetRecord? {
+        synchronized(cachedRecords) {
+            val candidates = cachedRecords.filter { it.needsAdvancedTargeting }
+            
+            // First, return candidates that have never been checked
+            val nullChecked = candidates.filter { it.lastValidated == null }
+            if (nullChecked.isNotEmpty()) {
+                return nullChecked.first()
+            }
+            // Otherwise, sort by oldest check time
+            return candidates.minByOrNull { it.lastValidated ?: "" }
+        }
+    }
+
+    /**
+     * Marks a target as recently validated.
+     */
+    fun markTargetValidated(ip: String) {
+        synchronized(cachedRecords) {
+            val record = cachedRecords.find { it.ip == ip } ?: return
+            record.lastValidated = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+            saveAllRecords(cachedRecords)
+        }
+        notifyDataUpdated()
+    }
+
+    /**
      * Saves the provided target list to the in-memory cache and persists it to disk via [SharedPreferences].
      */
     private fun saveAllRecords(records: List<TargetRecord>) {
@@ -185,7 +215,8 @@ object DatabaseManager {
         val backupFilePath: String,
         val multiWalletRecordsFixed: Int,
         val maskedSoftwareCleared: Int,
-        val maskedWalletsMigrated: Int
+        val maskedWalletsMigrated: Int,
+        val oldTheftsCleared: Int
     )
 
     /**
@@ -194,6 +225,7 @@ object DatabaseManager {
      * - Clears ALL wallets from multi-wallet records (since ownership is uncertain), migrating them to standalone placeholders.
      * - Removes software inventories from generic masked target placeholders.
      * - Migrates wallets attached to generic masked target placeholders to standalone placeholders.
+     * - Purges old theft events separated by >24h gaps.
      */
     fun runDatabaseMaintenance(): MaintenanceResult {
         // 1. Create a guaranteed pre-maintenance backup file
@@ -208,8 +240,29 @@ object DatabaseManager {
         var multiWalletCount = 0
         var maskedSoftwareCount = 0
         var maskedWalletsMigratedCount = 0
+        var oldTheftsClearedCount = 0
 
         for (record in recordMap.values.toList()) {
+            // 1.5. Clean up old theft events with gaps > 24 hours
+            val walletsToProcess = record.walletThefts.keys.toList()
+            for (wallet in walletsToProcess) {
+                val list = record.walletThefts[wallet]
+                if (list != null && list.size > 1) {
+                    list.sortBy { it.timestampMs }
+                    var startIndex = 0
+                    for (i in 1 until list.size) {
+                        if (list[i].timestampMs - list[i - 1].timestampMs > 24 * 3600000L) {
+                            startIndex = i
+                        }
+                    }
+                    if (startIndex > 0) {
+                        oldTheftsClearedCount += startIndex
+                        val recentCluster = list.subList(startIndex, list.size).toMutableList()
+                        record.walletThefts[wallet] = recentCluster
+                    }
+                }
+            }
+
             // 2. Clean up multiple wallets on a single target (clear ALL wallets since true owner is uncertain)
             if (record.wallets.size > 1) {
                 val walletsToDrop = record.wallets.toList()
@@ -285,7 +338,8 @@ object DatabaseManager {
             backupFilePath = backupFile.absolutePath,
             multiWalletRecordsFixed = multiWalletCount,
             maskedSoftwareCleared = maskedSoftwareCount,
-            maskedWalletsMigrated = maskedWalletsMigratedCount
+            maskedWalletsMigrated = maskedWalletsMigratedCount,
+            oldTheftsCleared = oldTheftsClearedCount
         )
     }
 
@@ -519,7 +573,9 @@ object DatabaseManager {
                         record.wallets.add(update.wallet)
                     }
                     
-                    if (update.stolenAmount != null && update.time != null) {
+                    // Only record theft events if they came from the player's own log (outbound "Stole" action)
+                    // This prevents falsely attributing another attacker's passive income when reading a victim's log.
+                    if (update.stolenAmount != null && update.time != null && update.isOwnLogTheft) {
                         val timestampMs = parseLogTime(update.time)
                         if (timestampMs != null) {
                             record.addTheftEvent(update.wallet, timestampMs, update.stolenAmount)
@@ -600,6 +656,21 @@ object DatabaseManager {
         val currentRecords = getAllRecords().toMutableList()
         currentRecords.removeAll { it.ip == ip }
         saveAllRecords(currentRecords)
+    }
+
+    /**
+     * Clears recorded theft events for a target, either entirely or just for a specific wallet.
+     */
+    fun clearTargetTheftEvents(ip: String, wallet: String? = null) {
+        val currentRecords = getAllRecords().toMutableList()
+        val record = currentRecords.find { it.ip == ip } ?: return
+        if (wallet != null) {
+            record.clearTheftEvents(wallet)
+        } else {
+            record.walletThefts.clear()
+        }
+        saveAllRecords(currentRecords)
+        appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
     }
 
     /**

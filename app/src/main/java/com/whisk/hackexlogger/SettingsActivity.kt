@@ -78,8 +78,22 @@ class SettingsActivity : AppCompatActivity() {
         updateUiState()
     }
 
+    private lateinit var advancedTargetingSwitch: androidx.appcompat.widget.SwitchCompat
+
     private fun initViews() {
         findViewById<ImageButton>(R.id.backBtn).setOnClickListener { finish() }
+
+        advancedTargetingSwitch = findViewById(R.id.advancedTargetingSwitch)
+        val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
+        advancedTargetingSwitch.isChecked = prefs.getBoolean("pref_advanced_targeting", false)
+        
+        advancedTargetingSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("pref_advanced_targeting", isChecked).apply()
+            // Send broadcast to update MainActivity if it's open
+            val updateIntent = android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED")
+            updateIntent.setPackage(packageName)
+            sendBroadcast(updateIntent)
+        }
 
         userInfoLayout = findViewById(R.id.userInfoLayout)
         userNameTv = findViewById(R.id.userNameTv)

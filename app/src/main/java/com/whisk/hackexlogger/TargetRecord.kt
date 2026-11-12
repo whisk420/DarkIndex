@@ -54,6 +54,20 @@ data class TargetRecord(
     val isTemporary: Boolean
         get() = ip.startsWith("unknown:")
 
+    /**
+     * True if the target lacks a wallet OR lacks any of the three core software required to assume 
+     * the software screen was scraped (Bypasser, Firewall, Password Encryptor).
+     */
+    val needsAdvancedTargeting: Boolean
+        get() {
+            if (isMasked || isTemporary) return false
+            val lacksWallet = wallets.isEmpty()
+            val lacksBypasser = !downloads.containsKey("Bypasser")
+            val lacksFirewall = !downloads.containsKey("Firewall")
+            val lacksEncryptor = !downloads.containsKey("Password Encryptor")
+            return lacksWallet || lacksBypasser || lacksFirewall || lacksEncryptor
+        }
+
     fun addTheftEvent(wallet: String, timestampMs: Long, amount: Int) {
         val list = walletThefts.getOrPut(wallet) { mutableListOf() }
         if (list.none { it.timestampMs == timestampMs && it.amount == amount }) {
@@ -62,26 +76,41 @@ data class TargetRecord(
         }
     }
 
+    fun clearTheftEvents(wallet: String) {
+        walletThefts.remove(wallet)
+    }
+
     fun getEstimatedIncome(wallet: String): String? {
         val list = walletThefts[wallet] ?: return null
         if (list.isEmpty()) return null
 
         val sorted = list.sortedBy { it.timestampMs }
-        if (sorted.size == 1) {
-            val amount = sorted.first().amount
+        
+        // Discard older thefts if there is a gap > 24 hours between consecutive hacks
+        var startIndex = 0
+        for (i in 1 until sorted.size) {
+            if (sorted[i].timestampMs - sorted[i - 1].timestampMs > 24 * 3600000L) {
+                startIndex = i
+            }
+        }
+        
+        val recentCluster = sorted.subList(startIndex, sorted.size)
+
+        if (recentCluster.size == 1) {
+            val amount = recentCluster.first().amount
             return "💵 ~${formatAmount(amount)}"
         }
 
-        val t0 = sorted.first().timestampMs
-        val tn = sorted.last().timestampMs
+        val t0 = recentCluster.first().timestampMs
+        val tn = recentCluster.last().timestampMs
         val hours = (tn - t0) / 3600000.0
 
         if (hours < 0.1) {
-            val total = sorted.sumOf { it.amount }
+            val total = recentCluster.sumOf { it.amount }
             return "💵 ~${formatAmount(total)}"
         }
 
-        val totalStolen = sorted.drop(1).sumOf { it.amount }
+        val totalStolen = recentCluster.drop(1).sumOf { it.amount }
         val rate = totalStolen / hours
         return "💵 ~${formatAmount(rate.toInt())}/hr"
     }
