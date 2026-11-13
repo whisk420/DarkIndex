@@ -361,7 +361,6 @@ object TargetRepository {
                     }
                     if (previousMatch != null) {
                         val merged = mergeRecords(previousMatch, imported)
-                        merged.ip = if (!imported.isMasked && previousMatch.isMasked) imported.ip else merged.ip
                         recordMap.remove(previousMatch.ip)
                         recordMap[merged.ip] = merged
                     } else {

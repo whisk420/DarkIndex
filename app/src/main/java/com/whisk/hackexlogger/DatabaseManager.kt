@@ -115,9 +115,10 @@ object DatabaseManager {
                     val previousOwner = recordMap.values.find { it.ip != ip && it.wallets.contains(update.wallet) }
                     if (previousOwner != null) {
                         val merged = TargetRepository.mergeRecords(record, previousOwner)
-                        merged.ip = ip
+                        recordMap.remove(record.ip)
                         recordMap.remove(previousOwner.ip)
                         record = merged
+                        ip = merged.ip
                         recordMap[ip] = record
                     }
                     if (!record.wallets.contains(update.wallet)) {
@@ -223,7 +224,7 @@ object DatabaseManager {
             val previousOwner = recordMap.values.find { it.ip != targetRecord.ip && it.wallets.contains(wallet) }
             if (previousOwner != null) {
                 val merged = TargetRepository.mergeRecords(targetRecord, previousOwner)
-                merged.ip = targetRecord.ip
+                recordMap.remove(targetRecord.ip)
                 recordMap.remove(previousOwner.ip)
                 targetRecord = merged
                 recordMap[targetRecord.ip] = targetRecord
