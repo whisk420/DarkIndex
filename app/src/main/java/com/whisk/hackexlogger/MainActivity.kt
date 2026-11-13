@@ -48,6 +48,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var targetAdapter: TargetAdapter
+    private var currentRecords: List<TargetRecord> = emptyList()
     private var currentSearchQuery = ""
     private var isPartialVisible = false
     private var isGoodSpamEnabled = false
@@ -143,7 +144,8 @@ class MainActivity : AppCompatActivity() {
         
         // Observe database updates reactively using StateFlow
         lifecycleScope.launch {
-            DatabaseManager.recordsFlow.collect {
+            DatabaseManager.recordsFlow.collect { records ->
+                currentRecords = records
                 refreshData()
             }
         }
@@ -266,6 +268,7 @@ class MainActivity : AppCompatActivity() {
 
         goodSpamCheckBox.setOnCheckedChangeListener { _, isChecked ->
             isGoodSpamEnabled = isChecked
+            forceFastSwap = true
             val visibility = if (isChecked) View.VISIBLE else View.GONE
             maxFirewallLabel.visibility = visibility
             maxFirewallSeekBar.visibility = visibility
@@ -307,11 +310,15 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.clearSearchBtn).setOnClickListener {
             searchInput.setText("")
+            forceFastSwap = true
         }
     }
 
+    private var forceFastSwap = false
+
     private fun onTogglePartial() {
         isPartialVisible = !isPartialVisible
+        forceFastSwap = true
         refreshData()
     }
 
@@ -320,7 +327,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun refreshData() {
         lifecycleScope.launch(Dispatchers.Default) {
-            val allRecords = DatabaseManager.getAllRecords()
+            val allRecords = currentRecords
             val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
             val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
             
@@ -422,6 +429,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             withContext(Dispatchers.Main) {
+                if (forceFastSwap) {
+                    // Bypass expensive O(N^2) DiffUtil calculation on massive list re-sorts/filters
+                    targetAdapter.submitList(null)
+                    forceFastSwap = false
+                }
                 targetAdapter.submitList(items)
             }
         }
