@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity() {
             type = "application/json"
             putExtra(Intent.EXTRA_TITLE, "target_console_$dateStr.json")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FHackExLogger")
+                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FDarkIndex")
                 putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
             }
         }
@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
             type = "*/*"
             putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/plain"))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FHackExLogger")
+                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FDarkIndex")
                 putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
             }
         }
@@ -543,7 +543,7 @@ class MainActivity : AppCompatActivity() {
         
         if (!hasOverlay) {
             builder.setTitle("Step 1: Overlay Permission")
-            builder.setMessage("To use the on-screen scraping overlay, HackExLogger requires the 'Display over other apps' permission.")
+            builder.setMessage("To use the on-screen scraping overlay, DarkIndex requires the 'Display over other apps' permission.")
             builder.setPositiveButton("Grant Overlay") { _, _ ->
                 expectingPermissionResult = true
                 val intent = Intent(
@@ -560,7 +560,7 @@ class MainActivity : AppCompatActivity() {
         } else if (!hasAccessibility) {
             if (Build.VERSION.SDK_INT >= 33) {
                 builder.setTitle("Step 2: Android 13+ Security Unlock")
-                builder.setMessage("Android blocks sideloaded accessibility apps by default. You MUST follow these exact steps:\n\n1. Tap '1. Accessibility' below, find HackExLogger, and try to turn it on. Android will block you with a 'Restricted setting' popup. Hit OK and come back.\n\n2. Tap '2. App Info' below, tap the 3 dots (⋮) in the top-right corner, and select 'Allow restricted settings'. Come back.\n\n3. Tap '1. Accessibility' one last time to successfully turn it on.")
+                builder.setMessage("Android blocks sideloaded accessibility apps by default. You MUST follow these exact steps:\n\n1. Tap '1. Accessibility' below, find DarkIndex, and try to turn it on. Android will block you with a 'Restricted setting' popup. Hit OK and come back.\n\n2. Tap '2. App Info' below, tap the 3 dots (⋮) in the top-right corner, and select 'Allow restricted settings'. Come back.\n\n3. Tap '1. Accessibility' one last time to successfully turn it on.")
                 
                 builder.setPositiveButton("1. Accessibility") { _, _ ->
                     expectingPermissionResult = true
@@ -575,7 +575,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 builder.setTitle("Step 2: Accessibility Permission")
-                builder.setMessage("HackExLogger requires the 'Accessibility' permission to read the game screen.")
+                builder.setMessage("DarkIndex requires the 'Accessibility' permission to read the game screen.")
                 builder.setPositiveButton("Grant Accessibility") { _, _ ->
                     expectingPermissionResult = true
                     startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))

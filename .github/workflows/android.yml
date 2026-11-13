@@ -70,27 +70,27 @@ jobs:
     - name: Prepare Release APK Artifact
       run: |
         mkdir -p build-outputs
-        cp app/build/outputs/apk/release/app-release.apk build-outputs/HackExLogger.apk
+        cp app/build/outputs/apk/release/app-release.apk build-outputs/DarkIndex.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HackExLogger-v${{ env.VERSION_NAME }}
-        path: build-outputs/HackExLogger.apk
+        name: DarkIndex-v${{ env.VERSION_NAME }}
+        path: build-outputs/DarkIndex.apk
         retention-days: 14
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.RELEASE_VERSION }}
-        name: "HackExLogger ${{ env.RELEASE_VERSION }}"
+        name: "DarkIndex ${{ env.RELEASE_VERSION }}"
         body: |
-          ### HackExLogger ${{ env.RELEASE_VERSION }}
+          ### DarkIndex ${{ env.RELEASE_VERSION }}
           
           100% offline standalone release.
           
-          - **`HackExLogger.apk`**: Single, 100% offline APK with zero internet permissions. Auto-mirrors database backups directly to your device's `Downloads/HackExLogger/` folder.
+          - **`DarkIndex.apk`**: Single, 100% offline APK with zero internet permissions. Auto-mirrors database backups directly to your device's `Downloads/DarkIndex/` folder.
         files: |
-          build-outputs/HackExLogger.apk
+          build-outputs/DarkIndex.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

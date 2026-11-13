@@ -40,5 +40,5 @@ if (System.getenv("ANDROID_USER_HOME") != null) {
     } catch (_: Throwable) {}
 }
 
-rootProject.name = "HackExLogger"
+rootProject.name = "DarkIndex"
 include(":app")

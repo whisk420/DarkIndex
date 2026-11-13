@@ -99,11 +99,11 @@ object TargetRepository {
 
     fun getDownloadsBackupFile(): File {
         val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val dir = File(downloadsDir, "HackExLogger")
+        val dir = File(downloadsDir, "DarkIndex")
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return File(dir, "hackex_database.json")
+        return File(dir, "darkindex_database.json")
     }
 
     fun saveAllRecords(records: List<TargetRecord>) {

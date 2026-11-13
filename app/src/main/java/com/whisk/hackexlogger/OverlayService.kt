@@ -558,7 +558,7 @@ class OverlayService : Service() {
      */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("OverlayServiceChannel", "Overlay Service", NotificationManager.IMPORTANCE_LOW)
+            val channel = NotificationChannel("OverlayServiceChannel", "DarkIndex Overlay Service", NotificationManager.IMPORTANCE_LOW)
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
@@ -566,7 +566,7 @@ class OverlayService : Service() {
 
     private fun buildNotification(): Notification {
         return NotificationCompat.Builder(this, "OverlayServiceChannel")
-            .setContentTitle("HackEx Harvester")
+            .setContentTitle("DarkIndex")
             .setContentText("Overlay active")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .build()
