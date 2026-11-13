@@ -225,10 +225,6 @@ class OverlayService : Service() {
             return
         }
 
-        if (::cameraFloatingButton.isInitialized) {
-            cameraFloatingButton.visibility = View.GONE
-        }
-
         isValidating = true
 
         val inflater = LayoutInflater.from(this)
@@ -268,7 +264,7 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 20
-            y = 100
+            y = 250
         }
 
         var initialX = 0
@@ -336,10 +332,6 @@ class OverlayService : Service() {
             }
             validationView = null
         }
-
-        if (::cameraFloatingButton.isInitialized && !isTargetingMode) {
-            cameraFloatingButton.visibility = View.VISIBLE
-        }
     }
 
     private fun startTargetingMode() {
@@ -347,9 +339,6 @@ class OverlayService : Service() {
         isTargetingMode = true
         if (isValidating) stopValidationMode()
 
-        if (::cameraFloatingButton.isInitialized) {
-            cameraFloatingButton.visibility = View.GONE
-        }
         showTargetingUI()
     }
 
@@ -361,10 +350,6 @@ class OverlayService : Service() {
         }
         targetingView = null
         currentTargetingTarget = null
-
-        if (::cameraFloatingButton.isInitialized) {
-            cameraFloatingButton.visibility = View.VISIBLE
-        }
     }
 
     private fun showTargetingUI() {
@@ -429,7 +414,7 @@ class OverlayService : Service() {
         ).apply {
             gravity = Gravity.TOP or Gravity.START
             x = 20
-            y = 100
+            y = 250
         }
 
         var initialX = 0

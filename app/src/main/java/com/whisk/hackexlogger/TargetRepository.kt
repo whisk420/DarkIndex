@@ -136,23 +136,19 @@ object TargetRepository {
     }
 
     fun getNextTargetForAdvancedTargeting(): TargetRecord? {
-        synchronized(cachedRecords) {
-            val candidates = cachedRecords.filter { it.needsAdvancedTargeting }
-            val nullChecked = candidates.filter { it.lastValidated == null }
-            if (nullChecked.isNotEmpty()) {
-                return nullChecked.first()
-            }
-            return candidates.minByOrNull { it.lastValidated ?: "" }
+        val candidates = getAllRecords().filter { it.needsAdvancedTargeting }
+        val nullChecked = candidates.filter { it.lastValidated == null }
+        if (nullChecked.isNotEmpty()) {
+            return nullChecked.first()
         }
+        return candidates.minByOrNull { it.lastValidated ?: "" }
     }
 
     fun markTargetValidated(ip: String) {
-        synchronized(cachedRecords) {
-            val record = cachedRecords.find { it.ip == ip } ?: return
-            record.lastValidated = getCurrentTimestamp()
-            saveAllRecords(cachedRecords)
-        }
-        notifyDataUpdated()
+        val currentRecords = getAllRecords().toMutableList()
+        val record = currentRecords.find { it.ip == ip } ?: return
+        record.lastValidated = getCurrentTimestamp()
+        saveAllRecords(currentRecords)
     }
 
     fun getNextRecordToValidate(): TargetRecord? {
