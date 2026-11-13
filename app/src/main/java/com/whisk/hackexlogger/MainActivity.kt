@@ -54,6 +54,7 @@ class MainActivity : AppCompatActivity() {
     private var isGoodSpamEnabled = false
     private var maxFirewallLevel = 20
     private var searchJob: Job? = null
+    private var expectingPermissionResult = false
 
     // Activity result launcher for exporting database records as a JSON document
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -165,6 +166,9 @@ class MainActivity : AppCompatActivity() {
         refreshData()
         if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
             startService(Intent(this, OverlayService::class.java))
+        } else if (expectingPermissionResult) {
+            expectingPermissionResult = false
+            showPermissionDialog(force = true)
         }
     }
 
@@ -536,28 +540,55 @@ class MainActivity : AppCompatActivity() {
         }
 
         val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Scraper Permissions Required")
-            .setMessage("To use the on-screen scraping overlay and validation tools, HackExLogger requires the 'Display over other apps' and 'Accessibility' permissions.\n\nYou can skip this if you only want to view or import data.")
-            .setPositiveButton("Enable") { _, _ ->
-                if (!hasOverlay) {
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:$packageName")
-                    )
-                    startActivity(intent)
-                } else {
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    startActivity(intent)
+        
+        if (!hasOverlay) {
+            builder.setTitle("Step 1: Overlay Permission")
+            builder.setMessage("To use the on-screen scraping overlay, HackExLogger requires the 'Display over other apps' permission.")
+            builder.setPositiveButton("Grant Overlay") { _, _ ->
+                expectingPermissionResult = true
+                val intent = Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            }
+            if (!force) {
+                builder.setNeutralButton("Don't Ask Again") { _, _ ->
+                    prefs.edit().putBoolean("hide_permission_warning", true).apply()
                 }
             }
-            .setNegativeButton("Not Now", null)
-
-        if (!force) {
-            builder.setNeutralButton("Don't Ask Again") { _, _ ->
-                prefs.edit().putBoolean("hide_permission_warning", true).apply()
+        } else if (!hasAccessibility) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                builder.setTitle("Step 2: Android 13+ Security Unlock")
+                builder.setMessage("Android blocks sideloaded accessibility apps by default. You MUST follow these exact steps:\n\n1. Tap '1. Accessibility' below, find HackExLogger, and try to turn it on. Android will block you with a 'Restricted setting' popup. Hit OK and come back.\n\n2. Tap '2. App Info' below, tap the 3 dots (⋮) in the top-right corner, and select 'Allow restricted settings'. Come back.\n\n3. Tap '1. Accessibility' one last time to successfully turn it on.")
+                
+                builder.setPositiveButton("1. Accessibility") { _, _ ->
+                    expectingPermissionResult = true
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+                builder.setNeutralButton("2. App Info") { _, _ ->
+                    expectingPermissionResult = true
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    startActivity(intent)
+                }
+            } else {
+                builder.setTitle("Step 2: Accessibility Permission")
+                builder.setMessage("HackExLogger requires the 'Accessibility' permission to read the game screen.")
+                builder.setPositiveButton("Grant Accessibility") { _, _ ->
+                    expectingPermissionResult = true
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+                if (!force) {
+                    builder.setNeutralButton("Don't Ask Again") { _, _ ->
+                        prefs.edit().putBoolean("hide_permission_warning", true).apply()
+                    }
+                }
             }
         }
 
+        builder.setNegativeButton(if (force) "Cancel" else "Not Now", null)
         builder.show()
     }
 
