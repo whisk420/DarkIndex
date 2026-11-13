@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application")
+    alias(libs.plugins.android.application)
 }
 
 android {
@@ -14,16 +14,6 @@ android {
         versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    flavorDimensions += "version"
-    productFlavors {
-        create("standalone") {
-            dimension = "version"
-        }
-        create("googlePlay") {
-            dimension = "version"
-        }
     }
 
     buildTypes {
@@ -48,12 +38,6 @@ dependencies {
     implementation(libs.material)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-
-    // Google Play flavor dependencies
-    "googlePlayImplementation"(libs.androidx.credentials)
-    "googlePlayImplementation"(libs.androidx.credentials.play.services.auth)
-    "googlePlayImplementation"(libs.googleid)
-    "googlePlayImplementation"(libs.play.services.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

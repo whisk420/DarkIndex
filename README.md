@@ -92,13 +92,13 @@ com.whisk.hackexlogger
 
 ---
 
-## Privacy & Build Flavors
+## Privacy & Storage
 
-Your data is **100% under your exclusive control**. Nobody else—including the developer—can ever view, access, or touch your data.
+Your data is **100% under your exclusive control and 100% offline**.
 
-HackExLogger provides two build variants:
-- **`standalone`**: 100% offline build. Excludes all Google Play Services dependencies and omits internet permissions entirely.
-- **`googlePlay`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your own personal Google Account storage space.
+- **No Internet Permission:** HackExLogger excludes internet permissions completely. Zero network calls or cloud connections are made.
+- **Durable Storage:** Database backups are automatically mirrored to your phone's public `Downloads/HackExLogger/` folder. Files stored here persist through app uninstalls and data wipes.
+- **Smart Import/Export:** Import and export file pickers launch directly inside `Downloads/HackExLogger/` for instant one-tap backup management.
 
 ---
 

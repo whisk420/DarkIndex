@@ -2,6 +2,7 @@ package com.whisk.hackexlogger
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Environment
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
@@ -170,6 +171,15 @@ object DatabaseManager {
         notifyDataUpdated()
     }
 
+    private fun getDownloadsBackupFile(): File {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val dir = File(downloadsDir, "HackExLogger")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        return File(dir, "hackex_database.json")
+    }
+
     /**
      * Saves the provided target list to the in-memory cache and persists it to disk via [SharedPreferences].
      */
@@ -181,13 +191,15 @@ object DatabaseManager {
         val json = gson.toJson(records)
         prefs.edit().putString(KEY_TARGETS, json).apply()
 
-        // Auto-sync cloud backup if enabled (debounced to prevent rate-limiting during rapid screen captures)
+        // Mirror database write to public Downloads/HackExLogger storage
         try {
-            if (::appContext.isInitialized && AccountManager.isCloudSyncEnabled(appContext) && records.isNotEmpty()) {
-                CloudBackupManager.scheduleDebouncedAutoSync(appContext)
+            if (records.isNotEmpty()) {
+                val downloadsFile = getDownloadsBackupFile()
+                val bundleJson = exportDataBundle()
+                downloadsFile.writeText(bundleJson)
             }
         } catch (e: Exception) {
-            android.util.Log.e("DatabaseManager", "Auto-sync backup scheduling failed: ${e.message}", e)
+            android.util.Log.e("DatabaseManager", "Downloads auto-backup failed: ${e.message}", e)
         }
 
         notifyDataUpdated()

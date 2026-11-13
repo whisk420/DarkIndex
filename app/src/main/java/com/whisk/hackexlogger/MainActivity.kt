@@ -65,8 +65,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Activity result launcher for exporting database records as a JSON document
-    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
-        if (uri != null) {
+    private val exportLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data?.data != null) {
+            val uri = result.data!!.data!!
             try {
                 val jsonString = DatabaseManager.exportDataBundle()
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -80,8 +81,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Activity result launcher for importing database records from a JSON file
-    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri != null) {
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data?.data != null) {
+            val uri = result.data!!.data!!
             try {
                 val jsonString = contentResolver.openInputStream(uri)?.use { inputStream ->
                     inputStream.bufferedReader(Charsets.UTF_8).readText()
@@ -90,12 +92,12 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "File is empty", Toast.LENGTH_SHORT).show()
                     return@registerForActivityResult
                 }
-                val result = DatabaseManager.importDataBundle(jsonString)
+                val importResult = DatabaseManager.importDataBundle(jsonString)
                 refreshData()
-                val msg = if (result.ingestCount > 0) {
-                    "Imported ${result.targetCount} targets and ${result.ingestCount} raw logs."
+                val msg = if (importResult.ingestCount > 0) {
+                    "Imported ${importResult.targetCount} targets and ${importResult.ingestCount} raw logs."
                 } else {
-                    "Imported ${result.targetCount} targets."
+                    "Imported ${importResult.targetCount} targets."
                 }
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
@@ -108,6 +110,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun openExportPicker() {
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, "target_console_$dateStr.json")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FHackExLogger")
+                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
+            }
+        }
+        exportLauncher.launch(intent)
+    }
+
+    private fun openImportPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/plain"))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary:Download%2FHackExLogger")
+                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
+            }
+        }
+        importLauncher.launch(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -118,9 +147,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Initialize local database storage & account manager
+        // Initialize local database storage
         DatabaseManager.init(this)
-        AccountManager.init(this)
         setupUI()
         
         // Register local broadcast receiver for UI data update events
@@ -195,12 +223,11 @@ class MainActivity : AppCompatActivity() {
                         true
                     }
                     1 -> {
-                        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-                        exportLauncher.launch("target_console_$dateStr.json")
+                        openExportPicker()
                         true
                     }
                     2 -> {
-                        importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                        openImportPicker()
                         true
                     }
                     3 -> {
@@ -478,7 +505,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        CloudBackupManager.flushPendingBackup(this)
     }
 
     /**
