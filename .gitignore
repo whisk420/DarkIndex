@@ -1,19 +1,43 @@
-*.iml
-.gradle
-/local.properties
-/.idea/
-.idea/
-app/.idea/
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Directory for generated files
 /build
-/captures
+app/build
+bin/
+gen/
+out/
+
+# Local configuration file (sdk path, etc)
+local.properties
+/local.properties
+
+# Log Files
+*.log
+
+# Android Studio / IntelliJ project files
+.idea/
+/.idea/
+app/.idea/
+*.iml
+*.iws
+*.ipr
+.gradle/
+.kotlin/
+.artifacts/
+
+# External Native Build
 .externalNativeBuild
 .cxx
-local.properties
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# User database exports & scratch files
 *.json
+*.jsonl
