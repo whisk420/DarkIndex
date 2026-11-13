@@ -14,13 +14,13 @@ class HackExParserTest {
 
     @Test
     fun testIpExtraction() {
-        val standardIp = HackExParser.extractIp("Found target at 192.168.1.100 today")
+        val standardIp = CommonParserUtil.extractIp("Found target at 192.168.1.100 today")
         assertEquals("192.168.1.100", standardIp)
 
-        val maskedIp = HackExParser.extractIp("Device accessed from 10.20.xxx.xxx")
+        val maskedIp = CommonParserUtil.extractIp("Device accessed from 10.20.xxx.xxx")
         assertEquals("10.20.xxx.xxx", maskedIp)
         
-        val unknownIp = HackExParser.extractIp("Device accessed from [UNKNOWN]")
+        val unknownIp = CommonParserUtil.extractIp("Device accessed from [UNKNOWN]")
         assertEquals("[UNKNOWN]", unknownIp)
     }
 
@@ -35,10 +35,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawSoloCrewText.lines()
-        val detectedType = HackExParser.detectScreenType(rawSoloCrewText, lines)
-        assertEquals(HackExParser.ScreenType.CREW, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawSoloCrewText, lines)
+        assertEquals(ScreenType.CREW, detectedType)
 
-        val result = HackExParser.parseCrewScreen(lines)
+        val result = CrewScreenParser.parse(lines)
         assertNotNull(result)
         assertEquals(1, result?.members?.size)
         assertEquals("97.68.44.77", result?.members?.get(0))
@@ -47,11 +47,11 @@ class HackExParserTest {
     @Test
     fun testShortenWallet() {
         val wallet = "hx1234567890abcdef"
-        val shortened = HackExParser.shortenWallet(wallet)
+        val shortened = CommonParserUtil.shortenWallet(wallet)
         assertEquals("hx1234...cdef", shortened)
         
         val alreadyShort = "hx1234"
-        assertEquals("hx1234", HackExParser.shortenWallet(alreadyShort))
+        assertEquals("hx1234", CommonParserUtil.shortenWallet(alreadyShort))
     }
 
     @Test
@@ -72,10 +72,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawVictimLogText.lines()
-        val detectedType = HackExParser.detectScreenType(rawVictimLogText, lines)
-        assertEquals(HackExParser.ScreenType.LOGS, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawVictimLogText, lines)
+        assertEquals(ScreenType.LOGS, detectedType)
 
-        val updates = HackExParser.parseLogs(lines)
+        val updates = LogScreenParser.parse(lines)
         assertNotNull(updates)
 
         // Find the 9,906 Crypto theft update (10:43)
@@ -101,7 +101,7 @@ class HackExParserTest {
             [11-2 3:22] 100 Crypto transferred to hx1234...5678
         """.trimIndent()
 
-        val updatesBlank = HackExParser.parseLogs(rawLogWithBlankLine.lines())
+        val updatesBlank = LogScreenParser.parse(rawLogWithBlankLine.lines())
         assertEquals(2, updatesBlank.size)
         assertEquals("", updatesBlank[0].ip) // Cleared by blank line barrier
 
@@ -111,7 +111,7 @@ class HackExParserTest {
             [11-2 3:25] 100 Crypto transferred to hx1234...5678
         """.trimIndent()
 
-        val updatesTimeCap = HackExParser.parseLogs(rawLogExceeds3Min.lines())
+        val updatesTimeCap = LogScreenParser.parse(rawLogExceeds3Min.lines())
         assertEquals(2, updatesTimeCap.size)
         assertEquals("", updatesTimeCap[0].ip) // Cleared by 3-minute cap (5 min diff)
     }
@@ -148,10 +148,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawProcessText.lines()
-        val detectedType = HackExParser.detectScreenType(rawProcessText, lines)
-        assertEquals(HackExParser.ScreenType.PROCESS, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawProcessText, lines)
+        assertEquals(ScreenType.PROCESS, detectedType)
 
-        val result = HackExParser.parseProcessScreen(lines)
+        val result = ProcessScreenParser.parse(lines)
         assertNotNull(result)
         assertEquals(3, result?.ips?.size)
         assertEquals("181.169.106.12", result?.ips?.get(0))
@@ -185,10 +185,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawVictimLog.lines()
-        val detectedType = HackExParser.detectScreenType(rawVictimLog, lines)
-        assertEquals(HackExParser.ScreenType.LOGS, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawVictimLog, lines)
+        assertEquals(ScreenType.LOGS, detectedType)
 
-        val updates = HackExParser.parseLogs(lines)
+        val updates = LogScreenParser.parse(lines)
         assertNotNull(updates)
         assertEquals(7, updates.size)
         assertEquals("86.123.81.1", updates[0].ip)
@@ -217,10 +217,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawLogText.lines()
-        val detectedType = HackExParser.detectScreenType(rawLogText, lines)
-        assertEquals(HackExParser.ScreenType.LOGS, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawLogText, lines)
+        assertEquals(ScreenType.LOGS, detectedType)
 
-        val updates = HackExParser.parseLogs(lines)
+        val updates = LogScreenParser.parse(lines)
         assertNotNull(updates)
         assertEquals(5, updates.size)
         assertEquals("hxf9f1...d59b", updates[0].wallet)
@@ -249,10 +249,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawWalletText.lines()
-        val detectedType = HackExParser.detectScreenType(rawWalletText, lines)
-        assertEquals(HackExParser.ScreenType.WALLET, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawWalletText, lines)
+        assertEquals(ScreenType.WALLET, detectedType)
 
-        val result = HackExParser.parseWalletScreen(rawWalletText)
+        val result = WalletScreenParser.parse(rawWalletText)
         assertNotNull(result)
         assertEquals("jaywat2550", result?.username)
         assertEquals("hx59a3...e70a", result?.wallet)
@@ -313,10 +313,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawSoftwareText.lines()
-        val detectedType = HackExParser.detectScreenType(rawSoftwareText, lines)
-        assertEquals(HackExParser.ScreenType.SOFTWARE, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawSoftwareText, lines)
+        assertEquals(ScreenType.SOFTWARE, detectedType)
 
-        val result = HackExParser.parseSoftwareScreen(rawSoftwareText)
+        val result = SoftwareScreenParser.parse(rawSoftwareText)
         assertNotNull(result)
         assertEquals("jaywat2550", result?.username)
         assertEquals(4, result?.softwareItems?.get("Antivirus")?.level)
@@ -348,10 +348,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawCrewText.lines()
-        val detectedType = HackExParser.detectScreenType(rawCrewText, lines)
-        assertEquals(HackExParser.ScreenType.CREW, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawCrewText, lines)
+        assertEquals(ScreenType.CREW, detectedType)
 
-        val result = HackExParser.parseCrewScreen(lines)
+        val result = CrewScreenParser.parse(lines)
         assertNotNull(result)
         assertEquals(4, result?.members?.size)
         assertEquals("75.231.228.6", result?.members?.get(0))
@@ -377,10 +377,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawCrewText.lines()
-        val detectedType = HackExParser.detectScreenType(rawCrewText, lines)
-        assertEquals(HackExParser.ScreenType.CREW, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawCrewText, lines)
+        assertEquals(ScreenType.CREW, detectedType)
 
-        val result = HackExParser.parseCrewScreen(lines)
+        val result = CrewScreenParser.parse(lines)
         assertNotNull(result)
         assertEquals(4, result?.members?.size)
         assertEquals("230.131.154.161", result?.members?.get(0))
@@ -422,10 +422,10 @@ class HackExParserTest {
         """.trimIndent()
 
         val lines = rawLogcatText.lines()
-        val detectedType = HackExParser.detectScreenType(rawLogcatText, lines)
-        assertEquals(HackExParser.ScreenType.HOME, detectedType)
+        val detectedType = ScreenClassifier.detectScreenType(rawLogcatText, lines)
+        assertEquals(ScreenType.HOME, detectedType)
 
-        val result = HackExParser.parseHomeScreen(rawLogcatText)
+        val result = HomeScreenParser.parse(rawLogcatText)
         assertNotNull(result)
         assertEquals("4.226.131.111", result?.ip)
         assertEquals("jaywat2550", result?.username)
@@ -447,7 +447,7 @@ class HackExParserTest {
             ENCRYPTOR Lv. 5
         """.trimIndent()
 
-        val result = HackExParser.parseHomeScreen(simulatedScreenText)
+        val result = HomeScreenParser.parse(simulatedScreenText)
         assertNotNull(result)
         
         assertEquals("10.0.0.55", result?.ip)
@@ -473,7 +473,7 @@ OFFICER
 MEMBER
         """.trimIndent()
 
-        val result = HackExParser.parseCrewScreen(simulatedScreenText.lines())
+        val result = CrewScreenParser.parse(simulatedScreenText.lines())
         assertNotNull(result)
         assertEquals(3, result?.members?.size)
         assertEquals("4.226.131.111", result?.members?.get(0))
@@ -518,7 +518,7 @@ DONE
 254.7.137.239
         """.trimIndent()
         
-        val result = HackExParser.parseProcessScreen(simulatedScreenText.lines())
+        val result = ProcessScreenParser.parse(simulatedScreenText.lines())
         assertNotNull(result)
         assertEquals(4, result?.ips?.size)
         assertEquals("252.170.3.29", result?.ips?.get(0))
@@ -545,7 +545,7 @@ DONE
             WALLET ADDRESS hx1234567890abcdef123456
         """.trimIndent()
 
-        val result = HackExParser.parseWalletScreen(text)
+        val result = WalletScreenParser.parse(text)
         assertNotNull(result)
         assertEquals("Pizaaparty", result?.username)
         assertEquals("hx1234...3456", result?.wallet)
@@ -563,10 +563,11 @@ DONE
             LVL 5
         """.trimIndent()
 
-        val result = HackExParser.parseSoftwareScreen(text)
+        val result = SoftwareScreenParser.parse(text)
         assertNotNull(result)
         assertEquals("Pizaaparty", result?.username)
         assertEquals(10, result?.softwareItems?.get("Spam")?.level)
         assertEquals(5, result?.softwareItems?.get("Firewall")?.level)
     }
 }
+

@@ -16,212 +16,20 @@ import java.util.TimeZone
  * Local data manager for persisting, querying, merging, and exporting HackEx target records.
  */
 object DatabaseManager {
-    private const val PREFS_NAME = "HackExDB"
-    private const val KEY_TARGETS = "targets"
-    private const val KEY_SIPHON_ALERTS = "siphon_alerts"
-    private const val KEY_KNOWN_SIPHONS = "known_siphons"
-    
-    private lateinit var prefs: SharedPreferences
-    private lateinit var appContext: Context
-    private val gson = Gson()
-    private val cachedRecords = mutableListOf<TargetRecord>()
-    
-    // IP -> Amount Siphoned map
-    private val knownSiphons = mutableMapOf<String, Int>()
-    
-    // Set of IPs that were removed (alerted)
-    private val siphonAlerts = mutableSetOf<String>()
-    
-    private val recentlyScrapedSiphons = mutableMapOf<String, Long>()
-    
-    @Volatile private var isInitialized = false
-
-    /**
-     * Initializes the local storage manager and populates the in-memory cache from private preferences.
-     */
     fun init(context: Context) {
-        if (!isInitialized) {
-            appContext = context.applicationContext
-            prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            loadCacheFromDisk()
-            isInitialized = true
-        }
+        TargetRepository.init(context)
+        SiphonTracker.init()
     }
 
-    /**
-     * Deserializes target records stored in app-private [SharedPreferences] into memory.
-     */
-    private fun loadCacheFromDisk() {
-        try {
-            val json = prefs.getString(KEY_TARGETS, "[]")
-            val loadedArray: Array<TargetRecord>? = gson.fromJson(json, Array<TargetRecord>::class.java)
-            synchronized(cachedRecords) {
-                cachedRecords.clear()
-                if (loadedArray != null) {
-                    for (record in loadedArray) {
-                        sanitizeRecord(record)
-                        cachedRecords.add(record)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("DatabaseManager", "Error loading target records cache: ${e.message}", e)
-        }
+    val recordsFlow = TargetRepository.recordsFlow
 
-        try {
-            val alertsJson = prefs.getString(KEY_SIPHON_ALERTS, "[]")
-            val loadedAlertsArray: Array<String>? = gson.fromJson(alertsJson, Array<String>::class.java)
-            if (loadedAlertsArray != null) {
-                siphonAlerts.clear()
-                siphonAlerts.addAll(loadedAlertsArray)
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("DatabaseManager", "Error loading siphon alerts cache: ${e.message}", e)
-        }
+    fun getAllRecords(): List<TargetRecord> = TargetRepository.getAllRecords()
 
-        try {
-            val siphonsJson = prefs.getString(KEY_KNOWN_SIPHONS, "{}")
-            val siphonsType = object : TypeToken<Map<String, Int>>() {}.type
-            val loadedSiphons: Map<String, Int>? = gson.fromJson(siphonsJson, siphonsType)
-            if (loadedSiphons != null) {
-                knownSiphons.clear()
-                knownSiphons.putAll(loadedSiphons)
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("DatabaseManager", "Error loading known siphons cache: ${e.message}", e)
-        }
-    }
+    fun getNextTargetForAdvancedTargeting(): TargetRecord? = TargetRepository.getNextTargetForAdvancedTargeting()
 
-    /**
-     * Ensures deserialized objects from JSON have non-null collections even if missing in legacy saved data.
-     */
-    private fun sanitizeRecord(record: TargetRecord) {
-        val fields = TargetRecord::class.java.declaredFields
-        for (field in fields) {
-            field.isAccessible = true
-            try {
-                if (field.get(record) == null) {
-                    val fieldType = field.type
-                    if (List::class.java.isAssignableFrom(fieldType)) {
-                        field.set(record, mutableListOf<String>())
-                    } else if (Map::class.java.isAssignableFrom(fieldType)) {
-                        field.set(record, mutableMapOf<String, Any>())
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-    }
+    fun markTargetValidated(ip: String) = TargetRepository.markTargetValidated(ip)
 
-    /**
-     * Retrieves a thread-safe deep copy of all currently stored target records.
-     *
-     * @return List of [TargetRecord] objects.
-     */
-    fun getAllRecords(): List<TargetRecord> {
-        if (!isInitialized) return emptyList()
-        synchronized(cachedRecords) {
-            return cachedRecords.map { record ->
-                sanitizeRecord(record)
-                record.copy(
-                    wallets = record.wallets.toMutableList(),
-                    downloads = record.downloads.toMutableMap(),
-                    walletThefts = record.walletThefts.mapValues { it.value.toMutableList() }.toMutableMap()
-                )
-            }
-        }
-    }
-
-    private fun notifyDataUpdated() {
-        if (::appContext.isInitialized) {
-            try {
-                val intent = android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED")
-                    .setPackage(appContext.packageName)
-                appContext.sendBroadcast(intent)
-            } catch (_: Exception) {}
-        }
-    }
-
-    /**
-     * Gets the next target that requires advanced targeting (missing wallet or core software),
-     * sorted by oldest validation timestamp.
-     */
-    fun getNextTargetForAdvancedTargeting(): TargetRecord? {
-        synchronized(cachedRecords) {
-            val candidates = cachedRecords.filter { it.needsAdvancedTargeting }
-            
-            // First, return candidates that have never been checked
-            val nullChecked = candidates.filter { it.lastValidated == null }
-            if (nullChecked.isNotEmpty()) {
-                return nullChecked.first()
-            }
-            // Otherwise, sort by oldest check time
-            return candidates.minByOrNull { it.lastValidated ?: "" }
-        }
-    }
-
-    /**
-     * Marks a target as recently validated.
-     */
-    fun markTargetValidated(ip: String) {
-        synchronized(cachedRecords) {
-            val record = cachedRecords.find { it.ip == ip } ?: return
-            record.lastValidated = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
-            saveAllRecords(cachedRecords)
-        }
-        notifyDataUpdated()
-    }
-
-    private fun getDownloadsBackupFile(): File {
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val dir = File(downloadsDir, "HackExLogger")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
-        return File(dir, "hackex_database.json")
-    }
-
-    /**
-     * Saves the provided target list to the in-memory cache and persists it to disk via [SharedPreferences].
-     */
-    private fun saveAllRecords(records: List<TargetRecord>) {
-        synchronized(cachedRecords) {
-            cachedRecords.clear()
-            cachedRecords.addAll(records)
-        }
-        val json = gson.toJson(records)
-        prefs.edit().putString(KEY_TARGETS, json).apply()
-
-        // Mirror database write to public Downloads/HackExLogger storage
-        try {
-            if (records.isNotEmpty()) {
-                val downloadsFile = getDownloadsBackupFile()
-                val bundleJson = exportDataBundle()
-                downloadsFile.writeText(bundleJson)
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("DatabaseManager", "Downloads auto-backup failed: ${e.message}", e)
-        }
-
-        notifyDataUpdated()
-    }
-
-    private fun saveSiphonData() {
-        prefs.edit()
-            .putString(KEY_SIPHON_ALERTS, gson.toJson(siphonAlerts))
-            .putString(KEY_KNOWN_SIPHONS, gson.toJson(knownSiphons))
-            .apply()
-    }
-
-    /**
-     * Clears all local target records from memory and app-private disk storage.
-     */
-    fun wipeDatabase() {
-        synchronized(cachedRecords) {
-            cachedRecords.clear()
-        }
-        prefs.edit().remove(KEY_TARGETS).apply()
-        notifyDataUpdated()
-    }
+    fun wipeDatabase() = TargetRepository.wipeDatabase()
 
     data class MaintenanceResult(
         val backupFilePath: String,
@@ -231,165 +39,21 @@ object DatabaseManager {
         val oldTheftsCleared: Int
     )
 
-    /**
-     * Performs a one-time maintenance pass over local database targets to clean up legacy bugs:
-     * - Saves a pre-maintenance backup file to internal storage.
-     * - Clears ALL wallets from multi-wallet records (since ownership is uncertain), migrating them to standalone placeholders.
-     * - Removes software inventories from generic masked target placeholders.
-     * - Migrates wallets attached to generic masked target placeholders to standalone placeholders.
-     * - Purges old theft events separated by >24h gaps.
-     */
     fun runDatabaseMaintenance(): MaintenanceResult {
-        // 1. Create a guaranteed pre-maintenance backup file
-        val backupJson = exportDataBundle()
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val backupFile = File(appContext.filesDir, "maintenance_backup_$timestamp.json")
-        backupFile.writeText(backupJson)
-
-        val records = getAllRecords().toMutableList()
-        val recordMap = records.associateBy { it.ip }.toMutableMap()
-
-        var multiWalletCount = 0
-        var maskedSoftwareCount = 0
-        var maskedWalletsMigratedCount = 0
-        var oldTheftsClearedCount = 0
-
-        for (record in recordMap.values.toList()) {
-            // 1.5. Clean up old theft events with gaps > 24 hours
-            val walletsToProcess = record.walletThefts.keys.toList()
-            for (wallet in walletsToProcess) {
-                val list = record.walletThefts[wallet]
-                if (list != null && list.size > 1) {
-                    list.sortBy { it.timestampMs }
-                    var startIndex = 0
-                    for (i in 1 until list.size) {
-                        if (list[i].timestampMs - list[i - 1].timestampMs > 24 * 3600000L) {
-                            startIndex = i
-                        }
-                    }
-                    if (startIndex > 0) {
-                        oldTheftsClearedCount += startIndex
-                        val recentCluster = list.subList(startIndex, list.size).toMutableList()
-                        record.walletThefts[wallet] = recentCluster
-                    }
-                }
-            }
-
-            // 2. Clean up multiple wallets on a single target (clear ALL wallets since true owner is uncertain)
-            if (record.wallets.size > 1) {
-                val walletsToDrop = record.wallets.toList()
-                record.wallets.clear()
-                multiWalletCount++
-
-                for (w in walletsToDrop) {
-                    logWalletConflict(record.ip, walletsToDrop[0], w, "MaintenanceCleanupAllDropped")
-                    
-                    // Move dropped wallets to standalone placeholders so wallet/theft stats aren't lost
-                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(w) }
-                    if (owner == null) {
-                        val placeholderIp = "unknown:wallet_$w"
-                        var placeholder = recordMap[placeholderIp]
-                        if (placeholder == null) {
-                            placeholder = TargetRecord(
-                                ip = placeholderIp,
-                                wallets = mutableListOf(w)
-                            )
-                            recordMap[placeholderIp] = placeholder
-                        } else if (!placeholder.wallets.contains(w)) {
-                            placeholder.wallets.add(w)
-                        }
-
-                        val thefts = record.walletThefts.remove(w)
-                        if (thefts != null) {
-                            placeholder.walletThefts.getOrPut(w) { mutableListOf() }.addAll(thefts)
-                        }
-                    }
-                }
-            }
-
-            // 3. Clean up generic masked records
-            if (record.isMasked) {
-                if (record.downloads.isNotEmpty()) {
-                    record.downloads.clear()
-                    maskedSoftwareCount++
-                }
-
-                // 4. Migrate wallets on generic masked records to standalone wallet placeholders
-                if (record.wallets.isNotEmpty()) {
-                    val walletToMigrate = record.wallets.first()
-                    record.wallets.clear()
-                    maskedWalletsMigratedCount++
-
-                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(walletToMigrate) }
-                    if (owner == null) {
-                        val placeholderIp = "unknown:wallet_$walletToMigrate"
-                        var placeholder = recordMap[placeholderIp]
-                        if (placeholder == null) {
-                            placeholder = TargetRecord(
-                                ip = placeholderIp,
-                                wallets = mutableListOf(walletToMigrate)
-                            )
-                            recordMap[placeholderIp] = placeholder
-                        } else if (!placeholder.wallets.contains(walletToMigrate)) {
-                            placeholder.wallets.add(walletToMigrate)
-                        }
-
-                        val thefts = record.walletThefts.remove(walletToMigrate)
-                        if (thefts != null) {
-                            placeholder.walletThefts.getOrPut(walletToMigrate) { mutableListOf() }.addAll(thefts)
-                        }
-                    }
-                }
-            }
-        }
-
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-
+        val result = TargetRepository.runDatabaseMaintenance()
         return MaintenanceResult(
-            backupFilePath = backupFile.absolutePath,
-            multiWalletRecordsFixed = multiWalletCount,
-            maskedSoftwareCleared = maskedSoftwareCount,
-            maskedWalletsMigrated = maskedWalletsMigratedCount,
-            oldTheftsCleared = oldTheftsClearedCount
+            backupFilePath = result.backupFilePath,
+            multiWalletRecordsFixed = result.multiWalletRecordsFixed,
+            maskedSoftwareCleared = result.maskedSoftwareCleared,
+            maskedWalletsMigrated = result.maskedWalletsMigrated,
+            oldTheftsCleared = result.oldTheftsCleared
         )
     }
 
-    /**
-     * Finds the next unmasked target record that requires verification/validation in-game.
-     * Prioritizes unmasked targets that have never been validated, followed by the oldest validated.
-     */
-    fun getNextRecordToValidate(): TargetRecord? {
-        val unmaskedRecords = getAllRecords().filter { !it.isMasked }
-        if (unmaskedRecords.isEmpty()) return null
+    fun getNextRecordToValidate(): TargetRecord? = TargetRepository.getNextRecordToValidate()
 
-        val neverValidated = unmaskedRecords.filter { it.lastValidated == null }
-        if (neverValidated.isNotEmpty()) {
-            return neverValidated.first()
-        }
+    fun markValidated(ip: String) = TargetRepository.markValidated(ip)
 
-        return unmaskedRecords.minByOrNull { it.lastValidated ?: "" }
-    }
-
-    /**
-     * Sets the validation timestamp for the specified target IP to the current date and time.
-     *
-     * @param ip Target IP address.
-     */
-    fun markValidated(ip: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        val record = currentRecords.find { it.ip == ip } ?: return
-        record.lastValidated = getCurrentTimestamp()
-        saveAllRecords(currentRecords)
-    }
-
-    private fun getCurrentTimestamp(): String {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
-    }
-
-    /**
-     * Helper to parse log timestamps like "10-16 1:16" or "10-15 23:40" into epoch milliseconds.
-     */
     fun parseLogTime(timeStr: String): Long? {
         val match = Regex("""^(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$""").find(timeStr.trim()) ?: return null
         val month = match.groupValues[1].toIntOrNull() ?: return null
@@ -410,142 +74,17 @@ object DatabaseManager {
         return cal.timeInMillis
     }
 
-    /**
-     * Exports all stored target data as a formatted JSON bundle for backup or migration.
-     *
-     * @return Pretty-printed JSON string conforming to [ConsoleBundle] schema.
-     */
-    fun exportDataBundle(): String {
-        val records = getAllRecords()
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        val bundle = ConsoleBundle(
-            format = "target-intelligence-console",
-            version = 1,
-            exportedAt = isoFormat.format(Date()),
-            targets = records.toTypedArray(),
-            ingests = emptyArray()
-        )
-        val exportGson = GsonBuilder()
-            .setPrettyPrinting()
-            .serializeNulls()
-            .create()
-        return exportGson.toJson(bundle)
-    }
+    fun exportDataBundle(): String = TargetRepository.exportDataBundle()
 
-    /**
-     * Imports a JSON bundle, merging new target records and updating existing entries.
-     *
-     * @param jsonString Serialized JSON bundle.
-     * @return [ImportResult] containing the count of processed targets and ingests.
-     * @throws IllegalArgumentException If JSON format or header schema is invalid.
-     */
     fun importDataBundle(jsonString: String): ImportResult {
-        val bundle = try {
-            gson.fromJson(jsonString, ConsoleBundle::class.java)
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid JSON format: ${e.message}", e)
-        }
-
-        if (bundle == null || bundle.format != "target-intelligence-console" || bundle.version != 1) {
-            throw IllegalArgumentException("This is not a Target Intelligence Console export.")
-        }
-
-        val importedTargets = bundle.targets ?: emptyArray()
-        val importedIngests = bundle.ingests ?: emptyArray()
-
-        val currentRecords = getAllRecords().toMutableList()
-        val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-
-        // Merge imported target records with existing database records
-        for (imported in importedTargets) {
-            try {
-                sanitizeRecord(imported)
-                val ip = imported.ip
-                if (ip.isBlank()) continue
-
-                val existing = recordMap[ip]
-                if (existing != null) {
-                    val merged = mergeRecords(existing, imported)
-                    recordMap[ip] = merged
-                } else {
-                    val previousMatch = recordMap.values.find { candidate ->
-                        (imported.username != null && candidate.username != null && candidate.username.equals(imported.username, ignoreCase = true)) ||
-                        (imported.wallets.isNotEmpty() && candidate.wallets.any { imported.wallets.contains(it) })
-                    }
-
-                    if (previousMatch != null) {
-                        val merged = mergeRecords(previousMatch, imported)
-                        merged.ip = if (!imported.isMasked && previousMatch.isMasked) imported.ip else merged.ip
-                        recordMap.remove(previousMatch.ip)
-                        recordMap[merged.ip] = merged
-                    } else {
-                        recordMap[ip] = imported
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("DatabaseManager", "Error merging target record: ${e.message}", e)
-            }
-        }
-
-        // Process raw ingests included in the bundle
-        for (ingest in importedIngests) {
-            val raw = ingest.raw
-            if (raw.isNullOrEmpty()) continue
-            try {
-                when (ingest.type) {
-                    "logs" -> {
-                        val lines = raw.lines()
-                        val updates = HackExParser.parseLogs(lines)
-                        applyUpdatesToMap(recordMap, updates)
-                    }
-                    "home" -> {
-                        val homeScreen = HackExParser.parseHomeScreen(raw)
-                        if (homeScreen != null) {
-                            applyHomeScreenToMap(recordMap, homeScreen)
-                        }
-                    }
-                    "software" -> {
-                        val softwareScreen = HackExParser.parseSoftwareScreen(raw)
-                        if (softwareScreen != null) {
-                            applySoftwareScreenToMap(recordMap, softwareScreen)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("DatabaseManager", "Error processing ingest: ${e.message}", e)
-            }
-        }
-
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-
-        // Broadcast local update event so UI screens refresh automatically
-        if (::appContext.isInitialized) {
-            try {
-                appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
-            } catch (_: Exception) {}
-        }
-
-        return ImportResult(importedTargets.size, importedIngests.size)
+        return TargetRepository.importDataBundle(jsonString)
     }
 
-    /**
-     * Applies parsed log updates to the database.
-     *
-     * @param updates List of [HackExParser.ParsedUpdate] instances from log scraping.
-     */
-    fun processUpdates(updates: List<HackExParser.ParsedUpdate>) {
+    fun processUpdates(updates: List<ParsedUpdate>) {
         if (updates.isEmpty()) return
-        val currentRecords = getAllRecords().toMutableList()
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-        applyUpdatesToMap(recordMap, updates)
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-    }
-
-    private fun applyUpdatesToMap(recordMap: MutableMap<String, TargetRecord>, updates: List<HackExParser.ParsedUpdate>) {
+        
         for (update in updates) {
             var ip = update.ip
             val isIpMasked = ip.isEmpty() || ip.contains("xxx", ignoreCase = true) || ip.contains("UNKNOWN", ignoreCase = true)
@@ -571,11 +110,11 @@ object DatabaseManager {
 
             if (update.wallet != null) {
                 if (record.wallets.isNotEmpty() && !record.wallets.contains(update.wallet)) {
-                    logWalletConflict(ip, record.wallets.first(), update.wallet, "LogUpdate")
+                    TargetRepository.logWalletConflict(ip, record.wallets.first(), update.wallet, "LogUpdate")
                 } else {
                     val previousOwner = recordMap.values.find { it.ip != ip && it.wallets.contains(update.wallet) }
                     if (previousOwner != null) {
-                        val merged = mergeRecords(record, previousOwner)
+                        val merged = TargetRepository.mergeRecords(record, previousOwner)
                         merged.ip = ip
                         recordMap.remove(previousOwner.ip)
                         record = merged
@@ -585,8 +124,6 @@ object DatabaseManager {
                         record.wallets.add(update.wallet)
                     }
                     
-                    // Only record theft events if they came from the player's own log (outbound "Stole" action)
-                    // This prevents falsely attributing another attacker's passive income when reading a victim's log.
                     if (update.stolenAmount != null && update.time != null && update.isOwnLogTheft) {
                         val timestampMs = parseLogTime(update.time)
                         if (timestampMs != null) {
@@ -597,7 +134,6 @@ object DatabaseManager {
             }
 
             if (update.software != null && update.isOwnedSoftware) {
-                // Do not attach software from logs if the log target IP is masked
                 if (!record.isMasked) {
                     record.downloads[update.software.name] = SoftwareEntry(
                         level = update.software.level,
@@ -607,20 +143,14 @@ object DatabaseManager {
                 }
             }
         }
+        TargetRepository.saveAllRecords(recordMap.values.toList())
+        TargetRepository.reconcileDatabase()
     }
 
-    /**
-     * Updates or creates a target record from parsed game home screen data.
-     */
-    fun processHomeScreen(homeScreen: HackExParser.HomeScreen) {
-        val currentRecords = getAllRecords().toMutableList()
+    fun processHomeScreen(homeScreen: HomeScreen) {
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-        applyHomeScreenToMap(recordMap, homeScreen)
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-    }
-
-    private fun applyHomeScreenToMap(recordMap: MutableMap<String, TargetRecord>, homeScreen: HackExParser.HomeScreen) {
+        
         var record = recordMap[homeScreen.ip]
         if (record == null) {
             record = TargetRecord(ip = homeScreen.ip)
@@ -632,73 +162,24 @@ object DatabaseManager {
         homeScreen.hardware?.let { record.hardware = it }
         homeScreen.firewall?.let { record.firewall = it }
         homeScreen.encryptor?.let { record.encryptor = it }
-        record.lastValidated = getCurrentTimestamp()
+        record.lastValidated = TargetRepository.getCurrentTimestamp()
         
         recordMap[homeScreen.ip] = record
+        TargetRepository.saveAllRecords(recordMap.values.toList())
+        TargetRepository.reconcileDatabase()
     }
 
-    /**
-     * Updates a target IP address in local storage and merges records if the new IP collides with an existing entry.
-     */
-    fun editTargetIp(oldIp: String, newIp: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        val existing = currentRecords.find { it.ip == oldIp } ?: return
-        
-        currentRecords.remove(existing)
-        
-        val collision = currentRecords.find { it.ip == newIp }
-        if (collision != null) {
-            currentRecords.remove(collision)
-            val merged = mergeRecords(collision, existing)
-            merged.ip = newIp
-            currentRecords.add(merged)
-        } else {
-            existing.ip = newIp
-            currentRecords.add(existing)
-        }
-        
-        saveAllRecords(currentRecords)
-        reconcileDatabase()
-    }
-    
-    /**
-     * Removes a target record from local storage by IP address.
-     */
-    fun deleteTarget(ip: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        currentRecords.removeAll { it.ip == ip }
-        saveAllRecords(currentRecords)
-    }
+    fun editTargetIp(oldIp: String, newIp: String) = TargetRepository.editTargetIp(oldIp, newIp)
 
-    /**
-     * Clears recorded theft events for a target, either entirely or just for a specific wallet.
-     */
-    fun clearTargetTheftEvents(ip: String, wallet: String? = null) {
-        val currentRecords = getAllRecords().toMutableList()
-        val record = currentRecords.find { it.ip == ip } ?: return
-        if (wallet != null) {
-            record.clearTheftEvents(wallet)
-        } else {
-            record.walletThefts.clear()
-        }
-        saveAllRecords(currentRecords)
-        appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
-    }
+    fun deleteTarget(ip: String) = TargetRepository.deleteTarget(ip)
 
-    /**
-     * Updates or creates target record software inventory from parsed game software screen data.
-     */
-    fun processSoftwareScreen(softwareScreen: HackExParser.SoftwareScreen) {
+    fun clearTargetTheftEvents(ip: String, wallet: String? = null) = TargetRepository.clearTargetTheftEvents(ip, wallet)
+
+    fun processSoftwareScreen(softwareScreen: SoftwareScreen) {
         if (softwareScreen.softwareItems.isEmpty()) return
-        val currentRecords = getAllRecords().toMutableList()
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-        applySoftwareScreenToMap(recordMap, softwareScreen)
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-    }
-
-    private fun applySoftwareScreenToMap(recordMap: MutableMap<String, TargetRecord>, softwareScreen: HackExParser.SoftwareScreen) {
-        if (softwareScreen.softwareItems.isEmpty()) return
+        
         val username = softwareScreen.username
         var targetRecord: TargetRecord? = null
         
@@ -715,14 +196,14 @@ object DatabaseManager {
         softwareScreen.softwareItems.forEach { (name, item) ->
             targetRecord.downloads[name] = SoftwareEntry(item.level, item.status, null)
         }
-        targetRecord.lastValidated = getCurrentTimestamp()
+        targetRecord.lastValidated = TargetRepository.getCurrentTimestamp()
+        
+        TargetRepository.saveAllRecords(recordMap.values.toList())
+        TargetRepository.reconcileDatabase()
     }
 
-    /**
-     * Associates a parsed in-game crypto wallet address with a target user record.
-     */
-    fun processWalletScreen(walletScreen: HackExParser.WalletScreen) {
-        val currentRecords = getAllRecords().toMutableList()
+    fun processWalletScreen(walletScreen: WalletScreen) {
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
         
         val username = walletScreen.username
@@ -737,11 +218,11 @@ object DatabaseManager {
         }
 
         if (targetRecord.wallets.isNotEmpty() && !targetRecord.wallets.contains(wallet)) {
-            logWalletConflict(targetRecord.ip, targetRecord.wallets.first(), wallet, "WalletScreen")
+            TargetRepository.logWalletConflict(targetRecord.ip, targetRecord.wallets.first(), wallet, "WalletScreen")
         } else {
             val previousOwner = recordMap.values.find { it.ip != targetRecord.ip && it.wallets.contains(wallet) }
             if (previousOwner != null) {
-                val merged = mergeRecords(targetRecord, previousOwner)
+                val merged = TargetRepository.mergeRecords(targetRecord, previousOwner)
                 merged.ip = targetRecord.ip
                 recordMap.remove(previousOwner.ip)
                 targetRecord = merged
@@ -752,106 +233,27 @@ object DatabaseManager {
                 targetRecord.wallets.add(wallet)
             }
         }
-        targetRecord.lastValidated = getCurrentTimestamp()
+        targetRecord.lastValidated = TargetRepository.getCurrentTimestamp()
         
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
+        TargetRepository.saveAllRecords(recordMap.values.toList())
+        TargetRepository.reconcileDatabase()
     }
 
-    fun getSiphonAlerts(): List<String> {
-        return siphonAlerts.toList()
-    }
+    fun getSiphonAlerts(): List<String> = SiphonTracker.getSiphonAlerts()
     
-    fun removeSiphonAlert(ip: String) {
-        siphonAlerts.remove(ip)
-        saveSiphonData()
+    fun removeSiphonAlert(ip: String) = SiphonTracker.removeSiphonAlert(ip)
+
+    fun clearSiphonTracking() = SiphonTracker.clearSiphonTracking()
+
+    fun processSiphonScreen(siphonScreen: SiphonScreen) {
+        SiphonTracker.processSiphonScreen(siphonScreen, TargetRepository.appContext)
     }
 
-    /**
-     * Clears all internal tracking for Siphons, used when prestiging.
-     */
-    fun clearSiphonTracking() {
-        knownSiphons.clear()
-        siphonAlerts.clear()
-        recentlyScrapedSiphons.clear()
-        saveSiphonData()
-    }
-
-    /**
-     * Processes a parsed Siphon Earnings screen, updates tracking, generates alerts, 
-     * and logs history to an exportable file.
-     */
-    fun processSiphonScreen(siphonScreen: HackExParser.SiphonScreen) {
-        if (siphonScreen.items.isEmpty() && siphonScreen.deployedCount > 0) return
-        
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        val nowStr = isoFormat.format(Date())
-        val exportFile = File(appContext.filesDir, "siphon_history.jsonl")
-        
-        val currentTime = System.currentTimeMillis()
-        val iterator = recentlyScrapedSiphons.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            if (currentTime - entry.value > 15 * 60 * 1000) {
-                iterator.remove()
-            }
-        }
-        
-        for (item in siphonScreen.items) {
-            recentlyScrapedSiphons[item.ip] = currentTime
-        }
-
-        // 1. Check for removed siphons
-        if (siphonScreen.deployedCount == 0) {
-            val missingIps = knownSiphons.keys.toList()
-            for (missingIp in missingIps) {
-                siphonAlerts.add(missingIp)
-                knownSiphons.remove(missingIp)
-                val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
-                exportFile.appendText("$logLine\n")
-            }
-        } else if (recentlyScrapedSiphons.size >= siphonScreen.deployedCount) {
-            val missingIps = knownSiphons.keys - recentlyScrapedSiphons.keys
-            for (missingIp in missingIps) {
-                siphonAlerts.add(missingIp)
-                knownSiphons.remove(missingIp)
-                val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
-                exportFile.appendText("$logLine\n")
-            }
-        }
-
-        // 2. Process current siphons and check for drops (wiped & reinstalled)
-        for (item in siphonScreen.items) {
-            val previousAmount = knownSiphons[item.ip]
-            
-            if (previousAmount != null && item.amount < previousAmount) {
-                // The amount went down: it was wiped and reinstalled!
-                siphonAlerts.add(item.ip)
-                val logLine = """{"timestamp":"$nowStr","ip":"${item.ip}","event":"REINSTALLED","old_amount":$previousAmount,"new_amount":${item.amount}}"""
-                exportFile.appendText("$logLine\n")
-            } else if (previousAmount == null) {
-                // New siphon installation!
-                val logLine = """{"timestamp":"$nowStr","ip":"${item.ip}","event":"INSTALLED","amount":${item.amount},"timeAgo":"${item.timeAgo}"}"""
-                exportFile.appendText("$logLine\n")
-            }
-            
-            // Update tracking map
-            knownSiphons[item.ip] = item.amount
-        }
-        
-        saveSiphonData()
-    }
-
-    /**
-     * Processes a parsed Crew Screen, matching known clan tags to unknown IPs.
-     */
-    fun processCrewScreen(crewScreen: HackExParser.CrewScreen) {
-        val map = cachedRecords.associateBy { it.ip }.toMutableMap()
+    fun processCrewScreen(crewScreen: CrewScreen) {
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
+        val map = currentRecords.associateBy { it.ip }.toMutableMap()
         var foundClanTag: String? = null
 
-        // Try to find a clan tag from existing known members
         for (ip in crewScreen.members) {
             val record = map[ip]
             if (record != null && !record.clan.isNullOrBlank()) {
@@ -860,13 +262,10 @@ object DatabaseManager {
             }
         }
 
-        // If no clan tag is found in the database, we discard the data
-        if (foundClanTag == null) {
-            return
-        }
+        if (foundClanTag == null) return
 
         var changed = false
-        val now = getCurrentTimestamp()
+        val now = TargetRepository.getCurrentTimestamp()
 
         for (ip in crewScreen.members) {
             val existing = map[ip]
@@ -895,18 +294,16 @@ object DatabaseManager {
         }
 
         if (changed) {
-            saveAllRecords(map.values.toList())
-            reconcileDatabase()
+            TargetRepository.saveAllRecords(map.values.toList())
+            TargetRepository.reconcileDatabase()
         }
     }
 
-    /**
-     * Processes a parsed Process Screen, adding any unknown IPs to the database.
-     */
-    fun processProcessScreen(processScreen: HackExParser.ProcessScreen) {
-        val map = cachedRecords.associateBy { it.ip }.toMutableMap()
+    fun processProcessScreen(processScreen: ProcessScreen) {
+        val currentRecords = TargetRepository.getAllRecords().toMutableList()
+        val map = currentRecords.associateBy { it.ip }.toMutableMap()
         var changed = false
-        val now = getCurrentTimestamp()
+        val now = TargetRepository.getCurrentTimestamp()
 
         val allIps = processScreen.ips + processScreen.invalidatedIps
 
@@ -943,116 +340,8 @@ object DatabaseManager {
         }
 
         if (changed) {
-            saveAllRecords(map.values.toList())
-            reconcileDatabase()
-        }
-    }
-
-    /**
-     * Merges non-null fields from an incoming record into a base target record.
-     */
-    private fun mergeRecords(base: TargetRecord, incoming: TargetRecord): TargetRecord {
-        val baseIsMasked = base.isMasked
-        val incomingIsMasked = incoming.isMasked
-        val canonicalIp = if ((!incomingIsMasked && baseIsMasked) || (base.isTemporary && !incoming.isTemporary)) incoming.ip else base.ip
-
-        // When merging an unmasked target with a masked generic target placeholder,
-        // do not contaminate the unmasked target with software/wallet data from the masked placeholder.
-        val ignoreMaskedData = (baseIsMasked != incomingIsMasked)
-
-        val finalWallets = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            unmasked.wallets.toMutableList()
-        } else {
-            val distinctWallets = (base.wallets + incoming.wallets).distinct()
-            if (distinctWallets.size > 1) {
-                logWalletConflict(canonicalIp, distinctWallets[0], distinctWallets[1], "MergeRecords")
-                mutableListOf(distinctWallets[0])
-            } else {
-                distinctWallets.toMutableList()
-            }
-        }
-
-        val mergedDownloads = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            unmasked.downloads.toMutableMap()
-        } else {
-            (base.downloads + incoming.downloads).toMutableMap()
-        }
-
-        val mergedThefts = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            unmasked.walletThefts.toMutableMap()
-        } else {
-            (base.walletThefts.keys + incoming.walletThefts.keys).distinct().associateWith { wallet ->
-                val listA = base.walletThefts[wallet] ?: emptyList()
-                val listB = incoming.walletThefts[wallet] ?: emptyList()
-                (listA + listB).distinctBy { "${it.timestampMs}_${it.amount}" }.sortedBy { it.timestampMs }.toMutableList()
-            }.toMutableMap()
-        }
-
-        return TargetRecord(
-            ip = canonicalIp,
-            username = incoming.username ?: base.username,
-            clan = incoming.clan ?: base.clan,
-            level = incoming.level ?: base.level,
-            hardware = incoming.hardware ?: base.hardware,
-            firewall = incoming.firewall ?: base.firewall,
-            encryptor = incoming.encryptor ?: base.encryptor,
-            wallets = finalWallets,
-            downloads = mergedDownloads,
-            walletThefts = mergedThefts,
-            lastValidated = incoming.lastValidated ?: base.lastValidated
-        )
-    }
-
-    private fun logWalletConflict(ip: String, wallet1: String, wallet2: String, source: String) {
-        try {
-            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-            val nowStr = isoFormat.format(Date())
-            val exportFile = File(appContext.filesDir, "wallet_conflicts.jsonl")
-            val logLine = """{"timestamp":"$nowStr","ip":"$ip","existing_wallet":"$wallet1","conflicting_wallet":"$wallet2","source":"$source"}"""
-            exportFile.appendText("$logLine\n")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /**
-     * Deduplicates database records by combining targets that share the same username or crypto wallet address.
-     */
-    private fun reconcileDatabase() {
-        val records = getAllRecords().toMutableList()
-        if (records.size < 2) return
-
-        var changed = false
-        var i = 0
-        while (i < records.size) {
-            var j = i + 1
-            while (j < records.size) {
-                val recA = records[i]
-                val recB = records[j]
-
-                val sharesUser = recA.username != null && recB.username != null && 
-                               recA.username.equals(recB.username, ignoreCase = true)
-                val sharesWallet = recA.wallets.any { recB.wallets.contains(it) }
-
-                if (sharesUser || sharesWallet) {
-                    val merged = mergeRecords(recA, recB)
-                    records[i] = merged
-                    records.removeAt(j)
-                    changed = true
-                    j--
-                }
-                j++
-            }
-            i++
-        }
-
-        if (changed) {
-            saveAllRecords(records)
+            TargetRepository.saveAllRecords(map.values.toList())
+            TargetRepository.reconcileDatabase()
         }
     }
 }

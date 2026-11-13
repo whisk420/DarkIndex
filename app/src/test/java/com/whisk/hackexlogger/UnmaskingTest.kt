@@ -14,7 +14,7 @@ class UnmaskingTest {
 
     @Test
     fun testUnknownIpIsClassifiedAsMasked() {
-        val extractedIp = HackExParser.extractIp("Device accessed from [UNKNOWN]")
+        val extractedIp = CommonParserUtil.extractIp("Device accessed from [UNKNOWN]")
         assertEquals("[UNKNOWN]", extractedIp)
 
         val target = TargetRecord(ip = "[UNKNOWN]")
@@ -116,10 +116,10 @@ class UnmaskingTest {
     @Test
     fun testLogSoftwareIgnoredForMaskedIp() {
         val maskedTarget = TargetRecord(ip = "4.226.131.xxx")
-        val update = HackExParser.ParsedUpdate(
+        val update = ParsedUpdate(
             ip = "4.226.131.xxx",
             time = "12:00",
-            software = HackExParser.Software("downloaded", 10, "Spam"),
+            software = Software("downloaded", 10, "Spam"),
             isOwnedSoftware = true,
             raw = "Downloaded Lv10 Spam from 4.226.131.xxx"
         )
@@ -146,7 +146,7 @@ class UnmaskingTest {
             "4.226.131.xxx" to TargetRecord(ip = "4.226.131.xxx")
         )
 
-        val update = HackExParser.ParsedUpdate(
+        val update = ParsedUpdate(
             ip = "4.226.131.xxx",
             time = "12:00",
             wallet = "hx9999...1111",
@@ -244,3 +244,4 @@ class UnmaskingTest {
         assertNotNull(recordMap["unknown:wallet_hx16a5...aac4"])
     }
 }
+

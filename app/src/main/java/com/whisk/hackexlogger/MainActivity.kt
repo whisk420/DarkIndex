@@ -54,16 +54,6 @@ class MainActivity : AppCompatActivity() {
     private var maxFirewallLevel = 20
     private var searchJob: Job? = null
 
-    // Listens for local broadcasts emitted when new data is parsed by the background accessibility service
-    private val dataUpdateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            android.util.Log.d("DOSSIER", "MainActivity received broadcast: ${intent.action}")
-            if (intent.action == "com.whisk.hackexlogger.DATA_UPDATED") {
-                refreshData()
-            }
-        }
-    }
-
     // Activity result launcher for exporting database records as a JSON document
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK && result.data?.data != null) {
@@ -151,8 +141,12 @@ class MainActivity : AppCompatActivity() {
         DatabaseManager.init(this)
         setupUI()
         
-        // Register local broadcast receiver for UI data update events
-        registerReceiver(dataUpdateReceiver, IntentFilter("com.whisk.hackexlogger.DATA_UPDATED"), RECEIVER_NOT_EXPORTED)
+        // Observe database updates reactively using StateFlow
+        lifecycleScope.launch {
+            DatabaseManager.recordsFlow.collect {
+                refreshData()
+            }
+        }
 
         showPermissionDialog(force = false)
     }
@@ -500,7 +494,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(dataUpdateReceiver)
     }
 
     override fun onStop() {

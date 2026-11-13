@@ -15,7 +15,7 @@ class TargetIncomeTest {
             "[10-15 12:24] Accessed device at 90.49.133.67"
         )
 
-        val updates = HackExParser.parseLogs(logLines).filter { it.wallet != null }
+        val updates = LogScreenParser.parse(logLines).filter { it.wallet != null }
         assertEquals(2, updates.size)
 
         val target = TargetRecord(ip = "90.49.133.67")
@@ -38,3 +38,4 @@ class TargetIncomeTest {
         assertEquals("💵 ~598/hr", income)
     }
 }
+

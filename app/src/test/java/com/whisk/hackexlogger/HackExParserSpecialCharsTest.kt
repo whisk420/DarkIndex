@@ -44,9 +44,10 @@ class HackExParserSpecialCharsTest {
                                                                                                     ENCRYPTOR
                                                                                                     Lv.20
 """
-        val result = HackExParser.parseHomeScreen(text)
+        val result = HomeScreenParser.parse(text)
         assertNotNull("HomeScreen should not be null", result)
         assertEquals("ÂLPHA", result?.username)
         assertEquals(30, result?.level)
     }
 }
+
