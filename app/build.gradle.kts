@@ -10,8 +10,16 @@ android {
         applicationId = "com.whisk.hackexlogger"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        val envVersionName = (project.findProperty("versionName") as? String)
+            ?: System.getenv("VERSION_NAME")
+            ?: "1.2-dev"
+
+        val envVersionCode = (project.findProperty("versionCode") as? String
+            ?: System.getenv("VERSION_CODE"))?.toIntOrNull()
+            ?: 1
+
+        versionCode = envVersionCode
+        versionName = envVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

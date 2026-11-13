@@ -1,12 +1,12 @@
-name: Build & Publish Release v1.1
+name: Build & Publish Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release Version Tag'
-        required: true
-        default: 'v1.1'
+        description: 'Release Version Tag (e.g. 1.2 or v1.2)'
+        required: false
+        default: '1.2'
   push:
     tags:
       - 'v*'
@@ -32,43 +32,65 @@ jobs:
     - name: Grant Execute Permission to Gradlew
       run: chmod +x gradlew
 
-    - name: Assemble Release APKs
-      run: ./gradlew assembleRelease --stacktrace
+    - name: Determine Release Version & Code
+      id: get_version
+      run: |
+        INPUT_VER="${{ inputs.version }}"
+        REF_VER="${{ github.ref_name }}"
+        
+        if [ -n "$INPUT_VER" ]; then
+          VER="$INPUT_VER"
+        elif [[ "$REF_VER" == v* ]]; then
+          VER="$REF_VER"
+        else
+          VER="1.2"
+        fi
+        
+        # Strip leading 'v' for versionName
+        CLEAN_VER="${VER#v}"
+        
+        # Tag name with 'v'
+        TAG_VER="v$CLEAN_VER"
+        
+        echo "RELEASE_VERSION=$TAG_VER" >> $GITHUB_ENV
+        echo "VERSION_NAME=$CLEAN_VER" >> $GITHUB_ENV
+        echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
+        
+        echo "Calculated Tag: $TAG_VER"
+        echo "Calculated Version Name: $CLEAN_VER"
+        echo "Calculated Version Code: ${{ github.run_number }}"
 
-    - name: Prepare Release APK Artifacts
+    - name: Assemble Release APK
+      run: |
+        ./gradlew assembleRelease \
+          -PversionName="${{ env.VERSION_NAME }}" \
+          -PversionCode="${{ env.VERSION_CODE }}" \
+          --stacktrace
+
+    - name: Prepare Release APK Artifact
       run: |
         mkdir -p build-outputs
-        cp app/build/outputs/apk/standalone/release/app-standalone-release.apk build-outputs/HackExHarvester-Standalone.apk
-        cp app/build/outputs/apk/googlePlay/release/app-googlePlay-release.apk build-outputs/HackExHarvester-GooglePlay.apk
+        cp app/build/outputs/apk/release/app-release.apk build-outputs/HackExLogger.apk
 
-    - name: Upload Standalone Artifact
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: HackExHarvester-Standalone
-        path: build-outputs/HackExHarvester-Standalone.apk
-        retention-days: 14
-
-    - name: Upload GooglePlay Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: HackExHarvester-GooglePlay
-        path: build-outputs/HackExHarvester-GooglePlay.apk
+        name: HackExLogger-v${{ env.VERSION_NAME }}
+        path: build-outputs/HackExLogger.apk
         retention-days: 14
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ inputs.version || github.ref_name || 'v1.1' }}
-        name: "HackExLogger ${{ inputs.version || github.ref_name || 'v1.1' }}"
+        tag_name: ${{ env.RELEASE_VERSION }}
+        name: "HackExLogger ${{ env.RELEASE_VERSION }}"
         body: |
-          ### HackExLogger Release ${{ inputs.version || github.ref_name || 'v1.1' }}
+          ### HackExLogger ${{ env.RELEASE_VERSION }}
           
-          This release introduces dual build variants and optional Google Account sign-in & cloud backup support:
+          100% offline standalone release.
           
-          - **`HackExHarvester-Standalone.apk`**: 100% offline standalone build with zero internet permissions.
-          - **`HackExHarvester-GooglePlay.apk`**: Includes optional Google Account sign-in under Settings for user-controlled cloud backup directly to your personal Google Account storage space.
+          - **`HackExLogger.apk`**: Single, 100% offline APK with zero internet permissions. Auto-mirrors database backups directly to your device's `Downloads/HackExLogger/` folder.
         files: |
-          build-outputs/HackExHarvester-Standalone.apk
-          build-outputs/HackExHarvester-GooglePlay.apk
+          build-outputs/HackExLogger.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
