@@ -212,9 +212,13 @@ object TargetRepository {
 
     fun runDatabaseMaintenance(): DatabaseManager.MaintenanceResult {
         val backupJson = exportDataBundle()
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val backupFile = File(appContext.filesDir, "maintenance_backup_$timestamp.json")
-        backupFile.writeText(backupJson)
+        var backupPath = "none"
+        if (::appContext.isInitialized) {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val backupFile = File(appContext.filesDir, "maintenance_backup_$timestamp.json")
+            backupFile.writeText(backupJson)
+            backupPath = backupFile.absolutePath
+        }
 
         val records = getAllRecords().toMutableList()
         val recordMap = records.associateBy { it.ip }.toMutableMap()
@@ -303,7 +307,7 @@ object TargetRepository {
         reconcileDatabase()
 
         return DatabaseManager.MaintenanceResult(
-            backupFilePath = backupFile.absolutePath,
+            backupFilePath = backupPath,
             multiWalletRecordsFixed = multiWalletCount,
             maskedSoftwareCleared = maskedSoftwareCount,
             maskedWalletsMigrated = maskedWalletsMigratedCount,
