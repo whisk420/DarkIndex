@@ -373,8 +373,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val genericFiltered = allRecords.filter { record ->
+                    val q = query.replace("[", "").replace("]", "")
                     record.ip.lowercase().contains(query) ||
                     record.username?.lowercase()?.contains(query) == true ||
+                    record.clan?.lowercase()?.contains(q) == true ||
+                    record.level?.toString() == query ||
+                    record.hardware?.lowercase()?.contains(query) == true ||
                     record.wallets.any { it.lowercase().contains(query) } ||
                     record.downloads.keys.any { it.lowercase().contains(query) }
                 }
