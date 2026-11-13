@@ -14,8 +14,8 @@ Vibe-coded to the moon and back, just like the game.
 - **Regex Game Text Parser**: Extracts in-game target profiles, software inventories, and activity logs using pattern matching tailored to HackEx UI text layouts.
 - **Passive Wallet Income Estimator**: Intelligently parses your personal log thefts, filters out outdated events with >24h gaps, and calculates highly accurate passive hourly crypto generation for every target's wallet.
 - **Advanced Targeting Mode**: Optional dashboard mode that filters your list to only show targets lacking critical scraping information, paired with a specialized overlay toolbar to cycle through incomplete targets and skip time-consuming bypasses.
-- **Search & Filtering**: Quick filter target records by virtual IP address, username, software name, or software level (including tiered `±2` level fuzzing).
-- **JSON Import & Export**: Export your target database to JSON or import target bundles using Android's Storage Access Framework.
+- **Search & Filtering**: Quickly filter target records by virtual IP address, username, wallet address, software name, software level, clan tags, or hardware tiers.
+- **Smart SAF Import & Export**: Instantly export your target database or import target bundles with Android's Storage Access Framework seamlessly linked to your `Downloads/HackExLogger/` folder.
 
 ---
 
@@ -48,11 +48,7 @@ If you are a developer, security-conscious, or simply want to tinker with the co
 3. **Open the Project**: Launch Android Studio, select **Open**, and select the `HackExLogger` directory you just cloned.
 4. **Sync Gradle**: Let Android Studio automatically download the required Gradle dependencies and sync the project structure.
 5. **Build and Install**:
-   - **Run on Device**: Connect your Android device via USB (with USB Debugging enabled), select `standaloneDebug` or `googlePlayDebug` in Android Studio's **Build Variants** panel, and click the green **Play/Run** button.
-   - **Generate APKs via Command Line**:
-     - **Standalone (100% Offline)**: `./gradlew assembleStandaloneDebug`
-     - **Google Play (Opt-In Cloud Backup)**: `./gradlew assembleGooglePlayDebug`
-     - **Both Variants**: `./gradlew assembleDebug`
+   - **Build APK**: `./gradlew assembleDebug`
 
 ---
 
@@ -70,13 +66,15 @@ HackExLogger requires specific Android permissions to provide overlay controls a
 
 ## Architecture Overview
 
-```
+```text
 com.whisk.hackexlogger
  ├── MainActivity                   # Dashboard for database browsing, searching, and JSON backup/restore.
  ├── ScraperAccessibilityService    # Accessibility Service that reads active window text nodes upon user trigger.
  ├── OverlayService                 # Foreground Service presenting floating UI widgets over the game interface.
- ├── DatabaseManager                # Thread-safe repository for persisting and merging target records on-device.
- ├── HackExParser                   # Regex pattern matcher for extracting in-game stats, software, and logs.
+ ├── TargetRepository               # Thread-safe local storage handling caching and durable JSON persistence.
+ ├── ScreenParsers                  # Modular Regex parsers mapping HackEx game UI to structured target states.
+ ├── SiphonTracker                  # Tracks deployed siphon botnets to alert you of wiped botnets.
+ ├── DatabaseManager                # Thin architectural facade proxying actions into the domain repositories.
  ├── TargetAdapter                  # RecyclerView adapter for rendering target cards and headers.
  ├── TargetRecord & ConsoleBundle   # Data models and JSON export/import schema definitions.
 ```
