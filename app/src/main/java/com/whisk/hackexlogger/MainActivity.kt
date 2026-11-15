@@ -240,8 +240,7 @@ class MainActivity : AppCompatActivity() {
                                 "Summary of actions taken:\n" +
                                 "• ${result.multiWalletRecordsFixed} multi-wallet target records cleared\n" +
                                 "• ${result.maskedSoftwareCleared} masked software inventories cleared\n" +
-                                "• ${result.maskedWalletsMigrated} masked wallets migrated to placeholders\n" +
-                                "• ${result.oldTheftsCleared} old theft events purged (24h+ gaps)"
+                                "• ${result.maskedWalletsMigrated} masked wallets migrated to placeholders"
                             )
                             .setPositiveButton("OK", null)
                             .show()

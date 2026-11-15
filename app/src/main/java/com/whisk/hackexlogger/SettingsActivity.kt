@@ -43,5 +43,17 @@ class SettingsActivity : AppCompatActivity() {
             updateIntent.setPackage(packageName)
             sendBroadcast(updateIntent)
         }
+
+        findViewById<android.widget.Button>(R.id.btnPurgeThefts).setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Purge Old Theft Data")
+                .setMessage("Are you sure you want to delete all theft events older than 30 days? (Events that make up the only reliable data for a target will be safely preserved).")
+                .setPositiveButton("Purge") { _, _ ->
+                    val purgedCount = DatabaseManager.purgeOldTheftEvents()
+                    android.widget.Toast.makeText(this, "Purged $purgedCount old theft events", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 }

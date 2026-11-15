@@ -226,27 +226,8 @@ object TargetRepository {
         var multiWalletCount = 0
         var maskedSoftwareCount = 0
         var maskedWalletsMigratedCount = 0
-        var oldTheftsClearedCount = 0
 
         for (record in recordMap.values.toList()) {
-            val walletsToProcess = record.walletThefts.keys.toList()
-            for (wallet in walletsToProcess) {
-                val list = record.walletThefts[wallet]
-                if (list != null && list.size > 1) {
-                    list.sortBy { it.timestampMs }
-                    var startIndex = 0
-                    for (i in 1 until list.size) {
-                        if (list[i].timestampMs - list[i - 1].timestampMs > 24 * 3600000L) {
-                            startIndex = i
-                        }
-                    }
-                    if (startIndex > 0) {
-                        oldTheftsClearedCount += startIndex
-                        val recentCluster = list.subList(startIndex, list.size).toMutableList()
-                        record.walletThefts[wallet] = recentCluster
-                    }
-                }
-            }
 
             if (record.wallets.size > 1) {
                 val walletsToDrop = record.wallets.toList()
@@ -310,9 +291,45 @@ object TargetRepository {
             backupFilePath = backupPath,
             multiWalletRecordsFixed = multiWalletCount,
             maskedSoftwareCleared = maskedSoftwareCount,
-            maskedWalletsMigrated = maskedWalletsMigratedCount,
-            oldTheftsCleared = oldTheftsClearedCount
+            maskedWalletsMigrated = maskedWalletsMigratedCount
         )
+    }
+
+    fun purgeOldTheftEvents(): Int {
+        val cutoff = System.currentTimeMillis() - 30 * 24 * 3600000L
+        val records = getAllRecords().toMutableList()
+        var purgedCount = 0
+
+        for (record in records) {
+            for (wallet in record.walletThefts.keys.toList()) {
+                val events = record.walletThefts[wallet] ?: continue
+                val oldEvents = events.filter { it.timestampMs < cutoff }
+                if (oldEvents.isEmpty()) continue
+
+                val newEvents = events.filter { it.timestampMs >= cutoff }
+
+                // Safety Shield: Check if purging old events removes ALL multi-event clusters
+                val clustersBefore = record.getReliableClusters(wallet).filter { it.size >= 2 }
+                
+                // create a temporary TargetRecord to test what the clusters WOULD look like
+                val tempRecord = record.copy(walletThefts = record.walletThefts.toMutableMap().apply { put(wallet, newEvents.toMutableList()) })
+                val clustersAfter = tempRecord.getReliableClusters(wallet).filter { it.size >= 2 }
+
+                if (clustersBefore.isNotEmpty() && clustersAfter.isEmpty()) {
+                    // Preserving history because it's the only reliable cluster source!
+                    continue
+                }
+
+                // Safe to purge old events
+                record.walletThefts[wallet] = newEvents.toMutableList()
+                purgedCount += oldEvents.size
+            }
+        }
+
+        if (purgedCount > 0) {
+            saveAllRecords(records)
+        }
+        return purgedCount
     }
 
     fun exportDataBundle(): String {

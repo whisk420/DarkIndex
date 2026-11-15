@@ -73,5 +73,34 @@ class ConsoleBundleTest {
             throw IllegalArgumentException("This is not a Target Intelligence Console export.")
         }
     }
+
+    @Test
+    fun testExportImportRoundTripPreservesThefts() {
+        TargetRepository.prefs = FakeSharedPreferences()
+        TargetRepository.cachedRecords.clear()
+        TargetRepository.isInitialized = true
+
+        val target = TargetRecord(ip = "1.2.3.4", username = "Thief")
+        target.addTheftEvent("hx999", 1000L, 500)
+        target.addTheftEvent("hx999", 2000L, 1000)
+        TargetRepository.saveAllRecords(listOf(target))
+
+        val exportJson = TargetRepository.exportDataBundle()
+        
+        // Clear and re-import
+        TargetRepository.cachedRecords.clear()
+        val importResult = TargetRepository.importDataBundle(exportJson)
+        
+        assertEquals(1, importResult.targetCount)
+        val records = TargetRepository.getAllRecords()
+        assertEquals(1, records.size)
+        
+        val restoredTarget = records[0]
+        assertEquals(2, restoredTarget.walletThefts["hx999"]?.size)
+        assertEquals(1000L, restoredTarget.walletThefts["hx999"]?.get(0)?.timestampMs)
+        assertEquals(500, restoredTarget.walletThefts["hx999"]?.get(0)?.amount)
+        assertEquals(2000L, restoredTarget.walletThefts["hx999"]?.get(1)?.timestampMs)
+        assertEquals(1000, restoredTarget.walletThefts["hx999"]?.get(1)?.amount)
+    }
 }
 

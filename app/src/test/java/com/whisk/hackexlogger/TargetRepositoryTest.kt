@@ -62,7 +62,7 @@ class TargetRepositoryTest {
     }
 
     @Test
-    fun testRunDatabaseMaintenancePurgesOldTheftGaps() {
+    fun testRunDatabaseMaintenanceDoesNotPurgeThefts() {
         val target = TargetRecord(ip = "10.0.0.99", username = "TheftTarget")
 
         // Add thefts: 1st hack at t=0, 2nd hack at t=30h (gap > 24h)
@@ -73,15 +73,52 @@ class TargetRepositoryTest {
 
         TargetRepository.saveAllRecords(listOf(target))
 
-        val result = TargetRepository.runDatabaseMaintenance()
-        assertTrue(result.oldTheftsCleared > 0)
+        TargetRepository.runDatabaseMaintenance()
 
         val updatedRecords = TargetRepository.getAllRecords()
         val updatedTarget = updatedRecords.first { it.ip == "10.0.0.99" }
         val thefts = updatedTarget.walletThefts["hxWallet1"]
         assertNotNull(thefts)
-        // Verify old theft event before the >24h gap was purged
-        assertEquals(1, thefts?.size)
-        assertEquals(t1, thefts?.first()?.timestampMs)
+        // Verify no theft event was purged by maintenance!
+        assertEquals(2, thefts?.size)
+    }
+
+    @Test
+    fun testPurgeOldTheftEventsSafetyShield() {
+        val target = TargetRecord(ip = "10.0.0.100", username = "OldTarget")
+
+        val cutoff = System.currentTimeMillis() - 30 * 24 * 3600000L
+        
+        // Add old thefts from 40 days ago that form a reliable cluster (>2 events, gaps < 24h)
+        val oldTs1 = cutoff - 10 * 24 * 3600000L
+        val oldTs2 = oldTs1 + 4 * 3600000L // 4 hours later
+        target.addTheftEvent("hxWallet2", oldTs1, 500)
+        target.addTheftEvent("hxWallet2", oldTs2, 1000)
+        
+        TargetRepository.saveAllRecords(listOf(target))
+        
+        // Even though these events are older than 30 days, they form the ONLY reliable cluster for this target.
+        // Therefore, purgeOldTheftEvents() should PRESERVE them.
+        val purgedCount = TargetRepository.purgeOldTheftEvents()
+        assertEquals(0, purgedCount)
+        
+        val updatedRecords = TargetRepository.getAllRecords()
+        val updatedTarget = updatedRecords.first { it.ip == "10.0.0.100" }
+        assertEquals(2, updatedTarget.walletThefts["hxWallet2"]?.size)
+        
+        // Now add a recent reliable cluster!
+        val newTs1 = System.currentTimeMillis() - 2 * 24 * 3600000L
+        val newTs2 = newTs1 + 4 * 3600000L
+        updatedTarget.addTheftEvent("hxWallet2", newTs1, 500)
+        updatedTarget.addTheftEvent("hxWallet2", newTs2, 1000)
+        TargetRepository.saveAllRecords(listOf(updatedTarget))
+        
+        // Because there is now a new reliable cluster, the old one can safely be purged!
+        val purgedCount2 = TargetRepository.purgeOldTheftEvents()
+        assertEquals(2, purgedCount2)
+        
+        val finalRecords = TargetRepository.getAllRecords()
+        val finalTarget = finalRecords.first { it.ip == "10.0.0.100" }
+        assertEquals(2, finalTarget.walletThefts["hxWallet2"]?.size) // Only new ones left
     }
 }

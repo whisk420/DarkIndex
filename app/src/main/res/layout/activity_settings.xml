@@ -77,6 +77,15 @@
                     android:text="Advanced Targeting Mode"
                     android:textColor="#ffffff"
                     android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnPurgeThefts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Purge Theft History (>30 Days)"
+                    android:textColor="#ffffff"
+                    android:backgroundTint="#8B0000" />
             </LinearLayout>
 
             <!-- Privacy & Control Guarantee Card -->

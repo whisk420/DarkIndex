@@ -35,8 +35,7 @@ object DatabaseManager {
         val backupFilePath: String,
         val multiWalletRecordsFixed: Int,
         val maskedSoftwareCleared: Int,
-        val maskedWalletsMigrated: Int,
-        val oldTheftsCleared: Int
+        val maskedWalletsMigrated: Int
     )
 
     fun runDatabaseMaintenance(): MaintenanceResult {
@@ -45,10 +44,11 @@ object DatabaseManager {
             backupFilePath = result.backupFilePath,
             multiWalletRecordsFixed = result.multiWalletRecordsFixed,
             maskedSoftwareCleared = result.maskedSoftwareCleared,
-            maskedWalletsMigrated = result.maskedWalletsMigrated,
-            oldTheftsCleared = result.oldTheftsCleared
+            maskedWalletsMigrated = result.maskedWalletsMigrated
         )
     }
+
+    fun purgeOldTheftEvents(): Int = TargetRepository.purgeOldTheftEvents()
 
     fun getNextRecordToValidate(): TargetRecord? = TargetRepository.getNextRecordToValidate()
 

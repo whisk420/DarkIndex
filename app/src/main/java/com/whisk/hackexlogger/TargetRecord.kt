@@ -80,39 +80,82 @@ data class TargetRecord(
         walletThefts.remove(wallet)
     }
 
-    fun getEstimatedIncome(wallet: String): String? {
-        val list = walletThefts[wallet] ?: return null
-        if (list.isEmpty()) return null
-
+    fun getReliableClusters(wallet: String): List<List<TheftEvent>> {
+        val list = walletThefts[wallet] ?: return emptyList()
         val sorted = list.sortedBy { it.timestampMs }
-        
-        // Discard older thefts if there is a gap > 24 hours between consecutive hacks
-        var startIndex = 0
+        if (sorted.isEmpty()) return emptyList()
+
+        val rawClusters = mutableListOf<MutableList<TheftEvent>>()
+        var current = mutableListOf(sorted[0])
+
         for (i in 1 until sorted.size) {
-            if (sorted[i].timestampMs - sorted[i - 1].timestampMs > 24 * 3600000L) {
-                startIndex = i
+            val gap = sorted[i].timestampMs - sorted[i - 1].timestampMs
+            if (gap > 24 * 3600000L) {
+                rawClusters.add(current)
+                current = mutableListOf(sorted[i])
+            } else {
+                current.add(sorted[i])
             }
         }
-        
-        val recentCluster = sorted.subList(startIndex, sorted.size)
+        rawClusters.add(current)
 
-        if (recentCluster.size == 1) {
-            val amount = recentCluster.first().amount
-            return "💵 ~${formatAmount(amount)}"
+        val maxSpanMs = 7 * 24 * 3600000L
+        val finalClusters = mutableListOf<List<TheftEvent>>()
+
+        for (cluster in rawClusters) {
+            if (cluster.size <= 1) {
+                finalClusters.add(cluster)
+                continue
+            }
+            val firstTs = cluster.first().timestampMs
+            val lastTs = cluster.last().timestampMs
+            if (lastTs - firstTs <= maxSpanMs) {
+                finalClusters.add(cluster)
+            } else {
+                var windowStart = firstTs
+                var windowEnd = windowStart + maxSpanMs
+                var subCluster = mutableListOf<TheftEvent>()
+
+                for (event in cluster) {
+                    if (event.timestampMs <= windowEnd) {
+                        subCluster.add(event)
+                    } else {
+                        if (subCluster.isNotEmpty()) finalClusters.add(subCluster)
+                        windowStart = event.timestampMs
+                        windowEnd = windowStart + maxSpanMs
+                        subCluster = mutableListOf(event)
+                    }
+                }
+                if (subCluster.isNotEmpty()) finalClusters.add(subCluster)
+            }
+        }
+        return finalClusters
+    }
+
+    fun getEstimatedIncome(wallet: String): String? {
+        val clusters = getReliableClusters(wallet)
+        if (clusters.isEmpty()) return null
+
+        val multiEventRates = mutableListOf<Double>()
+        for (cluster in clusters) {
+            if (cluster.size < 2) continue
+            val t0 = cluster.first().timestampMs
+            val tn = cluster.last().timestampMs
+            val hours = (tn - t0) / 3600000.0
+            if (hours < 0.1) continue
+
+            val incomeInSpan = cluster.drop(1).sumOf { it.amount }
+            val ratePerHour = incomeInSpan / hours
+            multiEventRates.add(ratePerHour)
         }
 
-        val t0 = recentCluster.first().timestampMs
-        val tn = recentCluster.last().timestampMs
-        val hours = (tn - t0) / 3600000.0
-
-        if (hours < 0.1) {
-            val total = recentCluster.sumOf { it.amount }
-            return "💵 ~${formatAmount(total)}"
+        if (multiEventRates.isNotEmpty()) {
+            val avgRate = multiEventRates.average()
+            return "💵 ~${formatAmount(avgRate.toInt())}/hr"
         }
 
-        val totalStolen = recentCluster.drop(1).sumOf { it.amount }
-        val rate = totalStolen / hours
-        return "💵 ~${formatAmount(rate.toInt())}/hr"
+        val lastEvent = walletThefts[wallet]?.maxByOrNull { it.timestampMs } ?: return null
+        return "💵 ~${formatAmount(lastEvent.amount)}"
     }
 
     private fun formatAmount(amount: Int): String {
