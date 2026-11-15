@@ -401,7 +401,7 @@ class MainActivity : AppCompatActivity() {
                 }.sortedByDescending { record ->
                     val lvl = (record.level ?: 0).toDouble()
                     val fw = (record.firewall ?: 0).toDouble()
-                    val hwPenalty = getHardwarePenalty(record.hardware)
+                    val hwPenalty = getHardwarePenalty(record.hardware).toDouble()
                     
                     // High emphasis on player level (Spam payout), but explicitly placing weight on lower hardware tiers
                     // (faster upload speeds) and lower firewalls.
@@ -466,68 +466,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Extracts the target's device name, computes its equivalent power tier index, 
-     * and maps it to an upload difficulty penalty. (Target's network speed only affects their own
-     * downloads, while target's CPU/Device governs how fast attackers can crack/upload to them).
-     * 
-     * Base Devices:
-     * - Raider: 1
-     * - Bolt: 4
-     * - Nova: 7
-     * 
-     * Special Devices (Mirror standard progression, offset by numeral):
-     * - Vector: Matches Bolt 1 (Power 4)
-     * - Scythe X: Scythe 1 = Raider 1 (Power 1). Thus Scythe IV = Power 4.
+     * Extracts the target's device name and maps it directly to deterministic empirical hardware tiers
+     * which dictate upload difficulty penalties.
      */
-    private fun getHardwarePenalty(hardware: String?): Double {
-        if (hardware == null) return 0.0
+    private fun getHardwarePenalty(hardware: String?): Int {
+        if (hardware == null) return 0
         val deviceStr = hardware.substringBefore(" • ").trim().lowercase()
         
-        var basePower = 0.0
-        
-        when {
-            deviceStr.contains("scythe") -> {
-                // Scythe 1 is equivalent to Raider 1 (Power 1).
-                basePower = 1.0
-            }
-            deviceStr.contains("raider") -> basePower = 1.0
-            deviceStr.contains("vector") -> basePower = 4.0 // Equivalent to Bolt
-            deviceStr.contains("bolt") -> basePower = 4.0
-            deviceStr.contains("nova") -> {
-                basePower = 7.0
-                if (deviceStr.contains(" s")) basePower += 3.0 // Nova S
-                if (deviceStr.contains(" x")) basePower += 4.0 // Nova X
-            }
-        }
-        
-        // Add modifier for roman numeral iterations (II, III, IV, etc.)
-        val romanNumeralMap = mapOf(
-            " ii" to 1.0,
-            " iii" to 2.0,
-            " iv" to 3.0,
-            " v" to 4.0,
-            " vi" to 5.0,
-            " vii" to 6.0,
-            " viii" to 7.0,
-            " ix" to 8.0,
-            " x" to 9.0
-        )
-        
-        for ((numeral, power) in romanNumeralMap) {
-            // Match the numeral exactly at the end of the string
-            // Skip applying the " x" modifier again if we already applied it specifically to Nova
-            if (deviceStr.endsWith(numeral)) {
-                if (deviceStr.contains("nova x") && numeral == " x") {
-                    // Already handled in the base block (+4 for Nova X vs Nova)
-                    break
-                }
-                basePower += power
-                break
-            }
-        }
+        // 1. Check exact Standard Devices (the 12 base tiers)
+        if (deviceStr.startsWith("raider")) return 0
+        if (deviceStr == "bolt") return 1
+        if (deviceStr == "bolt ii") return 2
+        if (deviceStr == "bolt iii") return 3
+        if (deviceStr == "nova") return 4
+        if (deviceStr == "nova ii") return 5
+        if (deviceStr == "nova iii") return 6
+        if (deviceStr == "nova s") return 7
+        if (deviceStr == "nova x") return 8
+        if (deviceStr == "nova ultra") return 9
 
-        // We only penalize target's CPU/Device speed, as their Network speed doesn't affect our uploads to them.
-        return basePower
+        // 2. Check Prestige Devices (Ghost, Vector, Scythe, Cipher, Apex)
+        // Their Roman numeral suffix maps exactly 1-to-1 with the 12 standard devices.
+        return when {
+            deviceStr.endsWith(" xii") -> 9 // Nova Ultra equivalent
+            deviceStr.endsWith(" xi") -> 8  // Nova X equivalent
+            deviceStr.endsWith(" x") -> 7   // Nova S equivalent
+            deviceStr.endsWith(" ix") -> 6  // Nova III equivalent
+            deviceStr.endsWith(" viii") -> 5 // Nova II equivalent
+            deviceStr.endsWith(" vii") -> 4 // Nova equivalent
+            deviceStr.endsWith(" vi") -> 3  // Bolt III equivalent
+            deviceStr.endsWith(" v") -> 2   // Bolt II equivalent
+            deviceStr.endsWith(" iv") -> 1  // Bolt equivalent
+            deviceStr.endsWith(" iii") || deviceStr.endsWith(" ii") || deviceStr.endsWith(" i") -> 0 // Raider tier
+            // Fallback for base prestige devices without a numeral
+            deviceStr.contains("ghost") || deviceStr.contains("vector") || deviceStr.contains("scythe") || 
+            deviceStr.contains("cipher") || deviceStr.contains("apex") -> 0
+            else -> 3 // Robust default for unknown strings
+        }
     }
 
     override fun onDestroy() {
