@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -296,7 +297,7 @@ object TargetRepository {
     }
 
     fun purgeOldTheftEvents(): Int {
-        val cutoff = System.currentTimeMillis() - 30 * 24 * 3600000L
+        val cutoff = (kotlinx.datetime.Clock.System.now() - 30.days).toEpochMilliseconds()
         val records = getAllRecords().toMutableList()
         var purgedCount = 0
 

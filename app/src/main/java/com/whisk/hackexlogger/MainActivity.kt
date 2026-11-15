@@ -436,6 +436,25 @@ class MainActivity : AppCompatActivity() {
             }
 
             withContext(Dispatchers.Main) {
+                val recycler = findViewById<RecyclerView>(R.id.targetsRecycler)
+                val emptyView = findViewById<View>(R.id.emptyStateView)
+                val emptyText = findViewById<TextView>(R.id.emptyStateText)
+
+                if (items.isEmpty()) {
+                    recycler.visibility = View.GONE
+                    emptyView.visibility = View.VISIBLE
+                    if (currentSearchQuery.isNotEmpty()) {
+                        emptyText.text = "No targets match your search criteria."
+                    } else if (isGoodSpamEnabled) {
+                        emptyText.text = "No targets found matching the Good Spam filter criteria."
+                    } else {
+                        emptyText.text = "No targets captured yet.\n\nTap the 📸 overlay to scan your HackEx 2 game screens!"
+                    }
+                } else {
+                    recycler.visibility = View.VISIBLE
+                    emptyView.visibility = View.GONE
+                }
+
                 if (forceFastSwap) {
                     // Bypass expensive O(N^2) DiffUtil calculation on massive list re-sorts/filters
                     targetAdapter.submitList(null)

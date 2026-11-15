@@ -12,11 +12,11 @@ android {
         targetSdk = 35
         val envVersionName = (project.findProperty("versionName") as? String)
             ?: System.getenv("VERSION_NAME")
-            ?: "1.2-dev"
+            ?: "1.3-dev"
 
         val envVersionCode = (project.findProperty("versionCode") as? String
             ?: System.getenv("VERSION_CODE"))?.toIntOrNull()
-            ?: 1
+            ?: 2
 
         versionCode = envVersionCode
         versionName = envVersionName
@@ -49,6 +49,8 @@ dependencies {
     implementation(libs.material)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

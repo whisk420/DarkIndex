@@ -58,6 +58,7 @@ class TargetAdapter(
 ) : ListAdapter<ListItem, RecyclerView.ViewHolder>(ListItemDiffCallback()) {
 
     var currentValidatingIp: String? = null
+    private var activeOverlayPosition: Int = -1
 
     companion object {
         private const val TYPE_HEADER = 0
@@ -85,7 +86,24 @@ class TargetAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
             is ListItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is ListItem.Target -> (holder as TargetViewHolder).bind(item.target, currentValidatingIp)
+            is ListItem.Target -> (holder as TargetViewHolder).bind(
+                target = item.target,
+                currentValidatingIp = currentValidatingIp,
+                isOverlayActive = (activeOverlayPosition == position),
+                onToggleOverlay = {
+                    val prev = activeOverlayPosition
+                    activeOverlayPosition = if (activeOverlayPosition == position) -1 else position
+                    if (prev != -1 && prev != position) notifyItemChanged(prev)
+                    notifyItemChanged(position)
+                },
+                onDismissOverlay = {
+                    if (activeOverlayPosition != -1) {
+                        val prev = activeOverlayPosition
+                        activeOverlayPosition = -1
+                        notifyItemChanged(prev)
+                    }
+                }
+            )
         }
     }
 
@@ -113,32 +131,83 @@ class TargetAdapter(
         private val onDelete: (TargetRecord) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         
+        private val cardContent: View = itemView.findViewById(R.id.cardContent)
+        private val actionOverlay: View = itemView.findViewById(R.id.actionOverlay)
         private val ipText: TextView = itemView.findViewById(R.id.ipText)
+        private val identityText: TextView = itemView.findViewById(R.id.identityText)
         private val editBtn: Button = itemView.findViewById(R.id.editBtn)
         private val shareBtn: Button = itemView.findViewById(R.id.shareBtn)
         private val deleteBtn: Button = itemView.findViewById(R.id.deleteBtn)
-        private val metaText: TextView = itemView.findViewById(R.id.metaText)
+        
+        private val metaContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.metaContainer)
         private val walletsContainer: LinearLayout = itemView.findViewById(R.id.walletsContainer)
-        private val softwareContainer: LinearLayout = itemView.findViewById(R.id.softwareContainer)
-        private val validatedText: TextView = itemView.findViewById(R.id.validatedText)
-        private val hardwareText: TextView = itemView.findViewById(R.id.hardwareText)
+        
+        private val bodySplitLayout: View = itemView.findViewById(R.id.bodySplitLayout)
+        private val defenseColumn: View = itemView.findViewById(R.id.defenseColumn)
+        private val defenseHeader: TextView = itemView.findViewById(R.id.defenseHeader)
+        private val defenseContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.defenseContainer)
+        private val offenseColumn: View = itemView.findViewById(R.id.offenseColumn)
+        private val offenseHeader: TextView = itemView.findViewById(R.id.offenseHeader)
+        private val offenseContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.offenseContainer)
+        private val virusColumn: View = itemView.findViewById(R.id.virusColumn)
+        private val virusHeader: TextView = itemView.findViewById(R.id.virusHeader)
+        private val virusContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.virusContainer)
+        private val noSoftwareText: TextView = itemView.findViewById(R.id.noSoftwareText)
 
-        private val softwareIcons = mapOf(
-            "Antivirus" to "💉",
-            "Spam" to "📧",
-            "Rootkit" to "🪱",
-            "Firewall" to "🛡️",
-            "Bypasser" to "🚪",
-            "Password Cracker" to "🔨",
-            "Password Encryptor" to "🔑",
-            "Proxy" to "🎭",
-            "Trace" to "📡",
-            "Siphon" to "🩸",
-            "Keygen" to "⚙️"
-        )
+        private fun dpToPx(dp: Int, context: android.content.Context): Int {
+            return (dp * context.resources.displayMetrics.density).toInt()
+        }
 
-        fun bind(target: TargetRecord, currentValidatingIp: String?) {
-            if (target.ip == currentValidatingIp) {
+        fun bind(
+            target: TargetRecord,
+            currentValidatingIp: String?,
+            isOverlayActive: Boolean,
+            onToggleOverlay: () -> Unit,
+            onDismissOverlay: () -> Unit
+        ) {
+            if (target.isMasked || target.isTemporary) {
+                cardContent.setBackgroundResource(R.drawable.bg_node_card_masked)
+            } else {
+                cardContent.setBackgroundResource(R.drawable.bg_node_card)
+            }
+
+            actionOverlay.visibility = if (isOverlayActive) View.VISIBLE else View.GONE
+
+            itemView.setOnLongClickListener {
+                onToggleOverlay()
+                true
+            }
+
+            itemView.setOnClickListener {
+                if (isOverlayActive) {
+                    onDismissOverlay()
+                } else {
+                    copyToClipboard("IP Address", target.ip)
+                }
+            }
+
+            actionOverlay.setOnClickListener {
+                onDismissOverlay()
+            }
+
+            editBtn.setOnClickListener {
+                onDismissOverlay()
+                onEdit(target)
+            }
+
+            shareBtn.setOnClickListener {
+                onDismissOverlay()
+                shareTarget(target)
+            }
+
+            deleteBtn.setOnClickListener {
+                onDismissOverlay()
+                onDelete(target)
+            }
+
+            // --- Row 1: Header (Left: IP, Center: Username, Right: Wallet) ---
+            val isCurrentVal = target.ip == currentValidatingIp
+            if (isCurrentVal) {
                 ipText.text = "👉 ${target.ip}"
                 ipText.setTextColor(Color.parseColor("#f59e0b"))
             } else {
@@ -146,119 +215,195 @@ class TargetAdapter(
                 ipText.setTextColor(Color.parseColor("#38bdf8"))
             }
 
-            ipText.setOnClickListener {
-                copyToClipboard("IP Address", target.ip)
-            }
-            editBtn.setOnClickListener { onEdit(target) }
-            deleteBtn.setOnClickListener { onDelete(target) }
-            shareBtn.setOnClickListener { shareTarget(target) }
-
-            val metaParts1 = mutableListOf<String>()
-            val metaParts2 = mutableListOf<String>()
-            
-            target.username?.let { metaParts1.add("👤 $it") }
-            target.clan?.let { metaParts1.add("👥 [$it]") }
-            target.level?.let { metaParts1.add("LVL: $it") }
-            
-            target.firewall?.let { metaParts2.add("🛡️ FW: Lv$it") }
-            target.encryptor?.let { metaParts2.add("🔑 ENC: Lv$it") }
-
-            val fullMeta = mutableListOf<String>()
-            if (metaParts1.isNotEmpty()) fullMeta.add(metaParts1.joinToString(" • "))
-            if (metaParts2.isNotEmpty()) fullMeta.add(metaParts2.joinToString(" • "))
-
-            metaText.text = fullMeta.joinToString("\n")
-            metaText.visibility = if (fullMeta.isEmpty()) View.GONE else View.VISIBLE
-
-            if (target.hardware != null) {
-                hardwareText.text = "💻 ${target.hardware}"
-                hardwareText.visibility = View.VISIBLE
+            if (target.username != null) {
+                identityText.text = target.username
+                identityText.visibility = View.VISIBLE
             } else {
-                hardwareText.visibility = View.GONE
+                identityText.visibility = View.INVISIBLE
             }
+
+            // --- Row 2: Rig Chips + Crew Tag ---
+            metaContainer.removeAllViews()
+            var hasMeta = false
+            
+            fun addMeta(label: String, value: String) {
+                hasMeta = true
+                val tv = TextView(itemView.context).apply {
+                    layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, dpToPx(3, context), dpToPx(4, context))
+                    }
+                    typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL)
+                    val fullString = "$label $value"
+                    val span = android.text.SpannableString(fullString)
+                    span.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#64748b")), 0, label.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    span.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#f1f5f9")), label.length + 1, span.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    span.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), label.length + 1, span.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    
+                    text = span
+                    textSize = 12f
+                    setPadding(dpToPx(6, context), dpToPx(3, context), dpToPx(6, context), dpToPx(3, context))
+                    setBackgroundResource(R.drawable.bg_chip)
+                }
+                metaContainer.addView(tv)
+            }
+
+            target.level?.let { addMeta("LVL", it.toString()) }
+            target.firewall?.let { addMeta("FW", it.toString()) }
+            target.encryptor?.let { addMeta("ENC", it.toString()) }
+            if (target.hardware != null) {
+                val hwStr = target.hardware!!
+                if (hwStr.contains(" • ")) {
+                    val parts = hwStr.split(" • ")
+                    addMeta("DEV", parts[0])
+                    if (parts.size > 1) {
+                        addMeta("NET", parts[1])
+                    }
+                } else {
+                    addMeta("HW", hwStr)
+                }
+            }
+            target.clan?.let { addMeta("CREW", it) }
+
+            metaContainer.visibility = if (hasMeta) View.VISIBLE else View.GONE
 
             if (target.wallets.isNotEmpty()) {
                 walletsContainer.removeAllViews()
                 target.wallets.forEach { wallet ->
-                    val row = LinearLayout(itemView.context).apply {
-                        orientation = LinearLayout.HORIZONTAL
+                    val income = target.getEstimatedIncome(wallet)
+                    val tv = TextView(itemView.context).apply {
                         layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
                             setMargins(0, 2, 0, 2)
                         }
-                    }
-
-                    val walletTv = TextView(itemView.context).apply {
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "WALLET: $wallet"
-                        setTextColor(Color.parseColor("#4ade80"))
-                        textSize = 14f
-                        setTextIsSelectable(true)
-                    }
-
-                    row.addView(walletTv)
-
-                    val income = target.getEstimatedIncome(wallet)
-                    if (income != null) {
-                        val incomeTv = TextView(itemView.context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT
-                            )
-                            text = income
-                            setTextColor(Color.parseColor("#f59e0b"))
-                            textSize = 14f
-                            setTypeface(null, Typeface.BOLD)
+                        if (income != null) {
+                            val fullString = "$wallet  $income"
+                            val span = android.text.SpannableString(fullString)
+                            span.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#4ade80")), 0, wallet.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            span.setSpan(android.text.style.ForegroundColorSpan(Color.WHITE), wallet.length + 2, fullString.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            span.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), wallet.length + 2, fullString.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            text = span
+                        } else {
+                            text = wallet
+                            setTextColor(Color.parseColor("#4ade80"))
                         }
-                        row.addView(incomeTv)
+                        textSize = 12f
+                        setTextIsSelectable(true)
+                        setBackgroundResource(R.drawable.bg_chip_secondary)
+                        setPadding(dpToPx(6, context), dpToPx(3, context), dpToPx(6, context), dpToPx(3, context))
                     }
-
-                    walletsContainer.addView(row)
+                    walletsContainer.addView(tv)
                 }
                 walletsContainer.visibility = View.VISIBLE
             } else {
-                walletsContainer.visibility = View.GONE
+                walletsContainer.visibility = View.INVISIBLE
             }
 
+            // --- Row 3 Software vs Placeholder ---
             if (target.downloads.isNotEmpty()) {
-                softwareContainer.removeAllViews()
-                target.downloads.forEach { (name, data) ->
-                    val icon = softwareIcons[name] ?: "📦"
-                    
-                    val textView = TextView(itemView.context)
-                    textView.text = "$icon $name Lv${data.level}"
-                    textView.setTextColor(Color.parseColor("#38bdf8"))
-                    textView.textSize = 14f
-                    textView.setPadding(0, 4, 0, 4)
-                    
-                    val layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    layoutParams.setMargins(0, 2, 0, 2)
-                    textView.layoutParams = layoutParams
-                    
-                    val backgroundParams = android.graphics.drawable.GradientDrawable()
-                    backgroundParams.setColor(Color.parseColor("#1e293b"))
-                    backgroundParams.cornerRadius = 8f
-                    textView.background = backgroundParams
-                    textView.setPadding(16, 8, 16, 8)
-                    
-                    softwareContainer.addView(textView)
-                }
-                softwareContainer.visibility = View.VISIBLE
-            } else {
-                softwareContainer.visibility = View.GONE
-            }
+                bodySplitLayout.visibility = View.VISIBLE
+                noSoftwareText.visibility = View.GONE
 
-            if (target.lastValidated != null) {
-                validatedText.text = "✓ Validated: ${target.lastValidated}"
-                validatedText.setTextColor(Color.parseColor("#4ade80"))
+                defenseContainer.removeAllViews()
+                offenseContainer.removeAllViews()
+                virusContainer.removeAllViews()
+
+                val defenseOrder = listOf("Firewall", "Password Encryptor", "Antivirus", "Proxy")
+                val offenseOrder = listOf("Bypasser", "Password Cracker", "Trace")
+                val virusOrder = listOf("Spam", "Siphon", "Rootkit")
+
+                fun addSoftwareChipTo(
+                    container: com.google.android.flexbox.FlexboxLayout, 
+                    name: String, 
+                    data: SoftwareEntry, 
+                    valueColor: String,
+                    wrapBefore: Boolean = false
+                ) {
+                    val shortName = when (name) {
+                        "Password Encryptor" -> "Encryptor"
+                        "Password Cracker" -> "Cracker"
+                        else -> name
+                    }
+                    val tv = TextView(itemView.context).apply {
+                        layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                            com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                            com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, dpToPx(2, context), dpToPx(3, context))
+                            isWrapBefore = wrapBefore
+                        }
+                        typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL)
+                        val fullString = "$shortName ${data.level}"
+                        val span = android.text.SpannableString(fullString)
+                        span.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor("#94a3b8")), 0, shortName.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        span.setSpan(android.text.style.ForegroundColorSpan(Color.parseColor(valueColor)), shortName.length + 1, span.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        span.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), shortName.length + 1, span.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        
+                        text = span
+                        textSize = 11.5f
+                        setPadding(dpToPx(4, context), dpToPx(2, context), dpToPx(4, context), dpToPx(2, context))
+                        setBackgroundResource(R.drawable.bg_chip)
+                        
+                        if (data.status != "installed") {
+                            alpha = 0.5f
+                        }
+                    }
+                    container.addView(tv)
+                }
+
+                val downloads = target.downloads
+
+                // Populate Defense (2x2 grid)
+                val defenseItems = defenseOrder.mapNotNull { name -> downloads[name]?.let { name to it } }
+                if (defenseItems.isNotEmpty()) {
+                    defenseColumn.visibility = View.VISIBLE
+                    defenseHeader.visibility = View.VISIBLE
+                    defenseContainer.visibility = View.VISIBLE
+                    defenseItems.forEachIndexed { index, (name, data) ->
+                        addSoftwareChipTo(defenseContainer, name, data, "#60a5fa", wrapBefore = (index == 2))
+                    }
+                } else {
+                    defenseColumn.visibility = View.GONE
+                    defenseHeader.visibility = View.GONE
+                    defenseContainer.visibility = View.GONE
+                }
+
+                // Populate Offense (2+1 grid)
+                val offenseItems = offenseOrder.mapNotNull { name -> downloads[name]?.let { name to it } }
+                if (offenseItems.isNotEmpty()) {
+                    offenseColumn.visibility = View.VISIBLE
+                    offenseHeader.visibility = View.VISIBLE
+                    offenseContainer.visibility = View.VISIBLE
+                    offenseItems.forEachIndexed { index, (name, data) ->
+                        addSoftwareChipTo(offenseContainer, name, data, "#fb923c", wrapBefore = (index == 2))
+                    }
+                } else {
+                    offenseColumn.visibility = View.GONE
+                    offenseHeader.visibility = View.GONE
+                    offenseContainer.visibility = View.GONE
+                }
+
+                // Populate Viruses (2+1 grid)
+                val virusItems = virusOrder.mapNotNull { name -> downloads[name]?.let { name to it } }
+                if (virusItems.isNotEmpty()) {
+                    virusColumn.visibility = View.VISIBLE
+                    virusHeader.visibility = View.VISIBLE
+                    virusContainer.visibility = View.VISIBLE
+                    virusItems.forEachIndexed { index, (name, data) ->
+                        addSoftwareChipTo(virusContainer, name, data, "#34d399", wrapBefore = (index == 2))
+                    }
+                } else {
+                    virusColumn.visibility = View.GONE
+                    virusHeader.visibility = View.GONE
+                    virusContainer.visibility = View.GONE
+                }
             } else {
-                validatedText.text = "Never validated"
-                validatedText.setTextColor(Color.parseColor("#64748b"))
+                bodySplitLayout.visibility = View.GONE
+                noSoftwareText.visibility = View.VISIBLE
             }
         }
 

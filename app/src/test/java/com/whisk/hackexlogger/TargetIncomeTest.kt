@@ -75,7 +75,7 @@ class TargetIncomeTest {
 
         val income = target.getEstimatedIncome(wallet)
         // Avg of 1000/hr and 500/hr = 750/hr
-        assertEquals("💵 ~750/hr", income)
+        assertEquals("₵750/hr", income)
     }
 
     @Test
@@ -87,12 +87,12 @@ class TargetIncomeTest {
         target.addTheftEvent(wallet, createTime(1, 10), 50000)
 
         val income = target.getEstimatedIncome(wallet)
-        assertEquals("💵 ~50.0k", income)
+        assertEquals("₵50.0k", income)
 
         // Another single hack 5 days later (still separate clusters of size 1)
         target.addTheftEvent(wallet, createTime(6, 10), 20000)
         val income2 = target.getEstimatedIncome(wallet)
         // Should show the most recent flat amount
-        assertEquals("💵 ~20.0k", income2)
+        assertEquals("₵20.0k", income2)
     }
 }

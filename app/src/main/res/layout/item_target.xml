@@ -1,118 +1,259 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    android:background="@drawable/bg_node_card"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:layout_marginBottom="6dp">
 
+    <!-- Primary Target Card View -->
     <LinearLayout
+        android:id="@+id/cardContent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:background="@drawable/bg_node_card"
+        android:orientation="vertical"
+        android:padding="8dp">
 
-        <TextView
-            android:id="@+id/ipText"
-            android:layout_width="0dp"
+        <!-- ROW 1: Header Bar (Left: IP, Center: Username, Right: Wallet/Income) -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="#38bdf8"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/ipText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#38bdf8"
+                android:fontFamily="monospace"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="start|center_vertical"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/identityText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="#f8fafc"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:visibility="invisible" />
+
+            <LinearLayout
+                android:id="@+id/walletsContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end|center_vertical"
+                android:visibility="invisible" />
+        </LinearLayout>
+
+        <!-- ROW 2: Hardware Rig Chips & Crew Tag (Centered Flexbox) -->
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/metaContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:flexWrap="wrap"
+            app:justifyContent="center"
+            app:alignItems="center"
+            app:alignContent="center"
+            android:visibility="gone" />
+
+        <!-- Horizontal Divider Line below Rig Chips (or below Header Bar when Rig Chips are hidden) -->
+        <View
+            android:id="@+id/headerDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="3dp"
+            android:background="#1e293b" />
+
+        <!-- ROW 3: 3-Column Horizontal Body (Defense, Offense, Viruses) -->
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/bodySplitLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            app:flexWrap="nowrap"
+            app:justifyContent="space_between"
+            app:alignItems="flex_start"
+            android:visibility="gone">
+
+            <!-- Defense Block -->
+            <LinearLayout
+                android:id="@+id/defenseColumn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="start"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/defenseHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:text="DEFENSE"
+                    android:textColor="#475569"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-condensed-medium"
+                    android:visibility="gone" />
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/defenseContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    app:flexWrap="wrap"
+                    app:justifyContent="flex_start"
+                    app:alignItems="center"
+                    app:alignContent="flex_start"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Offense Block -->
+            <LinearLayout
+                android:id="@+id/offenseColumn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/offenseHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="OFFENSE"
+                    android:textColor="#475569"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-condensed-medium"
+                    android:visibility="gone" />
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/offenseContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    app:flexWrap="wrap"
+                    app:justifyContent="flex_start"
+                    app:alignItems="center"
+                    app:alignContent="flex_start"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Virus Block -->
+            <LinearLayout
+                android:id="@+id/virusColumn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="end"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/virusHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:text="VIRUSES"
+                    android:textColor="#475569"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-condensed-medium"
+                    android:visibility="gone" />
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/virusContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    app:flexWrap="wrap"
+                    app:justifyContent="flex_start"
+                    app:alignItems="center"
+                    app:alignContent="flex_start"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </com.google.android.flexbox.FlexboxLayout>
+
+        <!-- Placeholder when no software is installed -->
+        <TextView
+            android:id="@+id/noSoftwareText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="No software detected"
+            android:textColor="#475569"
+            android:textSize="11sp"
+            android:fontFamily="sans-serif-condensed"
+            android:textStyle="italic"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Interactive Long-Press Action Overlay -->
+    <LinearLayout
+        android:id="@+id/actionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#f00b1120"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
 
         <Button
             android:id="@+id/editBtn"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="8dp"
-            android:layout_marginEnd="6dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
             android:backgroundTint="#1e293b"
+            android:paddingHorizontal="16dp"
             android:text="EDIT"
-            android:textColor="#94a3b8"
-            android:textSize="10sp" />
+            android:textColor="#38bdf8"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/shareBtn"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="8dp"
-            android:layout_marginEnd="6dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
             android:backgroundTint="#1e293b"
+            android:paddingHorizontal="16dp"
             android:text="SHARE"
-            android:textColor="#94a3b8"
-            android:textSize="10sp" />
+            android:textColor="#38bdf8"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/deleteBtn"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="8dp"
+            android:layout_height="40dp"
             android:backgroundTint="#7f1d1d"
-            android:text="DEL"
+            android:paddingHorizontal="16dp"
+            android:text="DELETE"
             android:textColor="#fca5a5"
-            android:textSize="10sp" />
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/metaText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="#e2e8f0"
-        android:textSize="14sp"
-        android:lineSpacingExtra="4dp"
-        android:textIsSelectable="true" />
-
-    <LinearLayout
-        android:id="@+id/walletsContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/softwareContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/validatedText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="#64748b"
-            android:textSize="10sp"
-            android:textStyle="italic" />
-
-        <TextView
-            android:id="@+id/hardwareText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#64748b"
-            android:textSize="10sp"
-            android:textStyle="italic"
-            android:textAlignment="viewEnd" />
-    </LinearLayout>
-
-</LinearLayout>
+</FrameLayout>

@@ -1,6 +1,9 @@
 package com.whisk.hackexlogger
 
 import java.util.Locale
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 /**
  * Represents software installed or stored on a target device in the HackEx game.
@@ -89,8 +92,10 @@ data class TargetRecord(
         var current = mutableListOf(sorted[0])
 
         for (i in 1 until sorted.size) {
-            val gap = sorted[i].timestampMs - sorted[i - 1].timestampMs
-            if (gap > 24 * 3600000L) {
+            val t1 = Instant.fromEpochMilliseconds(sorted[i - 1].timestampMs)
+            val t2 = Instant.fromEpochMilliseconds(sorted[i].timestampMs)
+            val gap = t2 - t1
+            if (gap > 24.hours) {
                 rawClusters.add(current)
                 current = mutableListOf(sorted[i])
             } else {
@@ -99,7 +104,6 @@ data class TargetRecord(
         }
         rawClusters.add(current)
 
-        val maxSpanMs = 7 * 24 * 3600000L
         val finalClusters = mutableListOf<List<TheftEvent>>()
 
         for (cluster in rawClusters) {
@@ -107,22 +111,24 @@ data class TargetRecord(
                 finalClusters.add(cluster)
                 continue
             }
-            val firstTs = cluster.first().timestampMs
-            val lastTs = cluster.last().timestampMs
-            if (lastTs - firstTs <= maxSpanMs) {
+            val firstTs = Instant.fromEpochMilliseconds(cluster.first().timestampMs)
+            val lastTs = Instant.fromEpochMilliseconds(cluster.last().timestampMs)
+            
+            if (lastTs - firstTs <= 7.days) {
                 finalClusters.add(cluster)
             } else {
                 var windowStart = firstTs
-                var windowEnd = windowStart + maxSpanMs
+                var windowEnd = windowStart + 7.days
                 var subCluster = mutableListOf<TheftEvent>()
 
                 for (event in cluster) {
-                    if (event.timestampMs <= windowEnd) {
+                    val eventTs = Instant.fromEpochMilliseconds(event.timestampMs)
+                    if (eventTs <= windowEnd) {
                         subCluster.add(event)
                     } else {
                         if (subCluster.isNotEmpty()) finalClusters.add(subCluster)
-                        windowStart = event.timestampMs
-                        windowEnd = windowStart + maxSpanMs
+                        windowStart = eventTs
+                        windowEnd = windowStart + 7.days
                         subCluster = mutableListOf(event)
                     }
                 }
@@ -151,11 +157,11 @@ data class TargetRecord(
 
         if (multiEventRates.isNotEmpty()) {
             val avgRate = multiEventRates.average()
-            return "💵 ~${formatAmount(avgRate.toInt())}/hr"
+            return "₵${formatAmount(avgRate.toInt())}/hr"
         }
 
         val lastEvent = walletThefts[wallet]?.maxByOrNull { it.timestampMs } ?: return null
-        return "💵 ~${formatAmount(lastEvent.amount)}"
+        return "₵${formatAmount(lastEvent.amount)}"
     }
 
     private fun formatAmount(amount: Int): String {
