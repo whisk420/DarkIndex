@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 
 class FakeSharedPreferences : SharedPreferences {
     private val values = mutableMapOf<String, Any?>()
+    private val listeners = mutableSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
 
     override fun getAll(): MutableMap<String, *> = values
 
@@ -36,13 +37,18 @@ class FakeSharedPreferences : SharedPreferences {
 
     override fun edit(): SharedPreferences.Editor = Editor()
 
-    override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) {}
+    override fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) {
+        if (listener != null) listeners.add(listener)
+    }
 
-    override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) {}
+    override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) {
+        if (listener != null) listeners.remove(listener)
+    }
 
     inner class Editor : SharedPreferences.Editor {
         private val temp = mutableMapOf<String, Any?>()
         private val removed = mutableSetOf<String>()
+        private var clearFlag = false
 
         override fun putString(key: String?, value: String?): SharedPreferences.Editor {
             if (key != null) temp[key] = value
@@ -80,7 +86,7 @@ class FakeSharedPreferences : SharedPreferences {
         }
 
         override fun clear(): SharedPreferences.Editor {
-            values.clear()
+            clearFlag = true
             return this
         }
 
@@ -90,10 +96,30 @@ class FakeSharedPreferences : SharedPreferences {
         }
 
         override fun apply() {
-            for (key in removed) {
-                values.remove(key)
+            val changedKeys = mutableSetOf<String>()
+            if (clearFlag) {
+                changedKeys.addAll(values.keys)
+                values.clear()
+                clearFlag = false
             }
-            values.putAll(temp)
+            for (key in removed) {
+                if (values.containsKey(key)) {
+                    values.remove(key)
+                    changedKeys.add(key)
+                }
+            }
+            removed.clear()
+            for ((key, value) in temp) {
+                values[key] = value
+                changedKeys.add(key)
+            }
+            temp.clear()
+
+            for (listener in listeners.toList()) {
+                for (key in changedKeys) {
+                    listener.onSharedPreferenceChanged(this@FakeSharedPreferences, key)
+                }
+            }
         }
     }
 }
