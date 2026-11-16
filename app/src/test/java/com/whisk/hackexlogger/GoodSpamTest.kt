@@ -57,14 +57,15 @@ class GoodSpamTest {
 
     @Test
     fun testCalculateScore() {
-        // Score formula: (Level * 5.0) - HardwarePenalty - (Firewall * 1.5)
-        // Level 35, Raider (hw=0), Firewall 10 -> (35 * 5.0) - 0 - (10 * 1.5) = 175 - 15 = 160.0
-        val score1 = GoodSpamUtils.calculateScore(level = 35, firewall = 10, hardware = "Raider • Fiber")
-        assertEquals(160.0, score1, 0.001)
+        // Score formula: (Level * 10.0) - (HardwarePenalty * 20.0) - (Firewall * 1.0)
+        
+        // Target A: Level 35, Raider (hw=0), Firewall 20 -> (35 * 10.0) - 0 - 20 = 350 - 20 = 330.0
+        val score1 = GoodSpamUtils.calculateScore(level = 35, firewall = 20, hardware = "Raider • Fiber")
+        assertEquals(330.0, score1, 0.001)
 
-        // Level 35, Nova Ultra (hw=9), Firewall 10 -> 175 - 9 - 15 = 151.0
-        val score2 = GoodSpamUtils.calculateScore(level = 35, firewall = 10, hardware = "Nova Ultra • Fiber")
-        assertEquals(151.0, score2, 0.001)
+        // Target B: Level 40, Nova Ultra (hw=9), Firewall 5 -> 400 - 180 - 5 = 215.0
+        val score2 = GoodSpamUtils.calculateScore(level = 40, firewall = 5, hardware = "Nova Ultra • Fiber")
+        assertEquals(215.0, score2, 0.001)
 
         // Null handling defaults: level null (0), firewall null (0), hardware null (0)
         val scoreNull = GoodSpamUtils.calculateScore(level = null, firewall = null, hardware = null)
@@ -88,13 +89,14 @@ class GoodSpamTest {
 
     @Test
     fun testGoodSpamTargetSorting() {
-        val target1 = TargetRecord(ip = "1.1.1.1", level = 30, firewall = 5, hardware = "Raider • Fiber") // score = 150 - 0 - 7.5 = 142.5
-        val target2 = TargetRecord(ip = "2.2.2.2", level = 40, firewall = 20, hardware = "Nova Ultra • Fiber") // score = 200 - 9 - 30 = 161.0
-        val target3 = TargetRecord(ip = "3.3.3.3", level = 40, firewall = 5, hardware = "Raider • Fiber") // score = 200 - 0 - 7.5 = 192.5
+        val target1 = TargetRecord(ip = "1.1.1.1", level = 35, firewall = 20, hardware = "Raider • Fiber")     // score = 350 - 0 - 20 = 330.0
+        val target2 = TargetRecord(ip = "2.2.2.2", level = 40, firewall = 5, hardware = "Nova Ultra • Fiber")  // score = 400 - 180 - 5 = 215.0
+        val target3 = TargetRecord(ip = "3.3.3.3", level = 25, firewall = 5, hardware = "Raider • Fiber")      // score = 250 - 0 - 5 = 245.0
 
         val targets = listOf(target1, target2, target3)
         val sorted = targets.sortedByDescending { GoodSpamUtils.calculateScore(it.level, it.firewall, it.hardware) }
 
-        assertEquals(listOf("3.3.3.3", "2.2.2.2", "1.1.1.1"), sorted.map { it.ip })
+        // Expected Order: 330.0 (Target 1), 245.0 (Target 3), 215.0 (Target 2)
+        assertEquals(listOf("1.1.1.1", "3.3.3.3", "2.2.2.2"), sorted.map { it.ip })
     }
 }
