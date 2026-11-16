@@ -56,6 +56,22 @@ object SiphonTracker {
         return siphonAlerts.toList()
     }
 
+    fun getKnownSiphons(): Map<String, Int> {
+        return knownSiphons.toMap()
+    }
+
+    fun restoreSiphonData(alerts: List<String>?, siphons: Map<String, Int>?) {
+        if (alerts != null) {
+            siphonAlerts.clear()
+            siphonAlerts.addAll(alerts)
+        }
+        if (siphons != null) {
+            knownSiphons.clear()
+            knownSiphons.putAll(siphons)
+        }
+        saveSiphonData()
+    }
+
     fun removeSiphonAlert(ip: String) {
         siphonAlerts.remove(ip)
         saveSiphonData()

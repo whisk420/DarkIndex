@@ -8,13 +8,17 @@ package com.whisk.hackexlogger
  * @property exportedAt ISO-8601 UTC timestamp of export.
  * @property targets List of exported target records.
  * @property ingests Optional list of archived raw log entries or screen captures.
+ * @property siphonAlerts Archived IPs that triggered a siphon removal or drop alert.
+ * @property knownSiphons Archived map of IPs to their last known siphon amounts.
  */
 data class ConsoleBundle(
     val format: String = "target-intelligence-console",
     val version: Int = 1,
     val exportedAt: String? = null,
     val targets: Array<TargetRecord>? = null,
-    val ingests: Array<ConsoleIngest>? = null
+    val ingests: Array<ConsoleIngest>? = null,
+    val siphonAlerts: Array<String>? = null,
+    val knownSiphons: Map<String, Int>? = null
 )
 
 /**

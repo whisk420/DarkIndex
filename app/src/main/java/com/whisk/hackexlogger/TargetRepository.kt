@@ -343,7 +343,9 @@ object TargetRepository {
             version = 1,
             exportedAt = isoFormat.format(Date()),
             targets = records.toTypedArray(),
-            ingests = emptyArray()
+            ingests = emptyArray(),
+            siphonAlerts = SiphonTracker.getSiphonAlerts().toTypedArray(),
+            knownSiphons = SiphonTracker.getKnownSiphons()
         )
         val exportGson = GsonBuilder().setPrettyPrinting().serializeNulls().create()
         return exportGson.toJson(bundle)
@@ -359,6 +361,8 @@ object TargetRepository {
         if (bundle == null || bundle.format != "target-intelligence-console" || bundle.version != 1) {
             throw IllegalArgumentException("This is not a Target Intelligence Console export.")
         }
+
+        SiphonTracker.restoreSiphonData(bundle.siphonAlerts?.toList(), bundle.knownSiphons)
 
         val importedTargets = bundle.targets ?: emptyArray()
         val importedIngests = bundle.ingests ?: emptyArray()
