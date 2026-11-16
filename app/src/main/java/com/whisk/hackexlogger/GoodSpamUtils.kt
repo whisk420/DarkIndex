@@ -70,20 +70,8 @@ object GoodSpamUtils {
      * Returns Pair(RecommendedSpamLevel [1..20], MaxAchievableHourlyCrypto [0..100]).
      */
     fun calculateRecommendedSpamLevel(targetLevel: Int?, playerLevel: Int?): Pair<Int, Int> {
-        val tLvl = targetLevel ?: return Pair(20, 100)
-        val pLvl = playerLevel ?: tLvl // Default to equal level if player level unknown
-
-        val bonus = when {
-            tLvl > pLvl -> (tLvl - pLvl) * 3.0
-            tLvl < pLvl -> (tLvl - pLvl) * 3.3
-            else -> 0.0
-        }
-
-        // To hit 100/hr: 5.0 * S + bonus >= 100 => 5.0 * S >= 100 - bonus
-        val neededSpamLevel = Math.ceil((100.0 - bonus) / 5.0).toInt().coerceIn(1, 20)
-        val maxIncome = (neededSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
-
-        return Pair(neededSpamLevel, maxIncome)
+        val info = calculateSpamPayoutInfo(targetLevel, playerLevel, 20)
+        return Pair(info.recommendedSpamLevel, info.maxAchievableIncome)
     }
 
     /**
@@ -91,22 +79,39 @@ object GoodSpamUtils {
      * and recommended Spam level for max cap.
      */
     fun calculateSpamPayoutInfo(targetLevel: Int?, playerLevel: Int?, currentSpamLevel: Int): SpamPayoutInfo {
-        val tLvl = targetLevel ?: return SpamPayoutInfo(currentSpamLevel, 100, 20, 100, true)
+        val currSpam = currentSpamLevel.coerceIn(0, 20)
+        val tLvl = targetLevel ?: return SpamPayoutInfo(currSpam, if (currSpam == 0) 0 else 100, 20, 100, true)
         val pLvl = playerLevel ?: tLvl
 
-        val bonus = when {
-            tLvl > pLvl -> (tLvl - pLvl) * 3.0
-            tLvl < pLvl -> (tLvl - pLvl) * 3.3
+        val delta = tLvl - pLvl
+        val levelAdjustment = when {
+            delta > 0 -> delta * 2.5 // Target higher level: +2.5 bonus per target level
+            delta < 0 -> {
+                val gap = -delta
+                // Lv 20 Spam absorbs the first 9 gap levels before penalty kicks in
+                val gapBeyondBuffer = (gap - 9).coerceAtLeast(0)
+                -gapBeyondBuffer * 3.3
+            }
             else -> 0.0
         }
 
-        val currIncome = (currentSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
-        val neededSpamLevel = Math.ceil((100.0 - bonus) / 5.0).toInt().coerceIn(1, 20)
-        val maxIncome = (neededSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
-        val isCapReached = currIncome >= 100 || currIncome >= maxIncome
+        val baseIncome = currSpam * 5.0
+        val currIncome = if (currSpam == 0) 0 else (baseIncome + levelAdjustment).toInt().coerceIn(0, 100)
+
+        // Max possible income at Lv 20 Spam against this target
+        val maxIncome = (100.0 + levelAdjustment).toInt().coerceIn(0, 100)
+
+        // Recommended Spam level needed to hit 100/hr cap (or Lv 20 against deficits)
+        val neededSpamLevel = if (levelAdjustment >= 0) {
+            Math.ceil((100.0 - levelAdjustment) / 5.0).toInt().coerceIn(1, 20)
+        } else {
+            20
+        }
+
+        val isCapReached = currIncome >= 100
 
         return SpamPayoutInfo(
-            currentSpamLevel = currentSpamLevel,
+            currentSpamLevel = currSpam,
             currentSpamIncome = currIncome,
             recommendedSpamLevel = neededSpamLevel,
             maxAchievableIncome = maxIncome,

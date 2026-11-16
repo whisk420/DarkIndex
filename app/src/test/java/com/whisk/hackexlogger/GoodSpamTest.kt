@@ -69,9 +69,9 @@ class GoodSpamTest {
 
     @Test
     fun testCalculateRecommendedSpamLevel() {
-        // Higher level target (Target 40, Player 35) -> Bonus = +15 -> Needs Lv. 17 Spam to hit 100/hr
+        // Higher level target (Target 40, Player 35) -> Bonus = +12.5 -> Needs Lv. 18 Spam to hit 100/hr
         val (lvl1, payout1) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 40, playerLevel = 35)
-        assertEquals(17, lvl1)
+        assertEquals(18, lvl1)
         assertEquals(100, payout1)
 
         // Same level target (Target 35, Player 35) -> Bonus = 0 -> Needs Lv. 20 Spam to hit 100/hr
@@ -79,10 +79,10 @@ class GoodSpamTest {
         assertEquals(20, lvl2)
         assertEquals(100, payout2)
 
-        // Lower level target (Target 23, Player 35) -> Penalty = -39.6 -> Max 60/hr at Lv. 20 Spam
+        // Lower level target (Target 23, Player 35) -> Gap = 12 (buffer 9) -> Penalty = -9.9 -> Max 90/hr at Lv. 20 Spam
         val (lvl3, payout3) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 23, playerLevel = 35)
         assertEquals(20, lvl3)
-        assertEquals(60, payout3)
+        assertEquals(90, payout3)
     }
 
     @Test
@@ -95,11 +95,18 @@ class GoodSpamTest {
         assertEquals(100, info1.maxAchievableIncome)
         assertFalse(info1.isCapReachedAtCurrent)
 
-        // Target 40, Player 35, Current Spam 20 -> Earns 100/hr (capped!), recommended Spam 17
+        // Target 40, Player 35, Current Spam 20 -> Earns 100/hr (capped!), recommended Spam 18
         val info2 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 40, playerLevel = 35, currentSpamLevel = 20)
         assertEquals(100, info2.currentSpamIncome)
-        assertEquals(17, info2.recommendedSpamLevel)
+        assertEquals(18, info2.recommendedSpamLevel)
         assertTrue(info2.isCapReachedAtCurrent)
+
+        // Target 3 (Level deficit 32, Player 35, Current Spam 20) -> Gap 32 (buffer 9, penalty -75.9) -> Earns 24/hr (NOT 100/hr!)
+        val info3 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 3, playerLevel = 35, currentSpamLevel = 20)
+        assertEquals(24, info3.currentSpamIncome)
+        assertEquals(20, info3.recommendedSpamLevel)
+        assertEquals(24, info3.maxAchievableIncome)
+        assertFalse(info3.isCapReachedAtCurrent)
     }
 
     @Test
