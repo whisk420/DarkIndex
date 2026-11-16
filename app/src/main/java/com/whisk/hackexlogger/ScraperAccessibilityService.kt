@@ -169,6 +169,14 @@ class ScraperAccessibilityService : AccessibilityService() {
                         savedItems.add("Store / Upgrades")
                     }
                 }
+                ScreenType.BYPASS -> {
+                    val bypassScreen = BypassScreenParser.parse(combinedText)
+                    if (bypassScreen != null) {
+                        Log.d("DOSSIER", "Parsed BypassScreen: $bypassScreen")
+                        DatabaseManager.processBypassScreen(bypassScreen)
+                        savedItems.add("Bypass / Target Info")
+                    }
+                }
                 ScreenType.PROCESS -> {
                     val processScreen = ProcessScreenParser.parse(allLines)
                     if (processScreen != null) {
@@ -247,6 +255,11 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (storeScreen != null) {
             DatabaseManager.processStoreScreen(storeScreen)
             savedItems.add("Store / Upgrades")
+        }
+        val bypassScreen = BypassScreenParser.parse(combinedText)
+        if (bypassScreen != null) {
+            DatabaseManager.processBypassScreen(bypassScreen)
+            savedItems.add("Bypass / Target Info")
         }
         val processScreen = ProcessScreenParser.parse(allLines)
         if (processScreen != null) {

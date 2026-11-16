@@ -87,24 +87,32 @@ class TargetAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
             is ListItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is ListItem.Target -> (holder as TargetViewHolder).bind(
-                target = item.target,
-                currentValidatingIp = currentValidatingIp,
-                isOverlayActive = (activeOverlayPosition == position),
-                onToggleOverlay = {
-                    val prev = activeOverlayPosition
-                    activeOverlayPosition = if (activeOverlayPosition == position) -1 else position
-                    if (prev != -1 && prev != position) notifyItemChanged(prev)
-                    notifyItemChanged(position)
-                },
-                onDismissOverlay = {
-                    if (activeOverlayPosition != -1) {
+            is ListItem.Target -> {
+                val profile = PlayerProfileRepository.getProfile()
+                val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
+                val playerCracker = (profile.softwareLevels["Password Cracker"] ?: 21) - 1
+                (holder as TargetViewHolder).bind(
+                    target = item.target,
+                    currentValidatingIp = currentValidatingIp,
+                    playerBypasser = playerBypasser,
+                    playerCracker = playerCracker,
+                    playerNetwork = profile.nextNetwork,
+                    isOverlayActive = (activeOverlayPosition == position),
+                    onToggleOverlay = {
                         val prev = activeOverlayPosition
-                        activeOverlayPosition = -1
-                        notifyItemChanged(prev)
+                        activeOverlayPosition = if (activeOverlayPosition == position) -1 else position
+                        if (prev != -1 && prev != position) notifyItemChanged(prev)
+                        notifyItemChanged(position)
+                    },
+                    onDismissOverlay = {
+                        if (activeOverlayPosition != -1) {
+                            val prev = activeOverlayPosition
+                            activeOverlayPosition = -1
+                            notifyItemChanged(prev)
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 
@@ -163,6 +171,9 @@ class TargetAdapter(
         fun bind(
             target: TargetRecord,
             currentValidatingIp: String?,
+            playerBypasser: Int,
+            playerCracker: Int,
+            playerNetwork: String?,
             isOverlayActive: Boolean,
             onToggleOverlay: () -> Unit,
             onDismissOverlay: () -> Unit
@@ -274,6 +285,66 @@ class TargetAdapter(
                 }
             }
             target.clan?.let { addMeta("CREW", it) }
+
+            fun addColoredChip(textStr: String, bgTintHex: String, textColorHex: String = "#ffffff") {
+                hasMeta = true
+                val tv = TextView(itemView.context).apply {
+                    layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, 0, dpToPx(3, context), dpToPx(4, context))
+                    }
+                    typeface = android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.BOLD)
+                    text = textStr
+                    textSize = 11f
+                    setTextColor(Color.parseColor(textColorHex))
+                    setPadding(dpToPx(6, context), dpToPx(3, context), dpToPx(6, context), dpToPx(3, context))
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        cornerRadius = dpToPx(4, context).toFloat()
+                        setColor(Color.parseColor(bgTintHex))
+                    }
+                }
+                metaContainer.addView(tv)
+            }
+
+            val bypassRate = target.getBypassSuccessRate(playerBypasser)
+            if (bypassRate != null) {
+                val fw = target.firewall ?: 0
+                val label = if (fw > playerBypasser) "FW +${fw - playerBypasser} ($bypassRate%)" else "Bypass $bypassRate%"
+                val colorHex = when {
+                    bypassRate >= 58 -> "#065f46"
+                    bypassRate == 50 -> "#854d0e"
+                    bypassRate >= 34 -> "#9a3412"
+                    else -> "#991b1b"
+                }
+                addColoredChip(label, colorHex)
+            }
+
+            val crackRate = target.getCrackSuccessRate(playerCracker)
+            if (crackRate != null) {
+                val enc = target.encryptor ?: 0
+                val label = if (enc > playerCracker) "ENC +${enc - playerCracker} ($crackRate%)" else "Crack $crackRate%"
+                val colorHex = when {
+                    crackRate >= 58 -> "#065f46"
+                    crackRate == 50 -> "#854d0e"
+                    crackRate >= 34 -> "#9a3412"
+                    else -> "#991b1b"
+                }
+                addColoredChip(label, colorHex)
+            }
+
+            if (target.hardware != null) {
+                val uploadSecs = NetworkSpeedUtils.getEstimatedUploadSeconds(target.hardware, playerNetwork)
+                val uploadStr = NetworkSpeedUtils.formatUploadDuration(uploadSecs)
+                val colorHex = when {
+                    uploadSecs < 15 * 60 -> "#065f46"
+                    uploadSecs <= 45 * 60 -> "#854d0e"
+                    else -> "#991b1b"
+                }
+                addColoredChip("⏱ $uploadStr", colorHex)
+            }
 
             metaContainer.visibility = if (hasMeta) View.VISIBLE else View.GONE
 

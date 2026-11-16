@@ -7,12 +7,13 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, BYPASS, UNKNOWN
 }
 
 object ScreenClassifier {
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
+        if (lowerText.contains("using bypasser") || lowerText.contains("// bypass firewall") || (lowerText.contains("// scan results") && lowerText.contains("fw lv"))) return ScreenType.BYPASS
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE
         if (lowerText.contains("wallet address") || lowerText.contains("'s wallet") || lowerText.contains("’s wallet")) return ScreenType.WALLET
@@ -478,3 +479,37 @@ object StoreScreenParser {
         return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels)
     }
 }
+
+// ----------------------------------------
+// BypassScreen
+// ----------------------------------------
+data class BypassScreen(
+    val targetIp: String?,
+    val firewall: Int?,
+    val encryptor: Int?,
+    val playerBypasser: Int?,
+    val apexBonus: Int?
+)
+
+object BypassScreenParser {
+    private val REGEX_FW = Regex("""(?:Firewall|FW)\s*Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_ENC = Regex("""(?:Encryptor|ENC)\s*Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_USING_BYPASSER = Regex("""Using\s+Bypasser\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val REGEX_APEX_BONUS = Regex("""\(\+(\d+)\)""")
+
+    fun parse(text: String): BypassScreen? {
+        val lower = text.lowercase()
+        if (!lower.contains("using bypasser") && !lower.contains("// bypass firewall") && !lower.contains("// scan results")) return null
+
+        val ip = CommonParserUtil.extractIp(text)
+        val firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        val encryptor = REGEX_ENC.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        val playerBypasser = REGEX_USING_BYPASSER.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        val apexBonus = REGEX_APEX_BONUS.find(text)?.groupValues?.get(1)?.toIntOrNull()
+
+        if (ip == null && firewall == null && playerBypasser == null) return null
+
+        return BypassScreen(ip, firewall, encryptor, playerBypasser, apexBonus)
+    }
+}
+

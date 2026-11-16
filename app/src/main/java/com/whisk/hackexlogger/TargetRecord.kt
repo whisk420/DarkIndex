@@ -171,4 +171,37 @@ data class TargetRecord(
             String.format(Locale.US, "%,d", amount)
         }
     }
+
+    companion object {
+        /**
+         * Calculates the hack success probability percentage (5% to 95%) based on level delta.
+         * Delta = PlayerOffenseLevel - TargetDefenseLevel
+         */
+        fun calculateSuccessProbability(playerOffenseLevel: Int, targetDefenseLevel: Int): Int {
+            val delta = playerOffenseLevel - targetDefenseLevel
+            return when {
+                delta >= 6 -> 95
+                delta == 5 -> 90
+                delta == 4 -> 82
+                delta == 3 -> 74
+                delta == 2 -> 66
+                delta == 1 -> 58
+                delta == 0 -> 50
+                delta == -1 -> 42
+                delta == -2 -> 34
+                delta == -3 -> 18
+                else -> 5
+            }
+        }
+    }
+
+    fun getBypassSuccessRate(playerBypasser: Int): Int? {
+        val fw = firewall ?: return null
+        return calculateSuccessProbability(playerBypasser, fw)
+    }
+
+    fun getCrackSuccessRate(playerCracker: Int): Int? {
+        val enc = encryptor ?: return null
+        return calculateSuccessProbability(playerCracker, enc)
+    }
 }

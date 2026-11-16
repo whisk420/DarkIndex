@@ -43,15 +43,15 @@ object GoodSpamUtils {
 
     /**
      * Calculates the Good Spam priority score for a target.
-     * Hardware is a severe time bottleneck (+17 mins upload time per tier), so it is heavily penalized.
-     * Firewall is mostly handled by the isEligible cutoff, so it acts as a minor tiebreaker.
-     * Formula: (Level * 10.0) - (HardwarePenalty * 20.0) - (Firewall * 1.0)
+     * Incorporates target level, estimated upload minutes (using player network speed boost), and firewall level.
+     * Formula: (Level * 10.0) - (UploadMinutes * 0.5) - (Firewall * 1.0)
      */
-    fun calculateScore(level: Int?, firewall: Int?, hardware: String?): Double {
+    fun calculateScore(level: Int?, firewall: Int?, hardware: String?, playerNetwork: String? = null): Double {
         val lvl = (level ?: 0).toDouble()
         val fw = (firewall ?: 0).toDouble()
-        val hwPenalty = getHardwarePenalty(hardware).toDouble()
-        return (lvl * 10.0) - (hwPenalty * 20.0) - fw
+        val uploadSecs = NetworkSpeedUtils.getEstimatedUploadSeconds(hardware, playerNetwork)
+        val uploadMins = uploadSecs / 60.0
+        return (lvl * 10.0) - (uploadMins * 0.5) - fw
     }
 
     /**

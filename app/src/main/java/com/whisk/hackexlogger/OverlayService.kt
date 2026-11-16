@@ -379,10 +379,16 @@ class OverlayService : Service() {
         }
 
         skipBtn?.setOnClickListener {
-            val ip = currentTargetingTarget?.ip
-            if (ip != null) {
-                DatabaseManager.markTargetValidated(ip)
-                showMinimalToast("Skipped: $ip")
+            val target = currentTargetingTarget
+            if (target != null) {
+                DatabaseManager.markTargetValidated(target.ip)
+                val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
+                val fw = target.firewall
+                if (fw != null && fw > playerBypasser) {
+                    showMinimalToast("FW Lv.$fw > Bypasser Lv.$playerBypasser - Skipped to back")
+                } else {
+                    showMinimalToast("Skipped: ${target.ip}")
+                }
                 loadNextTargetingTarget()
             }
         }

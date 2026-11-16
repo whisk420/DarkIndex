@@ -50,6 +50,20 @@ object PlayerProfileRepository {
         prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
     }
 
+    fun updateBypasserLevel(effectiveBypasserLevel: Int) {
+        val current = getProfile()
+        val mergedSoftware = current.softwareLevels.toMutableMap()
+        mergedSoftware["Bypasser"] = effectiveBypasserLevel + 1 // Store format (+1 for next upgrade level)
+        val updated = current.copy(softwareLevels = mergedSoftware)
+        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+    }
+
+    fun getEffectiveBypasserLevel(): Int {
+        val profile = getProfile()
+        val nextLevel = profile.softwareLevels["Bypasser"] ?: 21
+        return (nextLevel - 1).coerceAtLeast(1)
+    }
+
     fun decrementHardwareName(nextName: String?): String? {
         if (nextName == null) return null
         val trimmed = nextName.trim()

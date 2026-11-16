@@ -287,6 +287,14 @@ class MainActivity : AppCompatActivity() {
             isGoodSpamEnabled = isChecked
             forceFastSwap = true
             firewallSliderLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
+            if (isChecked) {
+                val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
+                maxFirewallLevel = playerBypasser
+                val maxFirewallSeekBar = findViewById<SeekBar>(R.id.maxFirewallSeekBar)
+                val maxFirewallValue = findViewById<TextView>(R.id.maxFirewallValue)
+                maxFirewallSeekBar.progress = playerBypasser.coerceIn(0, 31)
+                maxFirewallValue.text = if (playerBypasser >= 31) "Uncapped" else playerBypasser.toString()
+            }
             refreshData()
         }
 
@@ -413,10 +421,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (isGoodSpamEnabled) {
+                val profile = PlayerProfileRepository.getProfile()
                 filtered = filtered.filter { record ->
                     GoodSpamUtils.isEligible(record.firewall, maxFirewallLevel)
                 }.sortedByDescending { record ->
-                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware)
+                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, profile.nextNetwork)
                 }
             }
 

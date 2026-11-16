@@ -255,6 +255,29 @@ object DatabaseManager {
         PlayerProfileRepository.updateProfile(storeScreen)
     }
 
+    fun processBypassScreen(bypassScreen: BypassScreen) {
+        val ip = bypassScreen.targetIp
+        if (ip != null) {
+            val currentRecords = TargetRepository.getAllRecords().toMutableList()
+            val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
+            var record = recordMap[ip]
+            if (record == null) {
+                record = TargetRecord(ip = ip)
+                recordMap[ip] = record
+            }
+            if (bypassScreen.firewall != null) record.firewall = bypassScreen.firewall
+            if (bypassScreen.encryptor != null) record.encryptor = bypassScreen.encryptor
+            
+            TargetRepository.saveAllRecords(recordMap.values.toList())
+            TargetRepository.reconcileDatabase()
+        }
+
+        if (bypassScreen.playerBypasser != null) {
+            val totalBypasser = bypassScreen.playerBypasser + (bypassScreen.apexBonus ?: 0)
+            PlayerProfileRepository.updateBypasserLevel(totalBypasser)
+        }
+    }
+
     fun processCrewScreen(crewScreen: CrewScreen) {
         val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val map = currentRecords.associateBy { it.ip }.toMutableMap()
