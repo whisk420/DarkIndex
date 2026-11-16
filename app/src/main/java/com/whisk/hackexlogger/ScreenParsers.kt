@@ -7,12 +7,13 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, BYPASS, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
 }
 
 object ScreenClassifier {
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
+        if (lowerText.contains("my device") && (lowerText.contains("daily missions") || lowerText.contains("login streak"))) return ScreenType.OWN_PROFILE
         if (lowerText.contains("using bypasser") || lowerText.contains("// bypass firewall") || (lowerText.contains("// scan results") && lowerText.contains("fw lv"))) return ScreenType.BYPASS
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE
@@ -103,6 +104,30 @@ object HomeScreenParser {
 
         val hardware = if (device != null && network != null) "$device • $network" else device ?: network
         return HomeScreen(ip, username, clan, level, hardware, firewall, encryptor)
+    }
+}
+
+// ----------------------------------------
+// OwnHomeScreen (Player's Own Profile)
+// ----------------------------------------
+data class OwnHomeScreen(
+    val username: String?,
+    val level: Int?
+)
+
+object OwnHomeScreenParser {
+    private val REGEX_USER_HEADER = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE)
+    private val REGEX_LEVEL = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE)
+
+    fun parse(text: String): OwnHomeScreen? {
+        if (!text.lowercase().contains("my device")) return null
+        val userMatch = REGEX_USER_HEADER.find(text)
+        var username = userMatch?.groupValues?.get(1)?.trim()
+        if (username != null) {
+            username = username.removeSuffix("_").trim()
+        }
+        val level = REGEX_LEVEL.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        return OwnHomeScreen(username, level)
     }
 }
 

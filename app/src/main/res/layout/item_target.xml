@@ -73,6 +73,18 @@
             app:alignContent="center"
             android:visibility="gone" />
 
+        <!-- ROW 3: Tactical Intelligence Chips (Bypass %, Crack %, Upload Duration) -->
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/intelligenceContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            app:flexWrap="wrap"
+            app:justifyContent="center"
+            app:alignItems="center"
+            app:alignContent="center"
+            android:visibility="gone" />
+
         <!-- Horizontal Divider Line below Rig Chips (or below Header Bar when Rig Chips are hidden) -->
         <View
             android:id="@+id/headerDivider"

@@ -90,13 +90,16 @@ class TargetAdapter(
             is ListItem.Target -> {
                 val profile = PlayerProfileRepository.getProfile()
                 val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
-                val playerCracker = (profile.softwareLevels["Password Cracker"] ?: 21) - 1
+                val playerCracker = PlayerProfileRepository.getEffectiveCrackerLevel()
+                val currentSpamLevel = PlayerProfileRepository.getInstalledSpamLevel()
                 (holder as TargetViewHolder).bind(
                     target = item.target,
                     currentValidatingIp = currentValidatingIp,
                     playerBypasser = playerBypasser,
                     playerCracker = playerCracker,
                     playerNetwork = profile.nextNetwork,
+                    playerLevel = profile.playerLevel,
+                    currentSpamLevel = currentSpamLevel,
                     isOverlayActive = (activeOverlayPosition == position),
                     onToggleOverlay = {
                         val prev = activeOverlayPosition
@@ -150,6 +153,7 @@ class TargetAdapter(
         private val deleteBtn: Button = itemView.findViewById(R.id.deleteBtn)
         
         private val metaContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.metaContainer)
+        private val intelligenceContainer: com.google.android.flexbox.FlexboxLayout = itemView.findViewById(R.id.intelligenceContainer)
         private val walletsContainer: LinearLayout = itemView.findViewById(R.id.walletsContainer)
         
         private val bodySplitLayout: View = itemView.findViewById(R.id.bodySplitLayout)
@@ -174,6 +178,8 @@ class TargetAdapter(
             playerBypasser: Int,
             playerCracker: Int,
             playerNetwork: String?,
+            playerLevel: Int?,
+            currentSpamLevel: Int,
             isOverlayActive: Boolean,
             onToggleOverlay: () -> Unit,
             onDismissOverlay: () -> Unit
@@ -286,8 +292,14 @@ class TargetAdapter(
             }
             target.clan?.let { addMeta("CREW", it) }
 
-            fun addColoredChip(textStr: String, bgTintHex: String, textColorHex: String = "#ffffff") {
-                hasMeta = true
+            metaContainer.visibility = if (hasMeta) View.VISIBLE else View.GONE
+
+            // --- Row 3: Intelligence Chips (Bypass Rate, Crack Rate, Upload Duration) ---
+            intelligenceContainer.removeAllViews()
+            var hasIntelligence = false
+
+            fun addIntelligenceChip(textStr: String, bgTintHex: String, textColorHex: String = "#ffffff"): TextView {
+                hasIntelligence = true
                 val tv = TextView(itemView.context).apply {
                     layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
                         com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
@@ -306,7 +318,8 @@ class TargetAdapter(
                         setColor(Color.parseColor(bgTintHex))
                     }
                 }
-                metaContainer.addView(tv)
+                intelligenceContainer.addView(tv)
+                return tv
             }
 
             val bypassRate = target.getBypassSuccessRate(playerBypasser)
@@ -319,7 +332,15 @@ class TargetAdapter(
                     bypassRate >= 34 -> "#9a3412"
                     else -> "#991b1b"
                 }
-                addColoredChip(label, colorHex)
+                val chip = addIntelligenceChip(label, colorHex)
+                chip.setOnClickListener {
+                    val gapStr = if (fw > playerBypasser) "Target Firewall is +${fw - playerBypasser} levels above your Bypasser." else "Your Bypasser matches or exceeds target Firewall."
+                    androidx.appcompat.app.AlertDialog.Builder(itemView.context)
+                        .setTitle("Bypass Success Rate: $bypassRate%")
+                        .setMessage("Your Effective Bypasser: Lv. $playerBypasser\nTarget Firewall: Lv. $fw\n\n$gapStr")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
 
             val crackRate = target.getCrackSuccessRate(playerCracker)
@@ -332,21 +353,68 @@ class TargetAdapter(
                     crackRate >= 34 -> "#9a3412"
                     else -> "#991b1b"
                 }
-                addColoredChip(label, colorHex)
+                val chip = addIntelligenceChip(label, colorHex)
+                chip.setOnClickListener {
+                    val gapStr = if (enc > playerCracker) "Target Encryptor is +${enc - playerCracker} levels above your Cracker." else "Your Password Cracker matches or exceeds target Encryptor."
+                    androidx.appcompat.app.AlertDialog.Builder(itemView.context)
+                        .setTitle("Crack Success Rate: $crackRate%")
+                        .setMessage("Your Effective Password Cracker: Lv. $playerCracker\nTarget Encryptor: Lv. $enc\n\n$gapStr")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
 
             if (target.hardware != null) {
-                val uploadSecs = NetworkSpeedUtils.getEstimatedUploadSeconds(target.hardware, playerNetwork)
-                val uploadStr = NetworkSpeedUtils.formatUploadDuration(uploadSecs)
+                val uploadSecs20 = NetworkSpeedUtils.getEstimatedUploadSeconds(target.hardware, playerNetwork)
                 val colorHex = when {
-                    uploadSecs < 15 * 60 -> "#065f46"
-                    uploadSecs <= 45 * 60 -> "#854d0e"
+                    uploadSecs20 < 15 * 60 -> "#065f46"
+                    uploadSecs20 <= 45 * 60 -> "#854d0e"
                     else -> "#991b1b"
                 }
-                addColoredChip("⏱ $uploadStr", colorHex)
+                val chip = addIntelligenceChip("⏱ Upload Times", colorHex)
+                chip.setOnClickListener {
+                    val t1 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 1))
+                    val t5 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 5))
+                    val t10 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 10))
+                    val t20 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 20))
+
+                    val netName = PlayerProfileRepository.decrementHardwareName(playerNetwork) ?: "Base"
+                    val devName = target.hardware!!.substringBefore(" • ").trim()
+
+                    val payoutInfo = GoodSpamUtils.calculateSpamPayoutInfo(target.level, playerLevel, currentSpamLevel)
+                    val currUploadSecs = NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, currentSpamLevel)
+                    val currUploadStr = NetworkSpeedUtils.formatUploadDuration(currUploadSecs)
+
+                    val recUploadSecs = NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, payoutInfo.recommendedSpamLevel)
+                    val recUploadStr = NetworkSpeedUtils.formatUploadDuration(recUploadSecs)
+
+                    val capMessage = if (currentSpamLevel == 0) {
+                        "★ Current Spam: Not Installed\n★ Cap Target: Spam Lv.${payoutInfo.recommendedSpamLevel} (~$recUploadStr) hits the 100/hr cap!"
+                    } else if (payoutInfo.isCapReachedAtCurrent) {
+                        "★ Current Spam (Lv.$currentSpamLevel, ~$currUploadStr): Hits max 100/hr cap!"
+                    } else if (payoutInfo.maxAchievableIncome >= 100) {
+                        "★ Current Spam (Lv.$currentSpamLevel, ~$currUploadStr): Earns ~${payoutInfo.currentSpamIncome} Crypto/hr\n★ Cap Target: Spam Lv.${payoutInfo.recommendedSpamLevel} (~$recUploadStr) hits the 100/hr cap!"
+                    } else {
+                        "★ Current Spam (Lv.$currentSpamLevel, ~$currUploadStr): Earns ~${payoutInfo.currentSpamIncome} Crypto/hr\n★ Max Potential: Spam Lv.20 (~$recUploadStr) maxes at ~${payoutInfo.maxAchievableIncome}/hr (level gap penalty)."
+                    }
+
+                    androidx.appcompat.app.AlertDialog.Builder(itemView.context)
+                        .setTitle("Estimated Upload Durations")
+                        .setMessage(
+                            "Target Device: $devName\n" +
+                            "Your Network: $netName\n\n" +
+                            "• Virus Lv 1: ~$t1\n" +
+                            "• Virus Lv 5: ~$t5\n" +
+                            "• Virus Lv 10: ~$t10\n" +
+                            "• Virus Lv 20: ~$t20\n\n" +
+                            capMessage
+                        )
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
             }
 
-            metaContainer.visibility = if (hasMeta) View.VISIBLE else View.GONE
+            intelligenceContainer.visibility = if (hasIntelligence) View.VISIBLE else View.GONE
 
             if (target.wallets.isNotEmpty()) {
                 walletsContainer.removeAllViews()

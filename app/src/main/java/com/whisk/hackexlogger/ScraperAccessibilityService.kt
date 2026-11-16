@@ -161,6 +161,14 @@ class ScraperAccessibilityService : AccessibilityService() {
                         savedItems.add("Crew")
                     }
                 }
+                ScreenType.OWN_PROFILE -> {
+                    val ownHomeScreen = OwnHomeScreenParser.parse(combinedText)
+                    if (ownHomeScreen != null) {
+                        Log.d("DOSSIER", "Parsed OwnHomeScreen: $ownHomeScreen")
+                        DatabaseManager.processOwnHomeScreen(ownHomeScreen)
+                        savedItems.add("My Profile (Lv.${ownHomeScreen.level ?: "?"})")
+                    }
+                }
                 ScreenType.STORE -> {
                     val storeScreen = StoreScreenParser.parse(allLines)
                     if (storeScreen != null) {
@@ -255,6 +263,11 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (storeScreen != null) {
             DatabaseManager.processStoreScreen(storeScreen)
             savedItems.add("Store / Upgrades")
+        }
+        val ownHomeScreen = OwnHomeScreenParser.parse(combinedText)
+        if (ownHomeScreen != null) {
+            DatabaseManager.processOwnHomeScreen(ownHomeScreen)
+            savedItems.add("My Profile (Lv.${ownHomeScreen.level ?: "?"})")
         }
         val bypassScreen = BypassScreenParser.parse(combinedText)
         if (bypassScreen != null) {

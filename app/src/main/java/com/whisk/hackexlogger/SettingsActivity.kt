@@ -38,7 +38,13 @@ class SettingsActivity : AppCompatActivity() {
         val currentDevice = PlayerProfileRepository.decrementHardwareName(profile.nextDevice) ?: "Unknown"
         val currentNetwork = PlayerProfileRepository.decrementHardwareName(profile.nextNetwork) ?: "Unknown"
 
-        hardwareText.text = "Device: $currentDevice\n" +
+        val userStr = if (profile.username != null && profile.playerLevel != null) {
+            "Player: ${profile.username} (Lv. ${profile.playerLevel})\n"
+        } else if (profile.playerLevel != null) {
+            "Level: Lv. ${profile.playerLevel}\n"
+        } else ""
+
+        hardwareText.text = "${userStr}Device: $currentDevice\n" +
             "Network: $currentNetwork\n" +
             "Botnet: ${profile.botnetStatus ?: "Unknown"}"
 

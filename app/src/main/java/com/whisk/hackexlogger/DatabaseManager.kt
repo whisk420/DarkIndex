@@ -255,6 +255,10 @@ object DatabaseManager {
         PlayerProfileRepository.updateProfile(storeScreen)
     }
 
+    fun processOwnHomeScreen(ownHomeScreen: OwnHomeScreen) {
+        PlayerProfileRepository.updateOwnProfile(ownHomeScreen.username, ownHomeScreen.level)
+    }
+
     fun processBypassScreen(bypassScreen: BypassScreen) {
         val ip = bypassScreen.targetIp
         if (ip != null) {

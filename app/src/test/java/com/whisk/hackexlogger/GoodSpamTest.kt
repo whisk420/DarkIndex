@@ -68,6 +68,41 @@ class GoodSpamTest {
     }
 
     @Test
+    fun testCalculateRecommendedSpamLevel() {
+        // Higher level target (Target 40, Player 35) -> Bonus = +15 -> Needs Lv. 17 Spam to hit 100/hr
+        val (lvl1, payout1) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 40, playerLevel = 35)
+        assertEquals(17, lvl1)
+        assertEquals(100, payout1)
+
+        // Same level target (Target 35, Player 35) -> Bonus = 0 -> Needs Lv. 20 Spam to hit 100/hr
+        val (lvl2, payout2) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 35, playerLevel = 35)
+        assertEquals(20, lvl2)
+        assertEquals(100, payout2)
+
+        // Lower level target (Target 23, Player 35) -> Penalty = -39.6 -> Max 60/hr at Lv. 20 Spam
+        val (lvl3, payout3) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 23, playerLevel = 35)
+        assertEquals(20, lvl3)
+        assertEquals(60, payout3)
+    }
+
+    @Test
+    fun testCalculateSpamPayoutInfo() {
+        // Same level target (Target 35, Player 35, Current Spam 16) -> Earns 80/hr, needs Lv. 20 for 100/hr cap
+        val info1 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, playerLevel = 35, currentSpamLevel = 16)
+        assertEquals(16, info1.currentSpamLevel)
+        assertEquals(80, info1.currentSpamIncome)
+        assertEquals(20, info1.recommendedSpamLevel)
+        assertEquals(100, info1.maxAchievableIncome)
+        assertFalse(info1.isCapReachedAtCurrent)
+
+        // Target 40, Player 35, Current Spam 20 -> Earns 100/hr (capped!), recommended Spam 17
+        val info2 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 40, playerLevel = 35, currentSpamLevel = 20)
+        assertEquals(100, info2.currentSpamIncome)
+        assertEquals(17, info2.recommendedSpamLevel)
+        assertTrue(info2.isCapReachedAtCurrent)
+    }
+
+    @Test
     fun testFirewallEligibility() {
         // Threshold cutoff tests
         assertTrue(GoodSpamUtils.isEligible(firewall = 15, maxFirewallLevel = 20))

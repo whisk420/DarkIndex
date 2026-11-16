@@ -63,4 +63,62 @@ object GoodSpamUtils {
         val maxFw = if (maxFirewallLevel == 31) Int.MAX_VALUE else maxFirewallLevel
         return fw <= maxFw
     }
+
+    /**
+     * Calculates the minimum Spam level required to reach the 100 Crypto/hr payout cap
+     * against a specific target level.
+     * Returns Pair(RecommendedSpamLevel [1..20], MaxAchievableHourlyCrypto [0..100]).
+     */
+    fun calculateRecommendedSpamLevel(targetLevel: Int?, playerLevel: Int?): Pair<Int, Int> {
+        val tLvl = targetLevel ?: return Pair(20, 100)
+        val pLvl = playerLevel ?: tLvl // Default to equal level if player level unknown
+
+        val bonus = when {
+            tLvl > pLvl -> (tLvl - pLvl) * 3.0
+            tLvl < pLvl -> (tLvl - pLvl) * 3.3
+            else -> 0.0
+        }
+
+        // To hit 100/hr: 5.0 * S + bonus >= 100 => 5.0 * S >= 100 - bonus
+        val neededSpamLevel = Math.ceil((100.0 - bonus) / 5.0).toInt().coerceIn(1, 20)
+        val maxIncome = (neededSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
+
+        return Pair(neededSpamLevel, maxIncome)
+    }
+
+    /**
+     * Calculates full Spam payout metrics including current installed Spam level earnings
+     * and recommended Spam level for max cap.
+     */
+    fun calculateSpamPayoutInfo(targetLevel: Int?, playerLevel: Int?, currentSpamLevel: Int): SpamPayoutInfo {
+        val tLvl = targetLevel ?: return SpamPayoutInfo(currentSpamLevel, 100, 20, 100, true)
+        val pLvl = playerLevel ?: tLvl
+
+        val bonus = when {
+            tLvl > pLvl -> (tLvl - pLvl) * 3.0
+            tLvl < pLvl -> (tLvl - pLvl) * 3.3
+            else -> 0.0
+        }
+
+        val currIncome = (currentSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
+        val neededSpamLevel = Math.ceil((100.0 - bonus) / 5.0).toInt().coerceIn(1, 20)
+        val maxIncome = (neededSpamLevel * 5.0 + bonus).toInt().coerceIn(0, 100)
+        val isCapReached = currIncome >= 100 || currIncome >= maxIncome
+
+        return SpamPayoutInfo(
+            currentSpamLevel = currentSpamLevel,
+            currentSpamIncome = currIncome,
+            recommendedSpamLevel = neededSpamLevel,
+            maxAchievableIncome = maxIncome,
+            isCapReachedAtCurrent = isCapReached
+        )
+    }
 }
+
+data class SpamPayoutInfo(
+    val currentSpamLevel: Int,
+    val currentSpamIncome: Int,
+    val recommendedSpamLevel: Int,
+    val maxAchievableIncome: Int,
+    val isCapReachedAtCurrent: Boolean
+)

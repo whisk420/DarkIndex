@@ -2,9 +2,33 @@ package com.whisk.hackexlogger
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class PlayerIntelligenceTest {
+
+    @Before
+    fun setUp() {
+        TargetRepository.prefs = FakeSharedPreferences()
+        PlayerProfileRepository.prefs = FakeSharedPreferences()
+    }
+
+    @Test
+    fun testApexDeviceBonus() {
+        // Mock store screen with Apex VII device
+        val storeScreen = StoreScreen(
+            nextDevice = "Apex VII",
+            nextNetwork = "Null Route X",
+            nextSoftwareLevels = mapOf("Bypasser" to 21, "Password Cracker" to 21) // Installed = 20
+        )
+        PlayerProfileRepository.updateProfile(storeScreen)
+
+        assertTrue(PlayerProfileRepository.isApexDeviceOwned())
+        // Base = 20, Apex bonus = +3 -> Effective = 23
+        assertEquals(23, PlayerProfileRepository.getEffectiveBypasserLevel())
+        assertEquals(23, PlayerProfileRepository.getEffectiveCrackerLevel())
+    }
 
     @Test
     fun testSuccessProbabilityModel() {

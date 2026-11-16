@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import com.google.gson.Gson
 
 data class PlayerProfile(
+    val username: String? = null,
+    val playerLevel: Int? = null,
     val nextDevice: String? = null,
     val nextNetwork: String? = null,
     val botnetStatus: String? = null,
@@ -15,7 +17,7 @@ object PlayerProfileRepository {
     private const val PREFS_NAME = "HackExPlayerProfile"
     private const val KEY_PROFILE = "player_profile"
 
-    private lateinit var prefs: SharedPreferences
+    lateinit var prefs: SharedPreferences
     private val gson = Gson()
 
     fun init(context: Context) {
@@ -58,10 +60,47 @@ object PlayerProfileRepository {
         prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
     }
 
+    fun updatePlayerLevel(level: Int) {
+        val current = getProfile()
+        val updated = current.copy(playerLevel = level)
+        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+    }
+
+    fun updateOwnProfile(username: String?, level: Int?) {
+        val current = getProfile()
+        val updated = current.copy(
+            username = username ?: current.username,
+            playerLevel = level ?: current.playerLevel
+        )
+        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+    }
+
+    fun isApexDeviceOwned(): Boolean {
+        val profile = getProfile()
+        val dev = profile.nextDevice?.lowercase() ?: return false
+        return dev.contains("apex")
+    }
+
     fun getEffectiveBypasserLevel(): Int {
         val profile = getProfile()
-        val nextLevel = profile.softwareLevels["Bypasser"] ?: 21
-        return (nextLevel - 1).coerceAtLeast(1)
+        val nextLevel = profile.softwareLevels["Bypasser"]
+        val baseLevel = if (nextLevel != null) (nextLevel - 1).coerceAtLeast(1) else 1
+        val apexBonus = if (isApexDeviceOwned()) 3 else 0
+        return baseLevel + apexBonus
+    }
+
+    fun getEffectiveCrackerLevel(): Int {
+        val profile = getProfile()
+        val nextLevel = profile.softwareLevels["Password Cracker"]
+        val baseLevel = if (nextLevel != null) (nextLevel - 1).coerceAtLeast(1) else 1
+        val apexBonus = if (isApexDeviceOwned()) 3 else 0
+        return baseLevel + apexBonus
+    }
+
+    fun getInstalledSpamLevel(): Int {
+        val profile = getProfile()
+        val nextLevel = profile.softwareLevels["Spam"] ?: return 0
+        return (nextLevel - 1).coerceAtLeast(0)
     }
 
     fun decrementHardwareName(nextName: String?): String? {

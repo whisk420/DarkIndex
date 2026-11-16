@@ -76,6 +76,17 @@ object NetworkSpeedUtils {
     }
 
     /**
+     * Calculates the estimated upload duration in seconds for a specific virus level (1, 5, 10, 20)
+     * using polynomial scaling: (Level / 20)^2.25 * BaseLv20UploadSeconds.
+     */
+    fun getUploadSecondsForLevel(targetHardware: String?, playerNetwork: String?, virusLevel: Int): Int {
+        val baseLv20Secs = getEstimatedUploadSeconds(targetHardware, playerNetwork)
+        val levelRatio = (virusLevel.coerceAtLeast(1).toDouble() / 20.0)
+        val scalingFactor = Math.pow(levelRatio, 2.25)
+        return (baseLv20Secs * scalingFactor).toInt().coerceAtLeast(1)
+    }
+
+    /**
      * Formats upload duration in seconds to a human-readable display string (e.g. "6m 37s" or "1h 15m").
      */
     fun formatUploadDuration(seconds: Int): String {
