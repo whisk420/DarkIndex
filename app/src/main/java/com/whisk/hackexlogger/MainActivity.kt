@@ -15,7 +15,6 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.SeekBar
-import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.EditText
 import android.widget.ImageButton
@@ -29,6 +28,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -50,8 +51,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var targetAdapter: TargetAdapter
     private var currentRecords: List<TargetRecord> = emptyList()
     private var currentSearchQuery = ""
+    private var isFullVisible = true
     private var isPartialVisible = false
     private var isGoodSpamEnabled = false
+    private var isReconModeEnabled = false
     private var maxFirewallLevel = 20
     private var searchJob: Job? = null
     private var expectingPermissionResult = false
@@ -158,10 +161,11 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         
         val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
-        val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
-        val validateBtn = findViewById<Button>(R.id.validateBtn)
-        validateBtn.text = if (isAdvancedTargetingMode) "Target" else "Validate"
-        validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isAdvancedTargetingMode) "#f59e0b" else "#16a34a"))
+        isReconModeEnabled = prefs.getBoolean("pref_advanced_targeting", false)
+        val validateBtn = findViewById<ExtendedFloatingActionButton>(R.id.validateBtn)
+        validateBtn.text = if (isReconModeEnabled) "RECON" else "VALIDATE"
+        validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isReconModeEnabled) "#f59e0b" else "#16a34a"))
+        validateBtn.setIconResource(if (isReconModeEnabled) android.R.drawable.ic_menu_search else android.R.drawable.ic_menu_crop)
         
         refreshData()
         if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
@@ -173,18 +177,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        targetAdapter = TargetAdapter(this::onEditTarget, this::onDeleteTarget, this::onTogglePartial)
+        targetAdapter = TargetAdapter(this::onEditTarget, this::onDeleteTarget, this::onToggleFull, this::onTogglePartial)
         findViewById<RecyclerView>(R.id.targetsRecycler).adapter = targetAdapter
 
-        val validateBtn = findViewById<Button>(R.id.validateBtn)
+        val validateBtn = findViewById<ExtendedFloatingActionButton>(R.id.validateBtn)
 
-        // Validation / Advanced Targeting mode toggle button
+        // Validation / Recon mode toggle button
         validateBtn.setOnClickListener {
             if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
-                val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
-                val isAdvancedTargetingMode = prefs.getBoolean("pref_advanced_targeting", false)
                 val intent = Intent(this, OverlayService::class.java).apply {
-                    action = if (isAdvancedTargetingMode) OverlayService.ACTION_TOGGLE_ADVANCED_TARGETING else OverlayService.ACTION_TOGGLE_VALIDATION
+                    action = if (isReconModeEnabled) OverlayService.ACTION_TOGGLE_ADVANCED_TARGETING else OverlayService.ACTION_TOGGLE_VALIDATION
                 }
                 startService(intent)
             } else {
@@ -263,21 +265,33 @@ class MainActivity : AppCompatActivity() {
             popup.show()
         }
 
-        // Good Spam Filter Setup
-        val goodSpamCheckBox = findViewById<CheckBox>(R.id.goodSpamCheckBox)
-        val maxFirewallLabel = findViewById<TextView>(R.id.maxFirewallLabel)
-        val maxFirewallSeekBar = findViewById<SeekBar>(R.id.maxFirewallSeekBar)
-        val maxFirewallValue = findViewById<TextView>(R.id.maxFirewallValue)
+        // Recon Mode Setup
+        val reconModeCheckBox = findViewById<SwitchMaterial>(R.id.reconModeCheckBox)
+        reconModeCheckBox.isChecked = isReconModeEnabled
+        reconModeCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            isReconModeEnabled = isChecked
+            getSharedPreferences("HackExSettings", MODE_PRIVATE).edit().putBoolean("pref_advanced_targeting", isChecked).apply()
+            val validateBtn = findViewById<ExtendedFloatingActionButton>(R.id.validateBtn)
+            validateBtn.text = if (isChecked) "RECON" else "VALIDATE"
+            validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isChecked) "#f59e0b" else "#16a34a"))
+            validateBtn.setIconResource(if (isChecked) android.R.drawable.ic_menu_search else android.R.drawable.ic_menu_crop)
+            forceFastSwap = true
+            refreshData()
+        }
+
+        // Spam Priority Filter Setup
+        val goodSpamCheckBox = findViewById<SwitchMaterial>(R.id.goodSpamCheckBox)
+        val firewallSliderLayout = findViewById<View>(R.id.firewallSliderLayout)
 
         goodSpamCheckBox.setOnCheckedChangeListener { _, isChecked ->
             isGoodSpamEnabled = isChecked
             forceFastSwap = true
-            val visibility = if (isChecked) View.VISIBLE else View.GONE
-            maxFirewallLabel.visibility = visibility
-            maxFirewallSeekBar.visibility = visibility
-            maxFirewallValue.visibility = visibility
+            firewallSliderLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
             refreshData()
         }
+
+        val maxFirewallSeekBar = findViewById<SeekBar>(R.id.maxFirewallSeekBar)
+        val maxFirewallValue = findViewById<TextView>(R.id.maxFirewallValue)
 
         maxFirewallSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -310,14 +324,15 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
-
-        findViewById<Button>(R.id.clearSearchBtn).setOnClickListener {
-            searchInput.setText("")
-            forceFastSwap = true
-        }
     }
 
     private var forceFastSwap = false
+
+    private fun onToggleFull() {
+        isFullVisible = !isFullVisible
+        forceFastSwap = true
+        refreshData()
+    }
 
     private fun onTogglePartial() {
         isPartialVisible = !isPartialVisible
@@ -393,6 +408,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            if (isReconModeEnabled && !isGoodSpamEnabled && currentSearchQuery.isEmpty()) {
+                filtered = filtered.filter { it.needsAdvancedTargeting }
+            }
+
             if (isGoodSpamEnabled) {
                 filtered = filtered.filter { record ->
                     GoodSpamUtils.isEligible(record.firewall, maxFirewallLevel)
@@ -414,8 +433,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             val items = mutableListOf<ListItem>()
-            items.add(ListItem.Header("FULL TARGETS (${fullTargets.size})"))
-            fullTargets.forEach { items.add(ListItem.Target(it)) }
+
+            val fullHeaderTitle = if (isFullVisible) {
+                "▲ FULL TARGETS (${fullTargets.size})"
+            } else {
+                "▼ FULL TARGETS (${fullTargets.size})"
+            }
+            items.add(ListItem.Header(fullHeaderTitle, isPartialHeader = false, isExpanded = isFullVisible))
+            if (isFullVisible) {
+                fullTargets.forEach { items.add(ListItem.Target(it)) }
+            }
 
             val partialHeaderTitle = if (isPartialVisible) {
                 "▲ PARTIAL / MASKED TARGETS (${partialTargets.size})"

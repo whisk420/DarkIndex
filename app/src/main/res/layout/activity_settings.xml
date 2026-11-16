@@ -65,7 +65,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Switch between Traditional Display and Advanced Targeting mode."
+                    android:text="Switch between Traditional Display and Recon mode."
                     android:textColor="#94a3b8"
                     android:textSize="13sp" />
 
@@ -74,7 +74,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Advanced Targeting Mode"
+                    android:text="Recon Mode"
                     android:textColor="#ffffff"
                     android:textSize="14sp" />
 

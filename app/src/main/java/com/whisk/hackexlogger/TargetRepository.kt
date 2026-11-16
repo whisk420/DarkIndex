@@ -35,6 +35,7 @@ object TargetRepository {
             prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             loadCacheFromDisk()
             isInitialized = true
+            notifyDataUpdated()
         }
     }
 

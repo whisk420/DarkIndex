@@ -54,6 +54,7 @@ class ListItemDiffCallback : DiffUtil.ItemCallback<ListItem>() {
 class TargetAdapter(
     private val onEdit: (TargetRecord) -> Unit,
     private val onDelete: (TargetRecord) -> Unit,
+    private val onToggleFull: () -> Unit,
     private val onTogglePartial: () -> Unit
 ) : ListAdapter<ListItem, RecyclerView.ViewHolder>(ListItemDiffCallback()) {
 
@@ -76,7 +77,7 @@ class TargetAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == TYPE_HEADER) {
             val view = inflater.inflate(R.layout.item_header, parent, false)
-            HeaderViewHolder(view, onTogglePartial)
+            HeaderViewHolder(view, onToggleFull, onTogglePartial)
         } else {
             val view = inflater.inflate(R.layout.item_target, parent, false)
             TargetViewHolder(view, onEdit, onDelete)
@@ -109,6 +110,7 @@ class TargetAdapter(
 
     class HeaderViewHolder(
         itemView: View,
+        private val onToggleFull: () -> Unit,
         private val onTogglePartial: () -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         private val titleText: TextView = itemView.findViewById(R.id.headerTitle)
@@ -120,7 +122,7 @@ class TargetAdapter(
                 itemView.setOnClickListener { onTogglePartial() }
             } else {
                 titleText.setTextColor(Color.parseColor("#60a5fa"))
-                itemView.setOnClickListener(null)
+                itemView.setOnClickListener { onToggleFull() }
             }
         }
     }
@@ -179,6 +181,12 @@ class TargetAdapter(
             }
 
             itemView.setOnClickListener {
+                if (isOverlayActive) {
+                    onDismissOverlay()
+                }
+            }
+            
+            ipText.setOnClickListener {
                 if (isOverlayActive) {
                     onDismissOverlay()
                 } else {

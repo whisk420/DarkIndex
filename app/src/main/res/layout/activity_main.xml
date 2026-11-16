@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
@@ -8,196 +9,227 @@
     android:background="#0b1120"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/headerActions"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:elevation="0dp"
+        android:background="#0b1120">
 
-        <Button
-            android:id="@+id/validateBtn"
-            android:layout_width="0dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="6dp"
-            android:layout_weight="1"
-            android:backgroundTint="#16a34a"
-            android:minHeight="0dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="8dp"
-            android:text="Validate"
-            android:textColor="#ffffff"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="DarkIndex"
+            app:titleTextColor="#f8fafc">
 
-        <!-- Knowledge Base Button (Temporarily disabled while formulas are being reworked) -->
-        <ImageButton
-            android:id="@+id/knowledgeBaseBtn"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Knowledge Base"
-            android:src="@android:drawable/ic_menu_agenda"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:orientation="horizontal">
+
+                <!-- Knowledge Base Button (Temporarily disabled while formulas are being reworked) -->
+                <ImageButton
+                    android:id="@+id/knowledgeBaseBtn"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Knowledge Base"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    android:visibility="gone"
+                    app:tint="#e2e8f0" />
+
+                <ImageButton
+                    android:id="@+id/siphonAlertsBtn"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Siphon Alerts"
+                    android:src="@android:drawable/ic_popup_reminder"
+                    app:tint="#e2e8f0" />
+
+                <ImageButton
+                    android:id="@+id/settingsBtn"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Settings"
+                    android:src="@android:drawable/ic_menu_preferences"
+                    app:tint="#e2e8f0" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Search Bar -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/searchLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            app:boxBackgroundColor="#1e293b"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxStrokeWidth="0dp"
+            app:boxStrokeWidthFocused="0dp"
+            app:endIconMode="clear_text"
+            app:endIconTint="#94a3b8"
+            app:hintEnabled="false"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:startIconTint="#94a3b8"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/searchInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search IP, clan, or software..."
+                android:paddingVertical="12dp"
+                android:textColor="#f8fafc"
+                android:textColorHint="#64748b"
+                android:textSize="15sp"
+                android:inputType="textVisiblePassword"
+                android:imeOptions="actionSearch" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Toggles Row -->
+        <LinearLayout
+            android:id="@+id/togglesLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@id/searchLayout">
+
+            <!-- Recon Mode Toggle -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/reconModeCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:text="Recon Mode"
+                android:textColor="#e2e8f0"
+                android:textSize="14sp"
+                app:useMaterialThemeColors="false"
+                app:thumbTint="#f59e0b"
+                app:trackTint="#1e293b"/>
+
+            <!-- Spam Priority Toggle -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/goodSpamCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spam Priority"
+                android:textColor="#e2e8f0"
+                android:textSize="14sp"
+                app:useMaterialThemeColors="false"
+                app:thumbTint="#38bdf8"
+                app:trackTint="#1e293b"/>
+        </LinearLayout>
+
+        <!-- Firewall Slider Row (visible only when Spam Priority is on) -->
+        <LinearLayout
+            android:id="@+id/firewallSliderLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:visibility="gone"
-            app:tint="#e2e8f0" />
+            app:layout_constraintTop_toBottomOf="@id/togglesLayout">
 
-        <ImageButton
-            android:id="@+id/siphonAlertsBtn"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Siphon Alerts"
-            android:src="@android:drawable/ic_popup_reminder"
-            app:tint="#e2e8f0" />
+            <TextView
+                android:id="@+id/maxFirewallLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Max FW:"
+                android:textColor="#94a3b8"
+                android:textSize="13sp" />
 
+            <SeekBar
+                android:id="@+id/maxFirewallSeekBar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:max="31"
+                android:progress="20"
+                android:thumbTint="#38bdf8"
+                android:progressTint="#38bdf8" />
 
+            <TextView
+                android:id="@+id/maxFirewallValue"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="20"
+                android:textAlignment="viewEnd"
+                android:textColor="#f8fafc"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/settingsBtn"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences"
-            app:tint="#e2e8f0" />
-    </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/targetsRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:paddingHorizontal="6dp"
+            android:paddingBottom="88dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintTop_toBottomOf="@id/firewallSliderLayout"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
-    <EditText
-        android:id="@+id/searchInput"
-        android:layout_width="0dp"
-        android:layout_height="44dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="8dp"
-        android:background="@drawable/bg_search"
-        android:hint="Search IP, clan, or software..."
-        android:paddingStart="16dp"
-        android:paddingEnd="12dp"
-        android:textColor="#f8fafc"
-        android:textColorHint="#64748b"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toStartOf="@+id/clearSearchBtn"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/headerActions" />
+        <LinearLayout
+            android:id="@+id/emptyStateView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/firewallSliderLayout"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-    <Button
-        android:id="@+id/clearSearchBtn"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="📭"
+                android:textSize="48sp" />
+
+            <TextView
+                android:id="@+id/emptyStateText"
+                android:layout_width="280dp"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp"
+                android:text="No targets captured yet.\n\nTap the 📸 overlay to scan your HackEx 2 game screens!"
+                android:textAlignment="center"
+                android:textColor="#94a3b8"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/validateBtn"
         android:layout_width="wrap_content"
-        android:layout_height="44dp"
-        android:layout_marginEnd="16dp"
-        android:backgroundTint="#0284c7"
-        android:text="Clear"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_gravity="bottom|end"
+        android:text="VALIDATE"
         android:textColor="#ffffff"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="@+id/searchInput"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/searchInput" />
-
-    <LinearLayout
-        android:id="@+id/goodSpamFilterLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@+id/searchInput"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <CheckBox
-            android:id="@+id/goodSpamCheckBox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Good Spam"
-            android:textColor="#ffffff"
-            android:buttonTint="#0ea5e9" />
-
-        <TextView
-            android:id="@+id/maxFirewallLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Max FW:"
-            android:textColor="#94a3b8"
-            android:textSize="14sp"
-            android:visibility="gone" />
-
-        <SeekBar
-            android:id="@+id/maxFirewallSeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:max="31"
-            android:progress="20"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/maxFirewallValue"
-            android:layout_width="70dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="20"
-            android:textColor="#ffffff"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/targetsRecycler"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:clipToPadding="false"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
-        android:paddingBottom="16dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/goodSpamFilterLayout" />
-
-    <LinearLayout
-        android:id="@+id/emptyStateView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@+id/goodSpamFilterLayout"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📭"
-            android:textSize="48sp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:id="@+id/emptyStateText"
-            android:layout_width="280dp"
-            android:layout_height="wrap_content"
-            android:text="No targets captured yet.\n\nTap the 📸 overlay to scan your HackEx 2 game screens!"
-            android:textColor="#94a3b8"
-            android:textSize="16sp"
-            android:textAlignment="center"
-            android:lineSpacingExtra="4dp" />
-    </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+        app:backgroundTint="#16a34a"
+        app:icon="@android:drawable/ic_menu_crop"
+        app:iconTint="#ffffff" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
