@@ -44,7 +44,7 @@
             android:layout_marginTop="16dp"
             android:orientation="vertical">
 
-            <!-- Display Mode Settings -->
+            <!-- Player Profile -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -56,33 +56,61 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Display Mode"
+                    android:text="My Profile (Scraped from Store)"
                     android:textColor="#38bdf8"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/hardwareText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Switch between Traditional Display and Recon mode."
+                    android:layout_marginTop="8dp"
+                    android:text="Loading hardware..."
                     android:textColor="#94a3b8"
                     android:textSize="13sp" />
 
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/advancedTargetingSwitch"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Recon Mode"
-                    android:textColor="#ffffff"
-                    android:textSize="14sp" />
+                    android:text="Current Software Levels:"
+                    android:textColor="#10b981"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/softwareText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Loading software..."
+                    android:textColor="#94a3b8"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- Database Management -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#050811"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Database Management"
+                    android:textColor="#38bdf8"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btnPurgeThefts"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="12dp"
                     android:text="Purge Theft History (>30 Days)"
                     android:textColor="#ffffff"
                     android:backgroundTint="#8B0000" />

@@ -74,6 +74,13 @@ class ScreenClassifierTest {
     }
 
     @Test
+    fun testStoreScreenDetection() {
+        val text = "Keygen\nLVL 21\nProprietary key generator built for your device. Cracks license protection on downloaded software, allowing you to... read more"
+        val lines = text.split("\n")
+        assertEquals(ScreenType.STORE, ScreenClassifier.detectScreenType(text, lines))
+    }
+
+    @Test
     fun testUnknownScreenDetection() {
         val text = "Random text that matches no signatures at all"
         val lines = text.split("\n")

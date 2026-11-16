@@ -161,6 +161,14 @@ class ScraperAccessibilityService : AccessibilityService() {
                         savedItems.add("Crew")
                     }
                 }
+                ScreenType.STORE -> {
+                    val storeScreen = StoreScreenParser.parse(allLines)
+                    if (storeScreen != null) {
+                        Log.d("DOSSIER", "Parsed StoreScreen: $storeScreen")
+                        DatabaseManager.processStoreScreen(storeScreen)
+                        savedItems.add("Store / Upgrades")
+                    }
+                }
                 ScreenType.PROCESS -> {
                     val processScreen = ProcessScreenParser.parse(allLines)
                     if (processScreen != null) {
@@ -234,6 +242,11 @@ class ScraperAccessibilityService : AccessibilityService() {
         if (crewScreen != null) {
             DatabaseManager.processCrewScreen(crewScreen)
             savedItems.add("Crew")
+        }
+        val storeScreen = StoreScreenParser.parse(allLines)
+        if (storeScreen != null) {
+            DatabaseManager.processStoreScreen(storeScreen)
+            savedItems.add("Store / Upgrades")
         }
         val processScreen = ProcessScreenParser.parse(allLines)
         if (processScreen != null) {

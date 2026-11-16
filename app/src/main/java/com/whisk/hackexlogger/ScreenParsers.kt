@@ -7,12 +7,13 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, UNKNOWN
 }
 
 object ScreenClassifier {
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
+        if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE
         if (lowerText.contains("wallet address") || lowerText.contains("'s wallet") || lowerText.contains("’s wallet")) return ScreenType.WALLET
         if (lowerText.contains("siphoned") && lowerText.contains("deployed")) return ScreenType.SIPHON
@@ -396,5 +397,84 @@ object ProcessScreenParser {
             }
         }
         return ProcessScreen(ips.distinct(), invalidatedIps.distinct(), downloads)
+    }
+}
+
+// ----------------------------------------
+// StoreScreen
+// ----------------------------------------
+data class StoreScreen(
+    val nextDevice: String? = null,
+    val nextNetwork: String? = null,
+    val botnetStatus: String? = null,
+    val nextSoftwareLevels: Map<String, Int> = emptyMap()
+)
+
+object StoreScreenParser {
+    fun parse(lines: List<String>): StoreScreen? {
+        val text = lines.joinToString("\n")
+        if (!text.lowercase().contains("proprietary key generator built for your device")) return null
+
+        var nextDevice: String? = null
+        var nextNetwork: String? = null
+        var botnetStatus: String? = null
+        val softwareLevels = mutableMapOf<String, Int>()
+
+        var currentSection: String? = null
+        var currentSoftware: String? = null
+
+        val validSoftwareNames = listOf(
+            "Firewall", "Bypasser", "Password Encryptor", "Password Cracker",
+            "Spam", "Siphon", "Rootkit", "Antivirus", "Proxy", "Trace", "Keygen"
+        )
+
+        for (i in lines.indices) {
+            val line = lines[i].trim()
+            if (line.startsWith("// ")) {
+                currentSection = line
+                continue
+            }
+
+            when (currentSection) {
+                "// NEXT DEVICE" -> {
+                    if (nextDevice == null && line.isNotEmpty()) {
+                        nextDevice = line
+                    }
+                }
+                "// NEXT NETWORK" -> {
+                    if (nextNetwork == null && line.isNotEmpty()) {
+                        nextNetwork = line
+                    }
+                }
+                "// BOTNET" -> {
+                    if (botnetStatus == null && line.isNotEmpty()) {
+                        botnetStatus = line
+                        // If there is another line like "64 slots", we can grab it, but the first line is usually the name
+                        // Actually, looking at the dump:
+                        // Botnet - Nexus
+                        // 64 slots
+                        // Let's just combine them or use the slots line.
+                        // Let's just capture the first line as the status for now.
+                    } else if (botnetStatus != null && line.contains("slots")) {
+                        botnetStatus = "$botnetStatus ($line)"
+                    } else if (botnetStatus != null && line.contains("MAX TIER")) {
+                        botnetStatus = "$botnetStatus [MAX]"
+                    }
+                }
+                "// SOFTWARE" -> {
+                    if (validSoftwareNames.contains(line)) {
+                        currentSoftware = line
+                    } else if (currentSoftware != null && line.startsWith("LVL ")) {
+                        val level = line.removePrefix("LVL ").trim().toIntOrNull()
+                        if (level != null) {
+                            softwareLevels[currentSoftware] = level
+                        }
+                        currentSoftware = null
+                    }
+                }
+            }
+        }
+
+        return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels)
     }
 }

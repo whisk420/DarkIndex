@@ -19,6 +19,7 @@ object DatabaseManager {
     fun init(context: Context) {
         TargetRepository.init(context)
         SiphonTracker.init()
+        PlayerProfileRepository.init(context)
     }
 
     val recordsFlow = TargetRepository.recordsFlow
@@ -248,6 +249,10 @@ object DatabaseManager {
 
     fun processSiphonScreen(siphonScreen: SiphonScreen) {
         SiphonTracker.processSiphonScreen(siphonScreen, TargetRepository.appContext)
+    }
+
+    fun processStoreScreen(storeScreen: StoreScreen) {
+        PlayerProfileRepository.updateProfile(storeScreen)
     }
 
     fun processCrewScreen(crewScreen: CrewScreen) {

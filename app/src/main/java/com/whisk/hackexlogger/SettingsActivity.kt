@@ -12,8 +12,6 @@ import androidx.core.view.WindowInsetsCompat
  */
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var advancedTargetingSwitch: androidx.appcompat.widget.SwitchCompat
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -32,17 +30,22 @@ class SettingsActivity : AppCompatActivity() {
     private fun initViews() {
         findViewById<ImageButton>(R.id.backBtn).setOnClickListener { finish() }
 
-        advancedTargetingSwitch = findViewById(R.id.advancedTargetingSwitch)
-        val prefs = getSharedPreferences("HackExSettings", MODE_PRIVATE)
-        advancedTargetingSwitch.isChecked = prefs.getBoolean("pref_advanced_targeting", false)
+        val profile = PlayerProfileRepository.getProfile()
         
-        advancedTargetingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("pref_advanced_targeting", isChecked).apply()
-            // Send broadcast to update MainActivity if it's open
-            val updateIntent = android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED")
-            updateIntent.setPackage(packageName)
-            sendBroadcast(updateIntent)
-        }
+        val hardwareText = findViewById<android.widget.TextView>(R.id.hardwareText)
+        val softwareText = findViewById<android.widget.TextView>(R.id.softwareText)
+        
+        val currentDevice = PlayerProfileRepository.decrementHardwareName(profile.nextDevice) ?: "Unknown"
+        val currentNetwork = PlayerProfileRepository.decrementHardwareName(profile.nextNetwork) ?: "Unknown"
+
+        hardwareText.text = "Device: $currentDevice\n" +
+            "Network: $currentNetwork\n" +
+            "Botnet: ${profile.botnetStatus ?: "Unknown"}"
+
+        val softwareLevelsStr = profile.softwareLevels.entries
+            .joinToString("\n") { "${it.key}: ${it.value - 1}" } // Store shows NEXT level, so subtract 1 for current
+            
+        softwareText.text = softwareLevelsStr.ifEmpty { "No software parsed yet." }
 
         findViewById<android.widget.Button>(R.id.btnPurgeThefts).setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
