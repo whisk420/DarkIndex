@@ -50,6 +50,8 @@ object SiphonTracker {
             .apply()
     }
 
+    var currentTimeProvider: () -> Long = { System.currentTimeMillis() }
+
     fun getSiphonAlerts(): List<String> {
         return siphonAlerts.toList()
     }
@@ -63,6 +65,7 @@ object SiphonTracker {
         knownSiphons.clear()
         siphonAlerts.clear()
         recentlyScrapedSiphons.clear()
+        currentTimeProvider = { System.currentTimeMillis() }
         saveSiphonData()
     }
 
@@ -75,7 +78,7 @@ object SiphonTracker {
         val nowStr = isoFormat.format(Date())
         val exportFile = File(context.filesDir, "siphon_history.jsonl")
 
-        val currentTime = System.currentTimeMillis()
+        val currentTime = currentTimeProvider()
         val iterator = recentlyScrapedSiphons.iterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
