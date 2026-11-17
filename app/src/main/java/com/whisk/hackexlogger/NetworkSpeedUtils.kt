@@ -47,21 +47,23 @@ object NetworkSpeedUtils {
 
     /**
      * Calculates the base 1.0x DSL upload duration in seconds for a target device hardware tier (0 to 9).
+     * Based on empirical data: Tier 0 takes ~3019s against a 15.0x speed boost network.
+     * Base DSL (1.0x) = Empirical Time * 15.0x
      */
     fun getBaseUploadSeconds(targetHardware: String?): Int {
         val tier = GoodSpamUtils.getHardwarePenalty(targetHardware)
         return when (tier) {
-            0 -> 3774  // ~1h 02m
-            1 -> 5033  // ~1h 23m
-            2 -> 6290  // ~1h 44m
-            3 -> 7549  // ~2h 05m
-            4 -> 8810  // ~2h 26m
-            5 -> 10069 // ~2h 47m
-            6 -> 11328 // ~3h 08m
-            7 -> 12586 // ~3h 29m
-            8 -> 13845 // ~3h 50m
-            9 -> 15104 // ~4h 11m
-            else -> 7549
+            0 -> 45285  // 3019 * 15.0  (~12.5 hours)
+            1 -> 60390  // 4026 * 15.0  (~16.7 hours)
+            2 -> 75480  // 5032 * 15.0  (~21.0 hours)
+            3 -> 90585  // 6039 * 15.0  (~25.1 hours)
+            4 -> 105720 // 7048 * 15.0  (~29.3 hours)
+            5 -> 120825 // 8055 * 15.0  (~33.5 hours)
+            6 -> 135930 // 9062 * 15.0  (~37.7 hours)
+            7 -> 151035 // 10069 * 15.0 (~41.9 hours)
+            8 -> 166140 // 11076 * 15.0 (~46.1 hours)
+            9 -> 181245 // 12083 * 15.0 (~50.3 hours)
+            else -> 90585
         }
     }
 

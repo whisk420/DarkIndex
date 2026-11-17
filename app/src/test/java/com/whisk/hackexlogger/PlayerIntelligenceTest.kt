@@ -58,10 +58,10 @@ class PlayerIntelligenceTest {
 
     @Test
     fun testEstimatedUploadDurationAndFormatting() {
-        // Fiber (9.5x) vs Raider target (3,774s DSL base) -> 3774 / 9.5 = 397s
-        val secs = NetworkSpeedUtils.getEstimatedUploadSeconds("Raider • DSL", "Fiber")
-        assertEquals(397, secs)
-        assertEquals("6m 37s", NetworkSpeedUtils.formatUploadDuration(secs))
+        // Null Route X (18.0x) vs Raider target (45,285s DSL base) -> 45285 / 18.0 = 2515s
+        val secs = NetworkSpeedUtils.getEstimatedUploadSeconds("Raider • DSL", "Null Route X")
+        assertEquals(2515, secs)
+        assertEquals("41m 55s", NetworkSpeedUtils.formatUploadDuration(secs))
 
         // 1h 15m formatting test (4500s)
         assertEquals("1h 15m", NetworkSpeedUtils.formatUploadDuration(4500))
