@@ -32,12 +32,30 @@ jobs:
     - name: Grant Execute Permission to Gradlew
       run: chmod +x gradlew
 
+    # Every release MUST be signed with the one permanent DarkIndex key, otherwise Android forces an
+    # uninstall (and data loss) when updating. Refuse to build if the secrets are missing.
+    - name: Decode Permanent Signing Key
+      env:
+        SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      run: |
+        for name in SIGNING_KEYSTORE_BASE64 SIGNING_STORE_PASSWORD SIGNING_KEY_ALIAS SIGNING_KEY_PASSWORD; do
+          if [ -z "${!name}" ]; then
+            echo "::error::Missing repository secret $name — refusing to publish an APK signed with a throwaway key."
+            exit 1
+          fi
+        done
+        echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/darkindex-release.jks"
+        echo "SIGNING_STORE_FILE=$RUNNER_TEMP/darkindex-release.jks" >> "$GITHUB_ENV"
+
     - name: Determine Release Version & Code
       id: get_version
       run: |
         INPUT_VER="${{ inputs.version }}"
         REF_VER="${{ github.ref_name }}"
-        
+
         if [ -n "$INPUT_VER" ]; then
           VER="$INPUT_VER"
         elif [[ "$REF_VER" == v* ]]; then
@@ -45,22 +63,26 @@ jobs:
         else
           VER="1.2"
         fi
-        
+
         # Strip leading 'v' for versionName
         CLEAN_VER="${VER#v}"
-        
+
         # Tag name with 'v'
         TAG_VER="v$CLEAN_VER"
-        
+
         echo "RELEASE_VERSION=$TAG_VER" >> $GITHUB_ENV
         echo "VERSION_NAME=$CLEAN_VER" >> $GITHUB_ENV
         echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
-        
+
         echo "Calculated Tag: $TAG_VER"
         echo "Calculated Version Name: $CLEAN_VER"
         echo "Calculated Version Code: ${{ github.run_number }}"
 
     - name: Assemble Release APK
+      env:
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
       run: |
         ./gradlew assembleRelease \
           -PversionName="${{ env.VERSION_NAME }}" \
@@ -71,6 +93,29 @@ jobs:
       run: |
         mkdir -p build-outputs
         cp app/build/outputs/apk/release/app-release.apk build-outputs/DarkIndex.apk
+
+    # Prints the signing certificate so every release can be compared. If the repository
+    # variable SIGNING_CERT_SHA256 is set, the build fails when the certificate doesn't match it.
+    - name: Verify Signing Certificate
+      env:
+        EXPECTED_SHA256: ${{ vars.SIGNING_CERT_SHA256 }}
+      run: |
+        APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+        "$APKSIGNER" verify --print-certs build-outputs/DarkIndex.apk | tee certs.txt
+        ACTUAL=$(grep -m1 "certificate SHA-256 digest" certs.txt | awk -F': ' '{print $2}' | tr -d ' :' | tr 'A-F' 'a-f')
+        echo "Signing certificate SHA-256: $ACTUAL"
+        if [ -n "$EXPECTED_SHA256" ]; then
+          EXPECTED=$(echo "$EXPECTED_SHA256" | tr -d ' :' | tr 'A-F' 'a-f')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::APK is signed with an unexpected key ($ACTUAL), expected $EXPECTED."
+            exit 1
+          fi
+          echo "Certificate matches SIGNING_CERT_SHA256 ✔"
+        fi
+
+    - name: Remove Decoded Keystore
+      if: always()
+      run: rm -f "$RUNNER_TEMP/darkindex-release.jks"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -86,10 +131,11 @@ jobs:
         name: "DarkIndex ${{ env.RELEASE_VERSION }}"
         body: |
           ### DarkIndex ${{ env.RELEASE_VERSION }}
-          
+
           100% offline standalone release.
-          
+
           - **`DarkIndex.apk`**: Single, 100% offline APK with zero internet permissions. Auto-mirrors database backups directly to your device's `Downloads/DarkIndex/` folder.
+          - Signed with the permanent DarkIndex key: installs over previous releases and Android Studio builds without uninstalling.
         files: |
           build-outputs/DarkIndex.apk
       env:
