@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release Version Tag (e.g. 1.2 or v1.2)'
+        description: 'Release version (e.g. 1.6). Leave empty to bump the latest v* tag automatically (v1.5 -> 1.6).'
         required: false
-        default: '1.2'
+        default: ''
   push:
     tags:
       - 'v*'
@@ -21,6 +21,10 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v5
+      with:
+        # Full history + tags: the version code is 1000 + commit count and the name bumps the latest v* tag.
+        fetch-depth: 0
+        fetch-tags: true
 
     - name: Set up JDK 17
       uses: actions/setup-java@v5
@@ -57,26 +61,43 @@ jobs:
         REF_VER="${{ github.ref_name }}"
 
         if [ -n "$INPUT_VER" ]; then
-          VER="$INPUT_VER"
-        elif [[ "$REF_VER" == v* ]]; then
-          VER="$REF_VER"
+          VER="$INPUT_VER"                       # typed in "Run workflow"
+        elif [ "${{ github.ref_type }}" = "tag" ] && [[ "$REF_VER" == v* ]]; then
+          VER="$REF_VER"                         # pushed a v* tag
         else
-          VER="1.2"
+          # Automatic: bump the minor of the latest v* tag (v1.5 -> 1.6). No tags yet -> 1.0.
+          LAST=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          if [ -z "$LAST" ]; then
+            VER="1.0"
+          else
+            LAST="${LAST#v}"
+            MAJOR="${LAST%%.*}"
+            REST="${LAST#*.}"
+            MINOR="${REST%%.*}"
+            [ "$REST" = "$LAST" ] && MINOR=0
+            VER="$MAJOR.$((MINOR + 1))"
+          fi
         fi
 
-        # Strip leading 'v' for versionName
-        CLEAN_VER="${VER#v}"
+        CLEAN_VER="${VER#v}"                     # versionName without the v
+        TAG_VER="v$CLEAN_VER"                    # release tag with the v
 
-        # Tag name with 'v'
-        TAG_VER="v$CLEAN_VER"
+        # Same rule as app/build.gradle.kts, so CI and local builds of one commit share a code.
+        COMMITS=$(git rev-list --count HEAD)
+        CODE=$((1000 + COMMITS))
+
+        if [ "${{ github.ref_type }}" != "tag" ] && git rev-parse -q --verify "refs/tags/$TAG_VER" >/dev/null; then
+          echo "::error::Tag $TAG_VER already exists. Enter a different version, or leave it empty to auto-bump."
+          exit 1
+        fi
 
         echo "RELEASE_VERSION=$TAG_VER" >> $GITHUB_ENV
         echo "VERSION_NAME=$CLEAN_VER" >> $GITHUB_ENV
-        echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
+        echo "VERSION_CODE=$CODE" >> $GITHUB_ENV
 
-        echo "Calculated Tag: $TAG_VER"
-        echo "Calculated Version Name: $CLEAN_VER"
-        echo "Calculated Version Code: ${{ github.run_number }}"
+        echo "Release tag:   $TAG_VER"
+        echo "Version name:  $CLEAN_VER"
+        echo "Version code:  $CODE (1000 + $COMMITS commits)"
 
     - name: Assemble Release APK
       env:
