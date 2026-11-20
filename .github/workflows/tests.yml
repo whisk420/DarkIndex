@@ -1,0 +1,43 @@
+name: Unit Tests
+
+# Runs the JVM unit tests on every push and pull request. No signing key or secrets needed:
+# without them the build falls back to the debug key and Gradle prints a harmless warning.
+on:
+  push:
+    branches: ['**']
+    tags-ignore: ['v*']          # tag pushes run the release workflow, which runs the tests itself
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0             # full history, so the automatic version code is real
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v5
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant Execute Permission to Gradlew
+      run: chmod +x gradlew
+
+    - name: Run Unit Tests
+      run: ./gradlew testDebugUnitTest --stacktrace
+
+    - name: Upload Test Report
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: unit-test-report
+        path: app/build/reports/tests/testDebugUnitTest/
+        retention-days: 14
