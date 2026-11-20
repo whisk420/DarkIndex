@@ -1,0 +1,111 @@
+// LOG
+SAVE
+~/log.txt
+[11-20 12:38] Stole 5,093 Crypto from hx9087...65ca
+[11-20 12:38] Downloading Lv25 Password Encryptor from 113.149.48.111...
+[11-20 12:38] Downloading Lv26 Password Cracker from 113.149.48.111...
+[11-20 12:38] Downloading Lv26 Bypasser from 113.149.48.111...
+[11-20 12:38] Downloading Lv25 Firewall from 113.149.48.111...
+[11-20 12:38] Accessed device at 113.149.48.111
+[11-20 12:37] Purchased Keygen Lv26
+[11-20 11:57] Cracked password on 203.137.119.10
+[11-20 7:50] Cracked password on 231.130.229.178
+[11-20 7:50] Failed to bypass firewall on 1.163.20.168
+[11-20 5:30] Failed to bypass firewall on 188.105.210.250
+[11-20 4:18] Failed to crack password on 44.204.208.233
+[11-20 4:18] Bypassed firewall on 103.111.158.162
+[11-20 4:00] Stole 10,901 Crypto from hxff13...42f1
+[11-20 4:00] Accessed device at 23.176.239.38
+[11-20 3:54] Bypassed firewall on 143.173.241.89
+[11-20 3:08] Failed to crack password on 203.137.119.10
+[11-20 2:34] Uploaded Lv17 Spam to 44.204.208.233
+[11-20 2:28] Bypassed firewall on 182.86.118.123
+[11-20 2:28] Failed to bypass firewall on 117.187.56.202
+[11-20 2:26] Failed to bypass firewall on 214.223.202.227
+[11-20 2:25] Bypassed firewall on 223.240.25.183
+[11-20 2:13] Bypassed firewall on 144.248.219.41
+[11-20 1:25] Downloaded Lv23 Firewall from 44.204.208.233
+[11-20 1:06] Uploaded Lv6 Rootkit to 44.204.208.233
+[11-20 0:50] Downloading Lv23 Firewall from 44.204.208.233...
+[11-20 0:50] Uploading Lv17 Spam to 44.204.208.233...
+[11-20 0:50] Uploading Lv6 Rootkit to 44.204.208.233...
+[11-20 0:50] Cracking password on 44.204.208.233...
+[11-20 0:49] Accessed device at 44.204.208.233
+[11-20 0:48] Purchased Keygen Lv25
+[11-19 23:42] Uploaded Lv20 Siphon to 8.83.197.176
+[11-19 23:00] Uploaded Lv20 Siphon to 23.176.239.38
+[11-19 22:28] Uploaded Lv20 Siphon to 35.169.133.45
+[11-19 22:33] Failed to bypass firewall on xxx.xxx.xxx.xxx
+[11-19 22:30] Failed to crack password on 231.130.229.178
+[11-19 21:48] Uploaded Lv17 Spam to 179.230.70.124
+[11-19 21:56] Uploaded Lv20 Siphon to 113.149.48.111
+[11-19 21:33] Uploaded Lv20 Siphon to 166.75.5.195
+[11-19 21:03] Uploaded Lv17 Spam to 182.17.128.188
+[11-19 19:21] Cracked password on 166.75.5.195
+[11-19 19:07] Bypassed firewall on 44.204.208.233
+[11-19 17:56] Bypassed firewall on 184.246.169.176
+[11-19 17:40] Bypassed firewall on 174.160.72.149
+[11-19 16:38] Uploaded Lv6 Rootkit to 8.83.197.176
+[11-19 17:40] Failed to bypass firewall on 103.111.158.162
+[11-19 16:09] Stole 1,226 Crypto from hxaa2a...3a3a
+[11-19 16:08] Accessed device at 255.240.84.49
+[11-19 16:08] Stole 193 Crypto from hx4f67...ab27
+[11-19 16:08] Accessed device at 203.236.60.135
+[11-19 16:08] Stole 1,701 Crypto from hx6081...ab00
+[11-19 16:08] Accessed device at 181.151.2.103
+[11-19 16:08] Stole 346 Crypto from hxe3a3...245c
+[11-19 16:08] Accessed device at 176.69.169.220
+[11-19 16:07] Stole 92 Crypto from hxf0d9...dedc
+[11-19 16:07] Accessed device at 166.175.170.184
+[11-19 16:07] Accessed device at 166.75.5.195
+[11-19 16:07] Stole 208 Crypto from hxaf95...e231
+[11-19 16:07] Accessed device at 159.219.99.133
+[11-19 16:06] Stole 737 Crypto from hxbb62...ca8c
+[11-19 16:06] Accessed device at 146.216.16.243
+[11-19 16:06] Stole 406 Crypto from hxf58c...3dd1
+[11-19 16:06] Accessed device at 124.147.83.155
+[11-19 16:06] Stole 426 Crypto from hx9087...65ca
+[11-19 16:06] Stole 722 Crypto from hx8477...0525
+[11-19 16:05] Accessed device at 93.194.40.177
+[11-19 16:05] Stole 1,158 Crypto from hx4cf9...7b05
+[11-19 16:05] Accessed device at 35.169.133.45
+[11-19 16:05] Stole 688 Crypto from hx2537...f46c
+[11-19 16:05] Accessed device at 20.52.213.253
+[11-19 16:05] Stole 514 Crypto from hx18b6...73d3
+[11-19 16:05] Accessed device at 18.159.126.244
+[11-19 16:04] Stole 70 Crypto from hxbe4a...ba9c
+[11-19 16:04] Accessed device at 18.136.126.173
+[11-19 16:04] Stole 367 Crypto from hx91b1...14a6
+[11-19 16:04] Accessed device at 17.57.96.203
+[11-19 16:04] Stole 515 Crypto from hx2767...ffe1
+[11-19 16:04] Accessed device at 14.81.161.70
+[11-19 16:04] Stole 150 Crypto from hx6f70...a989
+[11-19 16:03] Accessed device at 11.8.23.40
+[11-19 16:03] Stole 824 Crypto from hx17e1...2e33
+[11-19 16:03] Accessed device at xxx.xxx.xxx.xxx
+[11-19 16:03] Stole 772 Crypto from hxe94d...72db
+[11-19 16:02] Uploading Lv20 Siphon to 8.83.197.176...
+[11-19 16:01] Downloading Lv22 Firewall from 8.83.197.176...
+[11-19 16:01] Uploading Lv6 Rootkit to 8.83.197.176...
+[11-19 16:01] Accessed device at 8.83.197.176
+[11-19 15:19] Uploaded Lv6 Rootkit to 166.75.5.195
+[11-19 15:17] Uploaded Lv6 Rootkit to 159.219.99.133
+[11-19 15:10] Accessed device at 185.97.243.154
+[11-19 15:10] Accessed device at 184.190.193.15
+[11-19 15:09] Accessed device at 184.40.216.9
+[11-19 15:09] Accessed device at 182.168.217.9
+[11-19 15:09] Uploading Lv17 Spam to 182.17.128.188...
+[11-19 15:09] Accessed device at 182.17.128.188
+[11-19 15:08] Accessed device at 180.210.255.76
+[11-19 15:08] Uploading Lv17 Spam to 179.230.70.124...
+[11-19 15:08] Accessed device at 179.230.70.124
+[11-19 15:07] Accessed device at 177.133.227.21
+
+Last saved: 2026-11-20 12:38:57
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS
+Transferred 4926 Crypto to Cold Storage.

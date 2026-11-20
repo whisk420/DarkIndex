@@ -1,0 +1,709 @@
+// APPS
+Notepad
+Wallet:
+43,643
+Credits:
+1,387
+SPAM
+58
+/ 67
++3
+Botnet - Nexus
+5,728/hr
+137,472/day
+>
+SIPHON
+122
+76,228
+DEPLOYED EARNED
+>
+▼ Installed Applications
+List view
+Grid view
+[-]
+Antivirus
+LVL 20
+LOCKEDLVL 24 available10,865 Crypto
+Firewall
+LVL 23
+Password Encryptor
+LVL 18
+LOCKEDLVL 24 available14,097 Crypto
+Proxy 
+ACTIVE
+23h 54m
+LVL 26
+Trace
+LVL 26
+Bypasser
+LVL 20
+(+3)
+LOCKEDLVL 22 available7,493 Crypto
+Password Cracker
+LVL 20
+(+3)
+LOCKEDLVL 24 available14,060 Crypto
+Spam 
+5,728/hr
+LVL 20
+LOCKEDLVL 26 available30,113 Crypto
+Rootkit
+LVL 6
+LOCKEDLVL 7 available2,636 Crypto
+Siphon 
+76,228 siphoned
+LVL 20
+LOCKEDLVL 25 available23,501 Crypto
+Keygen
+LVL 26
+Notepad
+Message Encryptor
+▼ Consumables
+[-]
+IP Scrambler
+New identity, who dis? Generates a fresh random IP. Current active bypasses against you will fail.
+Use
+x6
+System Purge
+Nuke every virus on your device. No scan, no wait, just gone. Restores 90% of lost reputation.
+Use
+x15
+EMP Pulse
+Kill switch. Cancels all pending processes against you and blocks new ones for 1 hour. 2hr cooldown.
+Use
+x14
+Wallet Shield
+Blocks crypto theft for 24 hours. 48hr cooldown between uses.
+Use
+x17
+Backdoor
+Instantly bypass the firewall. Targets with Firewall Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x38
+Exploit Kit
+Skip the password crack entirely. Targets with Encryptor Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x10
+Log Lock
+Locks your device log for 8 hours so attackers can't edit it. Trap a traced attacker's IP — they can't scrub their tracks. 12hr cooldown between uses. Requires app v1.3.0 or later to use.
+Use
+x9
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS 1
+SIPHON EARNINGS
+DEPLOYED
+122
+CURRENT DEPLOYED EARNED
+76,228
+112.118.227.239
+LV.20
+5.75%
+11,381 siphoned
+5d ago
+255.240.84.49
+LV.20
+5.75%
+8,642 siphoned
+5d ago
+183.187.119.179
+LV.20
+5.75%
+5,948 siphoned
+3d ago
+8.204.244.137
+LV.6
+2.25%
+5,606 siphoned
+15d ago
+176.91.69.58
+LV.13
+4%
+4,527 siphoned
+13d ago
+117.238.79.186
+LV.13
+4%
+3,896 siphoned
+14d ago
+60.139.194.253
+LV.20
+5.75%
+3,751 siphoned
+4d ago
+35.138.90.61
+LV.20
+5.75%
+2,176 siphoned
+2d ago
+166.175.170.184
+LV.6
+2.25%
+1,894 siphoned
+17d ago
+105.160.2.96
+LV.5
+2%
+1,662 siphoned
+7d ago
+67.190.93.42
+LV.20
+5.75%
+1,642 siphoned
+2d ago
+8.83.197.176
+LV.20
+5.75%
+1,628 siphoned
+13h ago
+64.57.130.70
+LV.13
+4%
+1,617 siphoned
+12d ago
+84.54.22.239
+LV.6
+2.25%
+1,213 siphoned
+14d ago
+129.152.82.30
+LV.6
+2.25%
+1,122 siphoned
+17d ago
+204.60.185.152
+LV.20
+5.75%
+1,045 siphoned
+5d ago
+75.36.55.25
+LV.6
+2.25%
+1,005 siphoned
+17d ago
+212.185.65.129
+LV.6
+2.25%
+991 siphoned
+17d ago
+165.205.25.89
+LV.13
+4%
+985 siphoned
+11d ago
+18.136.126.173
+LV.2
+1.25%
+887 siphoned
+18d ago
+194.245.115.157
+LV.13
+4%
+876 siphoned
+13d ago
+97.68.44.77
+LV.13
+4%
+814 siphoned
+12d ago
+35.169.133.45
+LV.20
+5.75%
+744 siphoned
+14h ago
+102.141.210.161
+LV.6
+2.25%
+670 siphoned
+17d ago
+113.149.48.111
+LV.20
+5.75%
+669 siphoned
+15h ago
+142.98.86.154
+LV.6
+2.25%
+658 siphoned
+17d ago
+114.103.185.166
+LV.5
+2%
+590 siphoned
+7d ago
+156.82.196.101
+LV.6
+2.25%
+504 siphoned
+17d ago
+98.242.106.197
+LV.2
+1.25%
+449 siphoned
+18d ago
+32.140.67.134
+LV.13
+4%
+427 siphoned
+8d ago
+49.66.112.239
+LV.6
+2.25%
+414 siphoned
+17d ago
+157.38.45.53
+LV.13
+4%
+380 siphoned
+11d ago
+51.234.143.116
+LV.6
+2.25%
+375 siphoned
+16d ago
+71.203.116.242
+LV.2
+1.25%
+358 siphoned
+18d ago
+39.248.143.59
+LV.2
+1.25%
+331 siphoned
+18d ago
+205.26.3.191
+LV.2
+1.25%
+310 siphoned
+18d ago
+170.8.214.142
+LV.2
+1.25%
+304 siphoned
+19d ago
+200.166.198.181
+LV.2
+1.25%
+301 siphoned
+19d ago
+61.180.117.228
+LV.6
+2.25%
+292 siphoned
+15d ago
+189.100.28.39
+LV.2
+1.25%
+281 siphoned
+19d ago
+37.129.241.18
+LV.6
+2.25%
+279 siphoned
+16d ago
+41.47.61.144
+LV.13
+4%
+271 siphoned
+8d ago
+205.101.110.145
+LV.20
+5.75%
+243 siphoned
+5d ago
+94.76.248.235
+LV.2
+1.25%
+231 siphoned
+18d ago
+51.45.103.61
+LV.2
+1.25%
+226 siphoned
+18d ago
+75.71.32.154
+LV.6
+2.25%
+219 siphoned
+17d ago
+149.144.52.248
+LV.13
+4%
+213 siphoned
+11d ago
+119.111.85.16
+LV.5
+2%
+197 siphoned
+7d ago
+163.254.190.176
+LV.2
+1.25%
+177 siphoned
+18d ago
+125.165.163.126
+LV.6
+2.25%
+162 siphoned
+17d ago
+254.107.239.208
+LV.13
+4%
+162 siphoned
+11d ago
+171.63.116.0
+LV.6
+2.25%
+125 siphoned
+17d ago
+99.57.167.64
+LV.6
+2.25%
+117 siphoned
+16d ago
+43.125.9.113
+LV.2
+1.25%
+105 siphoned
+18d ago
+29.143.128.254
+LV.2
+1.25%
+103 siphoned
+18d ago
+53.11.29.197
+LV.1
+1%
+100 siphoned
+19d ago
+68.135.151.102
+LV.1
+1%
+100 siphoned
+7d ago
+240.50.157.134
+LV.6
+2.25%
+98 siphoned
+17d ago
+18.46.243.156
+LV.5
+2%
+96 siphoned
+4d ago
+71.141.205.100
+LV.2
+1.25%
+82 siphoned
+18d ago
+51.243.73.66
+LV.2
+1.25%
+77 siphoned
+18d ago
+66.104.10.193
+LV.2
+1.25%
+76 siphoned
+18d ago
+36.110.204.87
+LV.2
+1.25%
+75 siphoned
+18d ago
+155.190.244.42
+LV.2
+1.25%
+69 siphoned
+18d ago
+63.44.206.110
+LV.6
+2.25%
+63 siphoned
+15d ago
+43.233.246.115
+LV.6
+2.25%
+63 siphoned
+16d ago
+125.94.34.221
+LV.2
+1.25%
+63 siphoned
+18d ago
+186.253.17.250
+LV.6
+2.25%
+60 siphoned
+17d ago
+198.226.162.94
+LV.6
+2.25%
+58 siphoned
+17d ago
+79.108.230.129
+LV.1
+1%
+57 siphoned
+7d ago
+97.31.174.216
+LV.2
+1.25%
+57 siphoned
+19d ago
+161.107.185.206
+LV.2
+1.25%
+56 siphoned
+18d ago
+162.226.118.45
+LV.6
+2.25%
+49 siphoned
+17d ago
+49.38.226.196
+LV.2
+1.25%
+45 siphoned
+19d ago
+17.124.212.162
+LV.6
+2.25%
+43 siphoned
+15d ago
+234.31.78.107
+LV.2
+1.25%
+42 siphoned
+18d ago
+89.119.25.170
+LV.1
+1%
+40 siphoned
+19d ago
+96.217.59.207
+LV.2
+1.25%
+39 siphoned
+18d ago
+174.209.62.169
+LV.2
+1.25%
+37 siphoned
+18d ago
+176.254.103.39
+LV.20
+5.75%
+35 siphoned
+5d ago
+88.205.81.140
+LV.6
+2.25%
+32 siphoned
+17d ago
+195.235.48.249
+LV.2
+1.25%
+32 siphoned
+19d ago
+15.228.202.205
+LV.2
+1.25%
+32 siphoned
+18d ago
+188.107.169.255
+LV.6
+2.25%
+31 siphoned
+17d ago
+181.123.231.168
+LV.2
+1.25%
+31 siphoned
+18d ago
+xxx.xxx.xxx.xxx
+LV.20
+5.75%
+30 siphoned
+15h ago
+71.201.140.162
+LV.6
+2.25%
+29 siphoned
+17d ago
+151.49.81.50
+LV.2
+1.25%
+27 siphoned
+19d ago
+159.135.230.175
+LV.2
+1.25%
+27 siphoned
+18d ago
+100.155.181.59
+LV.1
+1%
+27 siphoned
+19d ago
+237.195.76.119
+LV.6
+2.25%
+26 siphoned
+17d ago
+199.144.52.193
+LV.6
+2.25%
+25 siphoned
+17d ago
+109.240.204.115
+LV.6
+2.25%
+18 siphoned
+17d ago
+82.105.251.59
+LV.1
+1%
+15 siphoned
+7d ago
+7.20.136.64
+LV.2
+1.25%
+15 siphoned
+18d ago
+121.58.120.209
+LV.1
+1%
+12 siphoned
+7d ago
+244.74.255.238
+LV.1
+1%
+10 siphoned
+7d ago
+4.226.131.111
+LV.2
+1.25%
+8 siphoned
+18d ago
+112.156.182.68
+LV.6
+2.25%
+7 siphoned
+17d ago
+159.92.54.79
+LV.1
+1%
+6 siphoned
+17d ago
+77.95.56.227
+LV.1
+1%
+4 siphoned
+17d ago
+173.184.63.95
+LV.1
+1%
+4 siphoned
+18d ago
+186.40.49.96
+LV.6
+2.25%
+3 siphoned
+17d ago
+253.102.24.197
+LV.2
+1.25%
+2 siphoned
+18d ago
+95.205.188.133
+LV.2
+1.25%
+0 siphoned
+18d ago
+188.255.223.202
+LV.6
+2.25%
+0 siphoned
+17d ago
+209.23.190.92
+LV.2
+1.25%
+0 siphoned
+19d ago
+62.100.127.136
+LV.2
+1.25%
+0 siphoned
+18d ago
+15.126.120.166
+LV.13
+4%
+0 siphoned
+14d ago
+76.5.44.155
+LV.1
+1%
+0 siphoned
+17d ago
+115.232.162.9
+LV.5
+2%
+0 siphoned
+7d ago
+97.168.60.33
+LV.5
+2%
+0 siphoned
+7d ago
+109.248.222.248
+LV.6
+2.25%
+0 siphoned
+17d ago
+88.80.158.44
+LV.6
+2.25%
+0 siphoned
+17d ago
+74.111.8.213
+LV.2
+1.25%
+0 siphoned
+18d ago
+191.219.232.219
+LV.6
+2.25%
+0 siphoned
+17d ago
+193.91.118.147
+LV.6
+2.25%
+0 siphoned
+17d ago
+70.196.185.35
+LV.2
+1.25%
+0 siphoned
+19d ago
+74.38.221.95
+LV.1
+1%
+0 siphoned
+19d ago
+16.101.186.103
+LV.6
+2.25%
+0 siphoned
+17d ago
+220.139.54.242
+LV.6
+2.25%
+0 siphoned
+17d ago
+163.59.180.171
+LV.20
+5.75%
+0 siphoned
+2d ago

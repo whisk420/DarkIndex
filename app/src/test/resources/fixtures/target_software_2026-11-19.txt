@@ -1,0 +1,49 @@
+< back
+DISCONNECT
+// APPS
+mjja419's installed software
++ UPLOAD VIRUS 0 / 2 slots ▼
+Antivirus
+Scans and removes viruses. Restores 90% of lost reputation.
+LVL 22
++2
+Spam
+Generates passive Crypto income from deployed devices.
+LVL 20
+=
+Rootkit
+Weakens victim defenses for you and your crew.
+LVL 14
++8
+Firewall
+Blocks unauthorized access. Higher levels increase bypass difficulty and duration for attackers.
+LVL 22
+=
+Bypasser
+Bypasses target firewalls. Higher levels improve success rate and reduce hack time.
+LVL 22
++2
+Password Cracker
+Cracks encrypted passwords to access victim devices.
+LVL 22
++2
+Password Encryptor
+Encrypts your password. Higher levels make cracking harder and slower.
+LVL 22
++4
+Proxy
+Routes traffic through proxy hops to mask IP when activated. Higher levels mask more octets and resist Trace.
+LVL 20
+=
+Trace
+Traces connections back through proxy hops to reveal masked IPs. Higher levels have a greater chance of unmasking.
+LVL 21
++1
+Keygen
+Hardware-bound key generator. Cannot be downloaded.
+LVL 24
+DEVICE-BOUND
+Siphon
+Skims a percentage of Crypto flowing through the victim's account.
+LVL 20
+=
