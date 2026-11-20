@@ -99,6 +99,18 @@ jobs:
         echo "Version name:  $CLEAN_VER"
         echo "Version code:  $CODE (1000 + $COMMITS commits)"
 
+    # Never publish a build whose unit tests fail.
+    - name: Run Unit Tests
+      run: ./gradlew testDebugUnitTest --stacktrace
+
+    - name: Upload Test Report (on failure)
+      if: failure()
+      uses: actions/upload-artifact@v6
+      with:
+        name: unit-test-report
+        path: app/build/reports/tests/testDebugUnitTest/
+        retention-days: 14
+
     - name: Assemble Release APK
       env:
         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
