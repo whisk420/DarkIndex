@@ -38,17 +38,35 @@ Because DarkIndex is not distributed via the Google Play Store and utilizes Andr
 
 ## How to Build Yourself
 
-If you are a developer, security-conscious, or simply want to tinker with the code, you can easily build the app from source:
+If you are a developer, security-conscious, or simply want to tinker with the code, you can easily build the app from source. No keys, accounts or special setup are needed.
 
 1. **Prerequisites**: Ensure you have [Android Studio](https://developer.android.com/studio) and Git installed on your computer.
-2. **Clone the Repository**:
+2. **Clone the Repository** (or your fork):
    ```bash
    git clone https://github.com/whisk420/DarkIndex.git
    ```
 3. **Open the Project**: Launch Android Studio, select **Open**, and select the project directory.
-4. **Sync Gradle**: Let Android Studio automatically download the required Gradle dependencies and sync the project structure.
+4. **Sync Gradle**: Let Android Studio automatically download the required Gradle dependencies (and the JDK toolchain) and sync the project structure.
 5. **Build and Install**:
-   - **Build APK**: `./gradlew assembleDebug`
+   - **Run on a device or emulator**: press **Run ▶** in Android Studio.
+   - **Build APK**: `./gradlew assembleDebug` (Windows: `gradlew.bat assembleDebug`)
+   - **Run the unit tests**: `./gradlew testDebugUnitTest`
+
+> **Signing (you can ignore this):** your builds are signed with your own Android Studio debug key. That's expected. The project's release key is only used for official GitHub releases. Gradle prints a one-line warning about the missing key; it's harmless.
+>
+> **⚠️ Already have the official DarkIndex installed on the same phone?** Android won't install a build signed with a different key over it and will ask you to uninstall it first, which deletes its data. Use **⋮ → Export Data** beforehand (and **Import Data** afterwards), or test on an emulator or second device.
+
+### Contributing
+
+Pull requests are welcome.
+
+1. Fork the repo and create a branch.
+2. Make your change, then run `./gradlew testDebugUnitTest`. All tests must pass.
+3. **Parser changes need a test.** Add a fixture to `app/src/test/java/com/whisk/hackexlogger/` built from real screen text.
+4. **Getting real screen text:** enable **Settings & Account → Debug → Raw Dump Mode**. Every 📼 scrape is saved under the Raw Dumps icon, with the raw text, what each parser understood, discarded log lines and database changes. Tap a card to copy its JSON for a test fixture, an issue or your PR.
+5. Open a PR describing which game screens it affects.
+
+Never commit signing keys (`*.jks`, `keystore.properties`) or database exports (`*.json`). `.gitignore` already excludes them.
 
 ---
 

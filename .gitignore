@@ -41,3 +41,8 @@ Thumbs.db
 # User database exports & scratch files
 *.json
 *.jsonl
+
+# Signing keys & local signing config (never commit these)
+*.jks
+*.keystore
+keystore.properties
