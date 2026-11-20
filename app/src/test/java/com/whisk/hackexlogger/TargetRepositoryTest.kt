@@ -65,7 +65,7 @@ class TargetRepositoryTest {
     fun testRunDatabaseMaintenanceDoesNotPurgeThefts() {
         val target = TargetRecord(ip = "10.0.0.99", username = "TheftTarget")
 
-        // Add thefts: 1st hack at t=0, 2nd hack at t=30h (gap > 24h)
+        // Add thefts: 1st hack at t=0, 2nd hack at t=30h (gap > 1h)
         val t0 = 1000000L
         val t1 = t0 + (30 * 3600 * 1000L) // 30 hours later
         target.addTheftEvent("hxWallet1", t0, 500)
@@ -89,9 +89,9 @@ class TargetRepositoryTest {
 
         val cutoff = System.currentTimeMillis() - 30 * 24 * 3600000L
         
-        // Add old thefts from 40 days ago that form a reliable cluster (>2 events, gaps < 24h)
+        // Add old thefts from 40 days ago that form a reliable cluster (>2 events, gaps < 1h)
         val oldTs1 = cutoff - 10 * 24 * 3600000L
-        val oldTs2 = oldTs1 + 4 * 3600000L // 4 hours later
+        val oldTs2 = oldTs1 + 1800000L // 30 mins later
         target.addTheftEvent("hxWallet2", oldTs1, 500)
         target.addTheftEvent("hxWallet2", oldTs2, 1000)
         
@@ -108,7 +108,7 @@ class TargetRepositoryTest {
         
         // Now add a recent reliable cluster!
         val newTs1 = System.currentTimeMillis() - 2 * 24 * 3600000L
-        val newTs2 = newTs1 + 4 * 3600000L
+        val newTs2 = newTs1 + 1800000L // 30 mins later
         updatedTarget.addTheftEvent("hxWallet2", newTs1, 500)
         updatedTarget.addTheftEvent("hxWallet2", newTs2, 1000)
         TargetRepository.saveAllRecords(listOf(updatedTarget))

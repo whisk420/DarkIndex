@@ -11,10 +11,12 @@ import java.util.TimeZone
 object SiphonTracker {
     private const val KEY_SIPHON_ALERTS = "siphon_alerts"
     private const val KEY_KNOWN_SIPHONS = "known_siphons"
+    private const val KEY_KNOWN_SIPHON_STARTS = "known_siphon_starts"
 
     private val knownSiphons = mutableMapOf<String, Int>()
+    private val knownSiphonStartTimes = mutableMapOf<String, Long>()
     private val siphonAlerts = mutableSetOf<String>()
-    private val recentlyScrapedSiphons = mutableMapOf<String, Long>()
+    private val accumulatedSiphons = mutableSetOf<String>()
 
     fun init() {
         val prefs = TargetRepository.prefs
@@ -41,12 +43,25 @@ object SiphonTracker {
         } catch (e: Exception) {
             android.util.Log.e("SiphonTracker", "Error loading known siphons cache: ${e.message}", e)
         }
+
+        try {
+            val startsJson = prefs.getString(KEY_KNOWN_SIPHON_STARTS, "{}")
+            val startsType = object : TypeToken<Map<String, Long>>() {}.type
+            val loadedStarts: Map<String, Long>? = gson.fromJson(startsJson, startsType)
+            if (loadedStarts != null) {
+                knownSiphonStartTimes.clear()
+                knownSiphonStartTimes.putAll(loadedStarts)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SiphonTracker", "Error loading siphon start times: ${e.message}", e)
+        }
     }
 
     private fun saveSiphonData() {
         TargetRepository.prefs.edit()
             .putString(KEY_SIPHON_ALERTS, TargetRepository.gson.toJson(siphonAlerts))
             .putString(KEY_KNOWN_SIPHONS, TargetRepository.gson.toJson(knownSiphons))
+            .putString(KEY_KNOWN_SIPHON_STARTS, TargetRepository.gson.toJson(knownSiphonStartTimes))
             .apply()
     }
 
@@ -79,8 +94,9 @@ object SiphonTracker {
 
     fun clearSiphonTracking() {
         knownSiphons.clear()
+        knownSiphonStartTimes.clear()
         siphonAlerts.clear()
-        recentlyScrapedSiphons.clear()
+        accumulatedSiphons.clear()
         currentTimeProvider = { System.currentTimeMillis() }
         saveSiphonData()
     }
@@ -95,34 +111,33 @@ object SiphonTracker {
         val exportFile = File(context.filesDir, "siphon_history.jsonl")
 
         val currentTime = currentTimeProvider()
-        val iterator = recentlyScrapedSiphons.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            if (currentTime - entry.value > 15 * 60 * 1000) {
-                iterator.remove()
-            }
-        }
 
         for (item in siphonScreen.items) {
-            recentlyScrapedSiphons[item.ip] = currentTime
+            accumulatedSiphons.add(item.ip)
+            // If the user goes back and scans their list, remove anything that was falsely alerted
+            if (siphonAlerts.contains(item.ip)) {
+                siphonAlerts.remove(item.ip)
+            }
         }
 
-        if (siphonScreen.deployedCount == 0) {
-            val missingIps = knownSiphons.keys.toList()
+        if (siphonScreen.deployedCount == 0 || accumulatedSiphons.size >= siphonScreen.deployedCount) {
+            val missingIps = knownSiphons.keys - accumulatedSiphons
             for (missingIp in missingIps) {
-                siphonAlerts.add(missingIp)
+                val amount = knownSiphons[missingIp] ?: 0
+                val startTime = knownSiphonStartTimes[missingIp]
+                val installedForMs = if (startTime != null) currentTime - startTime else 0L
+                val isCrapInstall = installedForMs > 24L * 60 * 60 * 1000 && amount < 1000
+
+                if (!isCrapInstall) {
+                    siphonAlerts.add(missingIp)
+                }
+                
                 knownSiphons.remove(missingIp)
+                knownSiphonStartTimes.remove(missingIp)
                 val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
                 exportFile.appendText("$logLine\n")
             }
-        } else if (recentlyScrapedSiphons.size >= siphonScreen.deployedCount) {
-            val missingIps = knownSiphons.keys - recentlyScrapedSiphons.keys
-            for (missingIp in missingIps) {
-                siphonAlerts.add(missingIp)
-                knownSiphons.remove(missingIp)
-                val logLine = """{"timestamp":"$nowStr","ip":"$missingIp","event":"REMOVED"}"""
-                exportFile.appendText("$logLine\n")
-            }
+            accumulatedSiphons.clear()
         }
 
         for (item in siphonScreen.items) {
@@ -133,6 +148,7 @@ object SiphonTracker {
                 val logLine = """{"timestamp":"$nowStr","ip":"${item.ip}","event":"REINSTALLED","old_amount":$previousAmount,"new_amount":${item.amount}}"""
                 exportFile.appendText("$logLine\n")
             } else if (previousAmount == null) {
+                knownSiphonStartTimes[item.ip] = currentTime
                 val logLine = """{"timestamp":"$nowStr","ip":"${item.ip}","event":"INSTALLED","amount":${item.amount},"timeAgo":"${item.timeAgo}"}"""
                 exportFile.appendText("$logLine\n")
             }

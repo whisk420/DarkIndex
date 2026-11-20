@@ -6,12 +6,13 @@ import java.util.Calendar
 
 class TargetIncomeTest {
 
-    private fun createTime(dayOffset: Int, hourOfDay: Int): Long {
+    private fun createTime(dayOffset: Int, hourOfDay: Int, minute: Int = 0): Long {
         val c = Calendar.getInstance()
         c.set(2023, Calendar.JANUARY, 1, 0, 0, 0)
         c.set(Calendar.MILLISECOND, 0)
         c.add(Calendar.DAY_OF_MONTH, dayOffset)
         c.add(Calendar.HOUR_OF_DAY, hourOfDay)
+        c.add(Calendar.MINUTE, minute)
         return c.timeInMillis
     }
 
@@ -20,22 +21,28 @@ class TargetIncomeTest {
         val target = TargetRecord(ip = "1.1.1.1")
         val wallet = "hx123"
 
-        // Cluster 1: Days 1-10, hacked every 12 hours (Gap <= 24h)
+        // Cluster 1: Days 1-10, hacked every 30 minutes (Gap <= 1h)
         // Should be split into a 7-day cluster (Days 1-7) and a 3-day cluster (Days 8-10)
-        for (day in 1..10) {
-            target.addTheftEvent(wallet, createTime(day, 10), 1000)
-            target.addTheftEvent(wallet, createTime(day, 22), 1000)
+        var t = createTime(1, 10)
+        val tenDays = 10 * 24 * 60 * 60 * 1000L
+        val endTime = t + tenDays
+        while (t <= endTime) {
+            target.addTheftEvent(wallet, t, 1000)
+            t += 30 * 60 * 1000L
         }
 
-        // Gap of 48 hours (Day 11, Day 12 skipped)
+        // Gap of 48 hours is naturally formed here
 
         // Cluster 2: Day 13 (single event)
         target.addTheftEvent(wallet, createTime(13, 10), 500)
 
-        // Cluster 3: Day 15-16, hacked every 12 hours
-        for (day in 15..16) {
-            target.addTheftEvent(wallet, createTime(day, 10), 1000)
-            target.addTheftEvent(wallet, createTime(day, 22), 1000)
+        // Cluster 3: Day 15-16, hacked every 30 minutes
+        t = createTime(15, 10)
+        val thirtySixHours = 36 * 60 * 60 * 1000L
+        val endTwoDays = t + thirtySixHours
+        while (t <= endTwoDays) {
+            target.addTheftEvent(wallet, t, 1000)
+            t += 30 * 60 * 1000L
         }
 
         val clusters = target.getReliableClusters(wallet)
@@ -63,19 +70,19 @@ class TargetIncomeTest {
         val target = TargetRecord(ip = "1.1.1.1")
         val wallet = "hx123"
 
-        // Cluster 1: 4000 stolen over 4 hours (Rate: 1000/hr)
-        target.addTheftEvent(wallet, createTime(1, 10), 1000) // Initial hack (discarded for rate sum)
-        target.addTheftEvent(wallet, createTime(1, 12), 2000)
-        target.addTheftEvent(wallet, createTime(1, 14), 2000)
+        // Cluster 1: 4000 stolen over 1 hour (Rate: 4000/hr)
+        target.addTheftEvent(wallet, createTime(1, 10, 0), 1000) // Initial hack (discarded for rate sum)
+        target.addTheftEvent(wallet, createTime(1, 10, 30), 2000)
+        target.addTheftEvent(wallet, createTime(1, 11, 0), 2000)
 
-        // Cluster 2: 3000 stolen over 6 hours (Rate: 500/hr)
-        target.addTheftEvent(wallet, createTime(5, 10), 1000) // Initial hack
-        target.addTheftEvent(wallet, createTime(5, 13), 1500)
-        target.addTheftEvent(wallet, createTime(5, 16), 1500)
+        // Cluster 2: 3000 stolen over 1 hour (Rate: 3000/hr)
+        target.addTheftEvent(wallet, createTime(5, 10, 0), 1000) // Initial hack
+        target.addTheftEvent(wallet, createTime(5, 10, 30), 1500)
+        target.addTheftEvent(wallet, createTime(5, 11, 0), 1500)
 
         val income = target.getEstimatedIncome(wallet)
-        // Avg of 1000/hr and 500/hr = 750/hr
-        assertEquals("₵750/hr", income)
+        // Avg of 4000/hr and 3000/hr = 3500/hr
+        assertEquals("₵3,500/hr", income)
     }
 
     @Test

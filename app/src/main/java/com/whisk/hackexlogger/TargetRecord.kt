@@ -95,7 +95,7 @@ data class TargetRecord(
             val t1 = Instant.fromEpochMilliseconds(sorted[i - 1].timestampMs)
             val t2 = Instant.fromEpochMilliseconds(sorted[i].timestampMs)
             val gap = t2 - t1
-            if (gap > 24.hours) {
+            if (gap > 1.hours) {
                 rawClusters.add(current)
                 current = mutableListOf(sorted[i])
             } else {

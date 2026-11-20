@@ -97,46 +97,62 @@ class SiphonTrackerTest {
         SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 3, items = listOf(item1, item2, item3)), fakeContext)
         assertEquals(0, SiphonTracker.getSiphonAlerts().size)
 
-        // 20 minutes pass... old recentlyScrapedSiphons entries expire
+        // 20 minutes pass... old recentlyScrapedSiphons entries expire? No, we rely on full scroll now.
         mockTime += 20 * 60 * 1000L
 
         // Later, ip2 was wiped by Antivirus (game shows DEPLOYED 2). Player scrapes page 1 (visible: ip1)
         SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 2, items = listOf(item1)), fakeContext)
-        // recentlyScrapedSiphons has size 1 (< deployedCount 2), so removal is NOT triggered yet until full scroll
+        // accumulatedSiphons has size 1 (< deployedCount 2), so removal is NOT triggered yet until full scroll
         assertEquals(0, SiphonTracker.getSiphonAlerts().size)
 
-        // Player scrolls down to page 2 (visible: ip3). Now recentlyScrapedSiphons has ip1 + ip3 (size 2 >= deployedCount 2)
+        // Player scrolls down to page 2 (visible: ip3). Now accumulatedSiphons has ip1 + ip3 (size 2 >= deployedCount 2)
         SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 2, items = listOf(item3)), fakeContext)
 
         // Now removal detection triggers because accumulated scraped siphons size (2) >= deployedCount (2).
-        // ip2 was in knownSiphons but is missing from recentlyScrapedSiphons!
+        // ip2 was in knownSiphons but is missing from accumulatedSiphons!
         val alerts = SiphonTracker.getSiphonAlerts()
         assertEquals(1, alerts.size)
         assertEquals(ip2, alerts[0])
     }
 
     @Test
-    fun test15MinuteTTLEviction() {
+    fun testCrapInstallNotAlerted() {
+        val fakeContext = FakeContext()
+        var mockTime = 1_000_000L
+        SiphonTracker.currentTimeProvider = { mockTime }
+
+        // Initial 1 siphon installed, amount is small
+        val initialSiphon = SiphonItem(ip = "10.0.0.99", level = 5, percent = "2%", amount = 500, timeAgo = "10m ago")
+        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 1, items = listOf(initialSiphon)), fakeContext)
+
+        // Advance time by 2 days (48 hours)
+        mockTime += 48L * 60 * 60 * 1000L
+
+        // Now deployedCount = 0 (Siphon was completely wiped or manually removed)
+        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 0, items = emptyList()), fakeContext)
+
+        // It should NOT alert because it's a crap install (> 24h and < 1000)
+        val alerts = SiphonTracker.getSiphonAlerts()
+        assertEquals(0, alerts.size)
+    }
+
+    @Test
+    fun testReScrapingClearsFalseAlert() {
         val fakeContext = FakeContext()
         var mockTime = 1_000_000L
         SiphonTracker.currentTimeProvider = { mockTime }
 
         val item1 = SiphonItem("192.168.1.1", 10, "5%", 1000, "1h ago")
-        val item2 = SiphonItem("192.168.1.2", 10, "5%", 1000, "1h ago")
+        
+        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 1, items = listOf(item1)), fakeContext)
+        
+        // Forcibly add alert (e.g. false positive or old alert)
+        SiphonTracker.restoreSiphonData(listOf("192.168.1.1"), null)
+        assertEquals(1, SiphonTracker.getSiphonAlerts().size)
 
-        // Initial scrape at T=1,000,000
-        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 2, items = listOf(item1, item2)), fakeContext)
-        assertEquals(0, SiphonTracker.getSiphonAlerts().size)
-
-        // Advance mock time by 16 minutes (>15 minute TTL)
-        mockTime += 16 * 60 * 1000L
-
-        // Scrape page with only item1 and deployedCount = 2
-        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 2, items = listOf(item1)), fakeContext)
-
-        // item2 was evicted from recentlyScrapedSiphons due to TTL expiry (>15 min),
-        // so recentlyScrapedSiphons size is now only 1 (item1), which is < deployedCount (2).
-        // Therefore, removal alert is not triggered prematurely until full viewport scroll completes.
+        // Re-scrape the list. The alert should disappear because the item is present.
+        SiphonTracker.processSiphonScreen(SiphonScreen(deployedCount = 1, items = listOf(item1)), fakeContext)
+        
         assertEquals(0, SiphonTracker.getSiphonAlerts().size)
     }
 }
