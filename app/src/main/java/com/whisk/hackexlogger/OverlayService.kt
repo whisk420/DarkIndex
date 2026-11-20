@@ -20,6 +20,7 @@ import android.os.Handler
 import android.os.Looper
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.view.ViewConfiguration
 import android.view.View
 import android.view.WindowManager
@@ -61,6 +62,12 @@ class OverlayService : Service() {
     
     private var toastView: TextView? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Raw Dump Mode: the 📸 button turns into 📼 with a red ring while dumps are being recorded.
+    private var settingsPrefs: SharedPreferences? = null
+    private val settingsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == RawDumpSettings.KEY_ENABLED) applyCameraButtonStyle() // listeners are delivered on the main thread
+    }
     
     private val saveReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -78,6 +85,11 @@ class OverlayService : Service() {
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupCameraFloatingButton()
+
+        settingsPrefs = getSharedPreferences(RawDumpSettings.PREFS_NAME, Context.MODE_PRIVATE).also {
+            it.registerOnSharedPreferenceChangeListener(settingsListener)
+        }
+        applyCameraButtonStyle()
         
         androidx.core.content.ContextCompat.registerReceiver(
             this,
@@ -214,6 +226,18 @@ class OverlayService : Service() {
         cameraFloatingButton.setOnClickListener(null)
 
         windowManager.addView(cameraFloatingButton, params)
+    }
+
+    /** Normal: 📸 on a dark circle. Raw Dump Mode: 📼 on a dark circle with a red ring. */
+    private fun applyCameraButtonStyle() {
+        if (!::cameraFloatingButton.isInitialized) return
+        val dumping = RawDumpSettings.isEnabled(this)
+        cameraFloatingButton.text = if (dumping) "📼" else "📸"
+        cameraFloatingButton.background = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(Color.parseColor("#99000000"))
+            if (dumping) setStroke((3 * resources.displayMetrics.density).toInt(), Color.parseColor("#ef4444"))
+        }
     }
 
     /**
@@ -580,6 +604,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        settingsPrefs?.unregisterOnSharedPreferenceChangeListener(settingsListener)
         unregisterReceiver(saveReceiver)
         hideCloseTarget()
         toastView?.let { try { windowManager.removeView(it) } catch (e: Exception) {} }

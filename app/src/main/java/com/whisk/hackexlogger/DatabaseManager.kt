@@ -16,6 +16,17 @@ import java.util.TimeZone
  * Local data manager for persisting, querying, merging, and exporting HackEx target records.
  */
 object DatabaseManager {
+    /** Receives log lines the database layer drops. Null (no-op) unless Raw Dump Mode is recording a scrape. */
+    fun interface DbDiscardSink {
+        fun onDbDiscard(line: String, reason: String)
+    }
+
+    @Volatile var activeDiscardSink: DbDiscardSink? = null
+
+    private fun dbDiscard(update: ParsedUpdate, reason: String) {
+        activeDiscardSink?.onDbDiscard(update.raw, reason)
+    }
+
     fun init(context: Context) {
         TargetRepository.init(context)
         SiphonTracker.init()
@@ -101,7 +112,10 @@ object DatabaseManager {
                 }
             }
 
-            if (ip.isEmpty()) continue
+            if (ip.isEmpty()) {
+                dbDiscard(update, LogDiscardReason.EMPTY_IP)
+                continue
+            }
 
             var record = recordMap[ip]
             if (record == null) {
@@ -112,6 +126,7 @@ object DatabaseManager {
             if (update.wallet != null) {
                 if (record.wallets.isNotEmpty() && !record.wallets.contains(update.wallet)) {
                     TargetRepository.logWalletConflict(ip, record.wallets.first(), update.wallet, "LogUpdate")
+                    dbDiscard(update, LogDiscardReason.WALLET_CONFLICT)
                 } else {
                     val previousOwner = recordMap.values.find { it.ip != ip && it.wallets.contains(update.wallet) }
                     if (previousOwner != null) {
@@ -126,10 +141,12 @@ object DatabaseManager {
                         record.wallets.add(update.wallet)
                     }
                     
-                    if (update.stolenAmount != null && update.time != null && update.isOwnLogTheft) {
-                        val timestampMs = parseLogTime(update.time)
+                    if (update.stolenAmount != null && update.isOwnLogTheft) {
+                        val timestampMs = update.time?.let { parseLogTime(it) }
                         if (timestampMs != null) {
                             record.addTheftEvent(update.wallet, timestampMs, update.stolenAmount)
+                        } else {
+                            dbDiscard(update, LogDiscardReason.BAD_TIMESTAMP)
                         }
                     }
                 }
@@ -142,6 +159,8 @@ object DatabaseManager {
                         status = update.software.action,
                         lastSeen = update.time
                     )
+                } else {
+                    dbDiscard(update, LogDiscardReason.MASKED_SOFTWARE_IGNORED)
                 }
             }
         }

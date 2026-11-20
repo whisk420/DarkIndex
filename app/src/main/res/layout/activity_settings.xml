@@ -116,6 +116,44 @@
                     android:backgroundTint="#8B0000" />
             </LinearLayout>
 
+            <!-- Debug: Raw Dump Mode -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#050811"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Debug"
+                    android:textColor="#f87171"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/rawDumpModeSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Raw Dump Mode"
+                    android:textColor="#e2e8f0"
+                    android:textSize="14sp"
+                    app:useMaterialThemeColors="false"
+                    app:thumbTint="#ef4444"
+                    app:trackTint="#1e293b" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Records every 📸 scrape (raw screen text, what the parsers understood, discarded log lines and database changes). Scrapes still save normally. While on, the 📸 button shows 📼 and the Siphon Alerts icon is replaced by Raw Dumps."
+                    android:textColor="#94a3b8"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
             <!-- Privacy & Control Guarantee Card -->
             <LinearLayout
                 android:layout_width="match_parent"

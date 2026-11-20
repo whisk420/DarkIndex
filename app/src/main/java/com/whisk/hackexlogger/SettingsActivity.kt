@@ -53,6 +53,13 @@ class SettingsActivity : AppCompatActivity() {
             
         softwareText.text = softwareLevelsStr.ifEmpty { "No software parsed yet." }
 
+        val rawDumpSwitch = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.rawDumpModeSwitch)
+        rawDumpSwitch.isChecked = RawDumpSettings.isEnabled(this)
+        rawDumpSwitch.setOnCheckedChangeListener { _, isChecked ->
+            RawDumpSettings.setEnabled(this, isChecked)
+            android.widget.Toast.makeText(this, if (isChecked) "Raw Dump Mode ON — 📸 scrapes are recorded" else "Raw Dump Mode OFF", android.widget.Toast.LENGTH_SHORT).show()
+        }
+
         findViewById<android.widget.Button>(R.id.btnPurgeThefts).setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Purge Old Theft Data")

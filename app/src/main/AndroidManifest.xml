@@ -38,6 +38,10 @@
             android:name=".SiphonAlertsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".RawDumpsActivity"
+            android:exported="false" />
+
         <service
             android:name=".ScraperAccessibilityService"
             android:exported="true"

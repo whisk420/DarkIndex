@@ -166,7 +166,12 @@ class MainActivity : AppCompatActivity() {
         validateBtn.text = if (isReconModeEnabled) "RECON" else "VALIDATE"
         validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isReconModeEnabled) "#f59e0b" else "#16a34a"))
         validateBtn.setIconResource(if (isReconModeEnabled) android.R.drawable.ic_menu_search else android.R.drawable.ic_menu_crop)
-        
+
+        // Raw Dump Mode (debug): swap the Siphon Alerts icon for the Raw Dumps icon
+        val rawDumpMode = RawDumpSettings.isEnabled(this)
+        findViewById<ImageButton>(R.id.siphonAlertsBtn).visibility = if (rawDumpMode) View.GONE else View.VISIBLE
+        findViewById<ImageButton>(R.id.rawDumpsBtn).visibility = if (rawDumpMode) View.VISIBLE else View.GONE
+
         refreshData()
         if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
             startService(Intent(this, OverlayService::class.java))
@@ -206,6 +211,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.siphonAlertsBtn).setOnClickListener {
             val intent = Intent(this, SiphonAlertsActivity::class.java)
             startActivity(intent)
+        }
+
+        // Raw Dumps (debug) — only visible while Raw Dump Mode is on
+        findViewById<ImageButton>(R.id.rawDumpsBtn).setOnClickListener {
+            startActivity(Intent(this, RawDumpsActivity::class.java))
         }
 
         // Settings popup menu

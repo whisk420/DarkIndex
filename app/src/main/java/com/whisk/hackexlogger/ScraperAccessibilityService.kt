@@ -65,15 +65,24 @@ class ScraperAccessibilityService : AccessibilityService() {
 
     /**
      * Inspects the active window node hierarchy, extracts visible text, and parses game entity details.
+     * When Raw Dump Mode is on, the same scrape is also recorded as a dump (see docs/plans/raw-dump-mode.md).
      */
     fun scrapeAndParse() {
         val totalStartNanos = System.nanoTime()
+        val dump: RawDump? = if (RawDumpSettings.isEnabled(this)) RawDump.create(app = RawDumpCapture.appInfo(this)) else null
+
         Log.d("DOSSIER", "scrapeAndParse() called. Attempting to get root window...")
         val rootNode = rootInActiveWindow
         if (rootNode == null) {
             Log.e("DOSSIER", "ERROR: rootInActiveWindow is null. Cannot scrape.")
+            if (dump != null) {
+                dump.error = "rootInActiveWindow was null (no readable window)"
+                dump.result = "Nothing scraped"
+                saveDumpAndToast(dump, "Nothing scraped")
+            }
             return
         }
+        dump?.foregroundPackage = rootNode.packageName?.toString()
 
         // IMMEDIATELY traverse the node tree on the main thread to capture the exact current screen state.
         // Offloading tree traversal to a background thread causes race conditions if the user navigates away quickly.
@@ -83,142 +92,91 @@ class ScraperAccessibilityService : AccessibilityService() {
             extractText(rootNode, extractedTextList)
         } catch (e: Exception) {
             Log.e("DOSSIER", "Error extracting text nodes: ${e.message}", e)
+            dump?.error = "extractText failed: ${e.stackTraceToString().take(4000)}"
         }
         val extractDurationMs = (System.nanoTime() - extractStartNanos) / 1_000_000.0
 
-        if (extractedTextList.isEmpty()) {
-            val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
-                setPackage(packageName)
-                putExtra("message", "Nothing found to save")
+        if (dump != null) {
+            try {
+                dump.nodeTree = RawDumpCapture.nodeTree(rootNode)
+            } catch (e: Exception) {
+                dump.error = (dump.error?.plus("\n") ?: "") + "nodeTree capture failed: ${e.message}"
             }
-            sendBroadcast(toastIntent)
+            dump.timing.extractMs = RawDump.roundMs(extractDurationMs)
+            dump.timing.nodeCount = dump.nodeTree.size
+        }
+
+        if (extractedTextList.isEmpty()) {
+            if (dump != null) {
+                dump.result = "Nothing found to save"
+                saveDumpAndToast(dump, "Nothing found to save")
+            } else {
+                sendToast("Nothing found to save")
+            }
             return
         }
 
         val combinedText = extractedTextList.joinToString("\n")
         Log.i("DOSSIER_RAW", "--- RAW SCRAPED TEXT START ---\n$combinedText\n--- RAW SCRAPED TEXT END ---")
+        dump?.rawText = combinedText
 
         // Split extracted UI text into discrete lines for log parsing
         val allLines = combinedText.split(Regex("""\r?\n"""))
 
         // Offload ALL Regex parsing and storage to background thread
         serviceScope.launch(Dispatchers.Default) {
-            val savedItems = mutableListOf<String>()
+            var result: ScrapePipeline.Result? = null
+            var failure: Throwable? = null
 
-            // 1. Benchmark Screen Type Detection
-            val detectStartNanos = System.nanoTime()
-            val detectedType = ScreenClassifier.detectScreenType(combinedText, allLines)
-            val detectDurationMs = (System.nanoTime() - detectStartNanos) / 1_000_000.0
-
-            // 2. Benchmark Regex Parsing & Database Processing
-            val parseStartNanos = System.nanoTime()
-            when (detectedType) {
-                ScreenType.HOME -> {
-                    val homeScreen = HomeScreenParser.parse(combinedText)
-                    if (homeScreen != null) {
-                        Log.d("DOSSIER", "Parsed HomeScreen: $homeScreen")
-                        DatabaseManager.processHomeScreen(homeScreen)
-                        savedItems.add("Target Profile")
+            if (dump != null) {
+                // Serialize recorded scrapes: the session installs global hooks for its duration.
+                synchronized(DumpSession.LOCK) {
+                    val session = DumpSession(dump)
+                    session.begin()
+                    try {
+                        result = ScrapePipeline.run(combinedText, allLines, session)
+                    } catch (t: Throwable) {
+                        failure = t
+                    } finally {
+                        try { session.end() } catch (t: Throwable) { Log.e("DOSSIER", "DumpSession.end failed", t) }
                     }
                 }
-                ScreenType.SOFTWARE -> {
-                    val softwareScreen = SoftwareScreenParser.parse(combinedText)
-                    if (softwareScreen != null) {
-                        Log.d("DOSSIER", "Parsed SoftwareScreen: $softwareScreen")
-                        DatabaseManager.processSoftwareScreen(softwareScreen)
-                        savedItems.add("Software Inventory")
-                    }
-                }
-                ScreenType.WALLET -> {
-                    val walletScreen = WalletScreenParser.parse(combinedText)
-                    if (walletScreen != null) {
-                        Log.d("DOSSIER", "Parsed WalletScreen: $walletScreen")
-                        DatabaseManager.processWalletScreen(walletScreen)
-                        savedItems.add("Wallet")
-                    }
-                }
-                ScreenType.LOGS -> {
-                    val logUpdates = LogScreenParser.parse(allLines)
-                    if (logUpdates.isNotEmpty()) {
-                        Log.d("DOSSIER", "Parsed ${logUpdates.size} Log Updates")
-                        DatabaseManager.processUpdates(logUpdates)
-                        savedItems.add("${logUpdates.size} Log Events")
-                    }
-                }
-                ScreenType.SIPHON -> {
-                    val siphonScreen = SiphonScreenParser.parse(combinedText)
-                    if (siphonScreen != null) {
-                        Log.d("DOSSIER", "Parsed SiphonScreen: $siphonScreen")
-                        DatabaseManager.processSiphonScreen(siphonScreen)
-                        savedItems.add("Siphons")
-                    }
-                }
-                ScreenType.CREW -> {
-                    val crewScreen = CrewScreenParser.parse(allLines)
-                    if (crewScreen != null) {
-                        Log.d("DOSSIER", "Parsed CrewScreen: $crewScreen")
-                        DatabaseManager.processCrewScreen(crewScreen)
-                        savedItems.add("Crew")
-                    }
-                }
-                ScreenType.OWN_PROFILE -> {
-                    val ownHomeScreen = OwnHomeScreenParser.parse(combinedText)
-                    if (ownHomeScreen != null) {
-                        Log.d("DOSSIER", "Parsed OwnHomeScreen: $ownHomeScreen")
-                        DatabaseManager.processOwnHomeScreen(ownHomeScreen)
-                        savedItems.add("My Profile (Lv.${ownHomeScreen.level ?: "?"})")
-                    }
-                }
-                ScreenType.STORE -> {
-                    val storeScreen = StoreScreenParser.parse(allLines)
-                    if (storeScreen != null) {
-                        Log.d("DOSSIER", "Parsed StoreScreen: $storeScreen")
-                        DatabaseManager.processStoreScreen(storeScreen)
-                        savedItems.add("Store / Upgrades")
-                    }
-                }
-                ScreenType.BYPASS -> {
-                    val bypassScreen = BypassScreenParser.parse(combinedText)
-                    if (bypassScreen != null) {
-                        Log.d("DOSSIER", "Parsed BypassScreen: $bypassScreen")
-                        DatabaseManager.processBypassScreen(bypassScreen)
-                        savedItems.add("Bypass / Target Info")
-                    }
-                }
-                ScreenType.PROCESS -> {
-                    val processScreen = ProcessScreenParser.parse(allLines)
-                    if (processScreen != null) {
-                        Log.d("DOSSIER", "Parsed ProcessScreen: $processScreen")
-                        DatabaseManager.processProcessScreen(processScreen)
-                        savedItems.add("Processes")
-                    }
-                }
-                ScreenType.UNKNOWN -> {
-                    // Fallback to evaluating all parsers if screen type signature was ambiguous
-                    parseAllScreensFallback(combinedText, allLines, savedItems)
-                }
-            }
-            val parseDurationMs = (System.nanoTime() - parseStartNanos) / 1_000_000.0
-            val totalPipelineMs = (System.nanoTime() - totalStartNanos) / 1_000_000.0
-
-            // Output Precision Benchmark Report to Logcat
-            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "⏱️ [PERFORMANCE BENCHMARK] Screen: %s", detectedType))
-            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Node Extraction: %.2f ms (%d text nodes)", extractDurationMs, extractedTextList.size))
-            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Screen Type Detection: %.2f ms", detectDurationMs))
-            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Parsing & Database Processing: %.2f ms", parseDurationMs))
-            Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "└─ TOTAL PIPELINE TIME: %.2f ms", totalPipelineMs))
-
-            val toastMessage = if (savedItems.isNotEmpty()) {
-                "Saved: " + savedItems.joinToString(", ")
             } else {
-                "Nothing found to save"
+                try {
+                    result = ScrapePipeline.run(combinedText, allLines, null)
+                } catch (t: Throwable) {
+                    failure = t
+                }
             }
 
-            val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
-                setPackage(packageName)
-                putExtra("message", toastMessage)
+            val totalPipelineMs = (System.nanoTime() - totalStartNanos) / 1_000_000.0
+            val r = result
+            val toastMessage: String
+            if (r != null) {
+                // Output Precision Benchmark Report to Logcat
+                Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "⏱️ [PERFORMANCE BENCHMARK] Screen: %s", r.detectedType))
+                Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Node Extraction: %.2f ms (%d text nodes)", extractDurationMs, extractedTextList.size))
+                Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Screen Type Detection: %.2f ms", r.detectMs))
+                Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "├─ Parsing & Database Processing: %.2f ms", r.parseMs))
+                Log.i("DOSSIER_BENCHMARK", String.format(Locale.US, "└─ TOTAL PIPELINE TIME: %.2f ms", totalPipelineMs))
+                toastMessage = ScrapePipeline.toastMessage(r.savedItems)
+            } else {
+                Log.e("DOSSIER", "Scrape pipeline failed", failure)
+                toastMessage = "Scrape error: ${failure?.javaClass?.simpleName ?: "unknown"}"
             }
-            sendBroadcast(toastIntent)
+
+            if (dump != null) {
+                dump.detectedType = r?.detectedType?.name
+                dump.fallbackUsed = r?.fallbackUsed ?: false
+                dump.timing.detectMs = RawDump.roundMs(r?.detectMs ?: 0.0)
+                dump.timing.parseMs = RawDump.roundMs(r?.parseMs ?: 0.0)
+                dump.timing.totalMs = RawDump.roundMs(totalPipelineMs)
+                dump.result = toastMessage
+                failure?.let { dump.error = (dump.error?.plus("\n") ?: "") + it.stackTraceToString().take(4000) }
+                saveDumpAndToast(dump, toastMessage)
+            } else {
+                sendToast(toastMessage)
+            }
 
             Log.d("DOSSIER", "Sending DATA_UPDATED broadcast to UI")
             val updateIntent = Intent("com.whisk.hackexlogger.DATA_UPDATED").apply {
@@ -228,56 +186,24 @@ class ScraperAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun parseAllScreensFallback(combinedText: String, allLines: List<String>, savedItems: MutableList<String>) {
-        val homeScreen = HomeScreenParser.parse(combinedText)
-        if (homeScreen != null) {
-            DatabaseManager.processHomeScreen(homeScreen)
-            savedItems.add("Target Profile")
+    private fun sendToast(message: String) {
+        val toastIntent = Intent("com.whisk.hackexlogger.SHOW_TOAST").apply {
+            setPackage(packageName)
+            putExtra("message", message)
         }
-        val softwareScreen = SoftwareScreenParser.parse(combinedText)
-        if (softwareScreen != null) {
-            DatabaseManager.processSoftwareScreen(softwareScreen)
-            savedItems.add("Software Inventory")
-        }
-        val walletScreen = WalletScreenParser.parse(combinedText)
-        if (walletScreen != null) {
-            DatabaseManager.processWalletScreen(walletScreen)
-            savedItems.add("Wallet")
-        }
-        val logUpdates = LogScreenParser.parse(allLines)
-        if (logUpdates.isNotEmpty()) {
-            DatabaseManager.processUpdates(logUpdates)
-            savedItems.add("${logUpdates.size} Log Events")
-        }
-        val siphonScreen = SiphonScreenParser.parse(combinedText)
-        if (siphonScreen != null) {
-            DatabaseManager.processSiphonScreen(siphonScreen)
-            savedItems.add("Siphons")
-        }
-        val crewScreen = CrewScreenParser.parse(allLines)
-        if (crewScreen != null) {
-            DatabaseManager.processCrewScreen(crewScreen)
-            savedItems.add("Crew")
-        }
-        val storeScreen = StoreScreenParser.parse(allLines)
-        if (storeScreen != null) {
-            DatabaseManager.processStoreScreen(storeScreen)
-            savedItems.add("Store / Upgrades")
-        }
-        val ownHomeScreen = OwnHomeScreenParser.parse(combinedText)
-        if (ownHomeScreen != null) {
-            DatabaseManager.processOwnHomeScreen(ownHomeScreen)
-            savedItems.add("My Profile (Lv.${ownHomeScreen.level ?: "?"})")
-        }
-        val bypassScreen = BypassScreenParser.parse(combinedText)
-        if (bypassScreen != null) {
-            DatabaseManager.processBypassScreen(bypassScreen)
-            savedItems.add("Bypass / Target Info")
-        }
-        val processScreen = ProcessScreenParser.parse(allLines)
-        if (processScreen != null) {
-            DatabaseManager.processProcessScreen(processScreen)
-            savedItems.add("Processes")
+        sendBroadcast(toastIntent)
+    }
+
+    /** Persists the dump off the main thread, then shows the normal toast with "📼 #id" appended. */
+    private fun saveDumpAndToast(dump: RawDump, message: String) {
+        serviceScope.launch(Dispatchers.IO) {
+            val suffix = try {
+                " · 📼 #" + RawDumpStore.forContext(this@ScraperAccessibilityService).save(dump)
+            } catch (e: Exception) {
+                Log.e("DOSSIER", "Failed to save raw dump", e)
+                " · 📼 save failed"
+            }
+            sendToast(message + suffix)
         }
     }
 

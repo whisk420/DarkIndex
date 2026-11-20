@@ -492,7 +492,11 @@ object TargetRepository {
         )
     }
 
+    /** Observer for wallet conflicts. Null (no-op) unless Raw Dump Mode is recording a scrape. */
+    @Volatile var walletConflictListener: ((ip: String, existingWallet: String, conflictingWallet: String, source: String) -> Unit)? = null
+
     fun logWalletConflict(ip: String, wallet1: String, wallet2: String, source: String) {
+        walletConflictListener?.invoke(ip, wallet1, wallet2, source)
         try {
             val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")

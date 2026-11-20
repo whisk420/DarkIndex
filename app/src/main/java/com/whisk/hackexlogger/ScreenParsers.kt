@@ -147,6 +147,32 @@ data class ParsedUpdate(
 
 data class Software(val action: String, val level: Int, val name: String)
 
+/**
+ * A timestamped log line that did not produce a [ParsedUpdate] (or was dropped later by the database layer).
+ * @property stage "parser" (LogScreenParser) or "db" (DatabaseManager)
+ * @property reason machine-readable reason code, see [LogDiscardReason]
+ */
+data class DiscardedLogLine(val line: String, val stage: String, val reason: String)
+
+object LogDiscardReason {
+    // Parser stage
+    const val NO_PATTERN = "NO_PATTERN"             // matched none of the log regexes
+    const val UNKNOWN_SOURCE = "UNKNOWN_SOURCE"     // contains [UNKNOWN]; also resets IP attribution state
+    const val NO_TARGET_IP = "NO_TARGET_IP"         // software line with no IP and no access line within 3 min
+    // Database stage
+    const val EMPTY_IP = "EMPTY_IP"                                 // no IP and no wallet to key the record on
+    const val WALLET_CONFLICT = "WALLET_CONFLICT"                   // record already owns a different wallet
+    const val MASKED_SOFTWARE_IGNORED = "MASKED_SOFTWARE_IGNORED"   // download onto a masked IP is not stored
+    const val BAD_TIMESTAMP = "BAD_TIMESTAMP"                       // theft amount not recorded: time unparsable (wallet still linked)
+}
+
+/** Full result of a log parse: the updates plus every timestamped line that produced nothing. */
+data class LogParseResult(
+    val updates: List<ParsedUpdate>,
+    val discarded: List<DiscardedLogLine>,
+    val timestampedLineCount: Int
+)
+
 object LogScreenParser {
     private val REGEX_LOG_PREFIX = Regex("""^\[.+?\]""")
     private val REGEX_TIME_HEADER = Regex("""^\[([^\]]+)\]""")
@@ -166,10 +192,22 @@ object LogScreenParser {
         return day * 1440 + hour * 60 + minute
     }
 
-    fun parse(rawLines: List<String>): List<ParsedUpdate> {
+    fun parse(rawLines: List<String>): List<ParsedUpdate> = parseDetailed(rawLines).updates
+
+    /**
+     * Same parse as [parse], but also reports every timestamped line that produced no update and why.
+     * The `updates` list is identical to what [parse] returns.
+     */
+    fun parseDetailed(rawLines: List<String>): LogParseResult {
         val updates = mutableListOf<ParsedUpdate>()
+        val discarded = mutableListOf<DiscardedLogLine>()
+        var timestampedCount = 0
         var lastAccessIp: String? = null
         var lastAccessMinutes: Int? = null
+
+        fun discard(line: String, reason: String) {
+            discarded.add(DiscardedLogLine(line, "parser", reason))
+        }
 
         for (i in rawLines.indices.reversed()) {
             val line = rawLines[i].trim()
@@ -179,6 +217,7 @@ object LogScreenParser {
                 continue
             }
             if (!REGEX_LOG_PREFIX.containsMatchIn(line)) continue
+            timestampedCount++
 
             val timeStr = REGEX_TIME_HEADER.find(line)?.groupValues?.get(1)
             val currentMinutes = parseLogMinutes(timeStr)
@@ -186,6 +225,7 @@ object LogScreenParser {
             if (line.contains("[UNKNOWN]")) {
                 lastAccessIp = null
                 lastAccessMinutes = null
+                discard(line, LogDiscardReason.UNKNOWN_SOURCE)
                 continue
             }
 
@@ -256,9 +296,13 @@ object LogScreenParser {
 
             if (softMatch != null && targetIp != null && !line.contains("[UNKNOWN]")) {
                 updates.add(ParsedUpdate(ip = targetIp, time = timeStr, software = if (action != null && level != null && softwareName != null) Software(action, level, softwareName) else null, isOwnedSoftware = isOwned, raw = line))
+            } else if (softMatch != null) {
+                discard(line, LogDiscardReason.NO_TARGET_IP)
+            } else {
+                discard(line, LogDiscardReason.NO_PATTERN)
             }
         }
-        return updates
+        return LogParseResult(updates, discarded, timestampedCount)
     }
 }
 

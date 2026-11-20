@@ -48,6 +48,17 @@
                     android:src="@android:drawable/ic_popup_reminder"
                     app:tint="#e2e8f0" />
 
+                <!-- Raw Dumps (debug) — replaces Siphon Alerts while Raw Dump Mode is on -->
+                <ImageButton
+                    android:id="@+id/rawDumpsBtn"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Raw Dumps"
+                    android:src="@android:drawable/ic_menu_save"
+                    android:visibility="gone"
+                    app:tint="#f87171" />
+
                 <ImageButton
                     android:id="@+id/settingsBtn"
                     android:layout_width="48dp"
