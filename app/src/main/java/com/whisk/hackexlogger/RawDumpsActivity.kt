@@ -35,7 +35,7 @@ import java.util.TimeZone
 
 /**
  * Raw Dump Mode browser (debug). One card per recorded 📸 scrape.
- * Tap = copy that dump's JSON · ▸ = expand · long-press = DELETE · top bar: EXPORT ALL / DELETE ALL.
+ * Tap = copy that dump's lean JSON (paste-sized) · ▸ = expand (full stored JSON) · long-press = DELETE · top bar: EXPORT ALL / DELETE ALL.
  */
 class RawDumpsActivity : AppCompatActivity() {
 
@@ -91,10 +91,19 @@ class RawDumpsActivity : AppCompatActivity() {
                 Toast.makeText(this@RawDumpsActivity, "Dump #$id not found", Toast.LENGTH_SHORT).show()
                 return@launch
             }
+            // Copy the lean, paste-sized form (the full dump stays in storage / EXPORT ALL)
+            val lean = withContext(Dispatchers.Default) {
+                try { RawDumpJson.leanJson(json) } catch (e: Exception) { null }
+            } ?: json
             try {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("DarkIndex raw dump #$id", json))
-                Toast.makeText(this@RawDumpsActivity, "Dump #$id copied (${json.length / 1024} KB)", Toast.LENGTH_SHORT).show()
+                clipboard.setPrimaryClip(ClipData.newPlainText("DarkIndex raw dump #$id", lean))
+                val msg = if (lean.length > RawDumpJson.CHAT_PASTE_LIMIT) {
+                    "Dump #$id copied, but it's ${"%,d".format(lean.length)} chars — over the 20,000 chat paste limit. Attach an EXPORT ALL file instead."
+                } else {
+                    "Dump #$id copied (${"%,d".format(lean.length)} chars)"
+                }
+                Toast.makeText(this@RawDumpsActivity, msg, if (lean.length > RawDumpJson.CHAT_PASTE_LIMIT) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@RawDumpsActivity, "Dump #$id too large for the clipboard — use EXPORT ALL", Toast.LENGTH_LONG).show()
             }

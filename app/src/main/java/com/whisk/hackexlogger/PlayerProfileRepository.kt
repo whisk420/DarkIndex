@@ -7,10 +7,16 @@ import com.google.gson.Gson
 data class PlayerProfile(
     val username: String? = null,
     val playerLevel: Int? = null,
+    /** Store "NEXT DEVICE" (the upgrade on offer). Null once the device is maxed. */
     val nextDevice: String? = null,
+    /** Store "NEXT NETWORK" (the upgrade on offer). Null once the network is maxed. */
     val nextNetwork: String? = null,
     val botnetStatus: String? = null,
-    val softwareLevels: Map<String, Int> = emptyMap()
+    val softwareLevels: Map<String, Int> = emptyMap(),
+    /** The device you own: the shown item when the Store says MAX TIER, otherwise one below NEXT. */
+    val currentDevice: String? = null,
+    /** The network you own: the shown item when the Store says MAX TIER, otherwise one below NEXT. */
+    val currentNetwork: String? = null
 )
 
 object PlayerProfileRepository {
@@ -24,13 +30,19 @@ object PlayerProfileRepository {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
+    /** Last parsed profile and the JSON it came from. Every target card reads the profile several times, so this skips re-parsing unchanged JSON. */
+    @Volatile private var parsedCache: Pair<String, PlayerProfile>? = null
+
     fun getProfile(): PlayerProfile {
         val json = prefs.getString(KEY_PROFILE, null) ?: return PlayerProfile()
-        return try {
+        parsedCache?.let { (cachedJson, cachedProfile) -> if (cachedJson == json) return cachedProfile }
+        val profile = try {
             gson.fromJson(json, PlayerProfile::class.java) ?: PlayerProfile()
         } catch (e: Exception) {
             PlayerProfile()
         }
+        parsedCache = json to profile
+        return profile
     }
 
     fun updateProfile(storeScreen: StoreScreen) {
@@ -42,9 +54,30 @@ object PlayerProfileRepository {
             mergedSoftware[name] = level
         }
 
+        val shownDevice = storeScreen.nextDevice
+        val shownNetwork = storeScreen.nextNetwork
+
         val updated = current.copy(
-            nextDevice = storeScreen.nextDevice ?: current.nextDevice,
-            nextNetwork = storeScreen.nextNetwork ?: current.nextNetwork,
+            nextDevice = when {
+                shownDevice == null -> current.nextDevice
+                storeScreen.deviceMaxed -> null
+                else -> shownDevice
+            },
+            currentDevice = when {
+                shownDevice == null -> current.currentDevice
+                storeScreen.deviceMaxed -> shownDevice
+                else -> decrementHardwareName(shownDevice)
+            },
+            nextNetwork = when {
+                shownNetwork == null -> current.nextNetwork
+                storeScreen.networkMaxed -> null
+                else -> shownNetwork
+            },
+            currentNetwork = when {
+                shownNetwork == null -> current.currentNetwork
+                storeScreen.networkMaxed -> shownNetwork
+                else -> decrementHardwareName(shownNetwork)
+            },
             botnetStatus = storeScreen.botnetStatus ?: current.botnetStatus,
             softwareLevels = mergedSoftware
         )
@@ -75,9 +108,22 @@ object PlayerProfileRepository {
         prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
     }
 
+    /** The network you own (for upload maths). Falls back to "one below NEXT" for profiles saved before currentNetwork existed. */
+    fun getCurrentNetwork(): String? {
+        val profile = getProfile()
+        return profile.currentNetwork ?: decrementHardwareName(profile.nextNetwork)
+    }
+
+    /** The device you own. Falls back to "one below NEXT" for profiles saved before currentDevice existed. */
+    fun getCurrentDevice(): String? {
+        val profile = getProfile()
+        return profile.currentDevice ?: decrementHardwareName(profile.nextDevice)
+    }
+
     fun isApexDeviceOwned(): Boolean {
         val profile = getProfile()
-        val dev = profile.nextDevice?.lowercase() ?: return false
+        // Same behaviour as before (pending owner verification), but still works once the device is maxed and NEXT is gone.
+        val dev = (profile.nextDevice ?: profile.currentDevice)?.lowercase() ?: return false
         return dev.contains("apex")
     }
 

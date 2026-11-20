@@ -10,9 +10,7 @@ class RecordMergingTest {
 
     @Before
     fun setUp() {
-        TargetRepository.prefs = FakeSharedPreferences()
-        TargetRepository.cachedRecords.clear()
-        TargetRepository.isInitialized = true
+        TestEnv.freshRepository()
     }
 
     @Test

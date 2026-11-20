@@ -62,9 +62,9 @@ Pull requests are welcome.
 
 1. Fork the repo and create a branch.
 2. Make your change, then run `./gradlew testDebugUnitTest`. All tests must pass.
-3. **Parser changes need a test.** Add a fixture to `app/src/test/java/com/whisk/hackexlogger/` built from real screen text.
+3. **Parser changes need a test.** Save the real screen text as a `.txt` file in `app/src/test/resources/fixtures/` and load it with `TestEnv.fixture("name.txt")` (see `RealDataRegressionTest`). Start each test with `TestEnv.freshRepository()` so it runs on an empty, isolated database.
 4. **Getting real screen text:** enable **Settings & Account → Debug → Raw Dump Mode**. Every 📼 scrape is saved under the Raw Dumps icon, with the raw text, what each parser understood, discarded log lines and database changes. Tap a card to copy its JSON for a test fixture, an issue or your PR.
-5. Open a PR describing which game screens it affects.
+5. Open a PR describing which game screens it affects. GitHub runs the unit tests on every push and PR automatically.
 
 Never commit signing keys (`*.jks`, `keystore.properties`) or database exports (`*.json`). `.gitignore` already excludes them.
 

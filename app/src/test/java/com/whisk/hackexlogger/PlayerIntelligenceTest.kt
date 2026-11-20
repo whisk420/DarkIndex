@@ -10,8 +10,7 @@ class PlayerIntelligenceTest {
 
     @Before
     fun setUp() {
-        TargetRepository.prefs = FakeSharedPreferences()
-        PlayerProfileRepository.prefs = FakeSharedPreferences()
+        TestEnv.freshRepository()
     }
 
     @Test

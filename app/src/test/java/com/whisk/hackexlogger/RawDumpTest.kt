@@ -22,6 +22,7 @@ class RawDumpTest {
 
     @Before
     fun setUp() {
+        TestEnv.freshRepository()
         TargetRepository.prefs = FakeSharedPreferences()
         TargetRepository.cachedRecords.clear()
         TargetRepository.isInitialized = true
@@ -325,6 +326,119 @@ class RawDumpTest {
         val dumps = root.getAsJsonArray("dumps")
         assertEquals("first", dumps[0].asJsonObject.get("rawText").asString)
         assertEquals("second", dumps[1].asJsonObject.get("rawText").asString)
+    }
+
+    // ---------------------------------------------------------------- JSON order + lean copy (items 9, 10)
+
+    private fun recordedLogDump(): RawDump {
+        val dump = RawDump.create(nowMs = 1_000L)
+        dump.rawText = mixedLog
+        dump.nodeTree = listOf(
+            RawDumpNode(d = 0, cls = "android.widget.FrameLayout", id = null, text = null, desc = null, bounds = listOf(0, 0, 1008, 2244)),
+            RawDumpNode(d = 1, cls = "android.view.View", id = null, text = "", desc = null, bounds = listOf(0, 0, 1008, 2244)),
+            RawDumpNode(d = 2, cls = "android.widget.EditText", id = null, text = mixedLog, desc = null, bounds = listOf(36, 369, 1008, 1874)),
+            RawDumpNode(d = 2, cls = "android.widget.Button", id = "nav-item-scan", text = "SCAN", desc = null, bounds = listOf(184, 2009, 306, 2128))
+        )
+        val session = DumpSession(dump)
+        session.begin()
+        val r = ScrapePipeline.run(mixedLog, mixedLog.lines(), session)
+        session.end()
+        dump.detectedType = r.detectedType.name
+        dump.result = ScrapePipeline.toastMessage(r.savedItems)
+        return dump
+    }
+
+    @Test
+    fun storedJsonHasExplicitKeyOrder() {
+        val store = RawDumpStore(tmpDir)
+        val id = store.save(recordedLogDump())
+        val keys = JsonParser.parseString(store.readJson(id)!!).asJsonObject.keySet().toList()
+        assertEquals(listOf("format", "version", "id", "capturedAtUtc"), keys.take(4))
+        assertEquals(listOf("interpretation", "rawText", "nodeTree"), keys.takeLast(3))
+        assertTrue(keys.indexOf("discardedLogLines") < keys.indexOf("dbEffects"))
+    }
+
+    @Test
+    fun leanCopyIsCompactAndKeepsWhatMatters() {
+        val store = RawDumpStore(tmpDir)
+        val id = store.save(recordedLogDump())
+        val full = store.readJson(id)!!
+        val leanText = RawDumpJson.leanJson(full)
+        assertTrue("lean (${leanText.length}) should be much smaller than full (${full.length})", leanText.length < full.length / 2)
+        assertFalse("lean is compact", leanText.contains("\n  "))
+
+        val lean = JsonParser.parseString(leanText).asJsonObject
+        assertEquals(RawDumpJson.LEAN_FORMAT, lean.get("format").asString)
+        assertEquals(id, lean.get("dump").asLong)
+        assertEquals("LOGS", lean.get("screen").asString)
+        assertFalse("null error dropped", lean.has("error"))
+        assertEquals(mixedLog, lean.get("rawText").asString)
+
+        // discarded rows: [line, "stage:reason"]
+        val discarded = lean.getAsJsonArray("discarded")
+        assertEquals(5, discarded.size())
+        assertTrue(discarded.any { it.asJsonArray[1].asString == "parser:NO_TARGET_IP" })
+
+        // Log rows reference rawText line numbers
+        val rows = lean.getAsJsonObject("interp").getAsJsonObject("Log").getAsJsonArray("rows")
+        assertEquals(2, rows.size())
+        val rawLines = mixedLog.split("\n")
+        val stole = rows.map { it.asJsonArray }.single { it.size() > 2 && !it[2].isJsonNull }
+        val access = rows.map { it.asJsonArray }.single { it !== stole && it.size() == 2 }
+        assertTrue("trailing null/false trimmed", rawLines[access[0].asInt].contains("Accessed device at 5.6.7.8"))
+        assertTrue(rawLines[stole[0].asInt].contains("Stole 1,226"))
+        assertEquals("5.6.7.8", stole[1].asString)
+        assertEquals(1226, stole[3].asInt)
+
+        // db: empty lists dropped, created kept
+        val db = lean.getAsJsonObject("db")
+        assertFalse(db.has("removed"))
+        assertEquals("5.6.7.8", db.getAsJsonArray("created")[0].asString)
+
+        // nodes: only text/id/desc rows, short class names, text truncated
+        val nodes = lean.getAsJsonObject("nodes")
+        assertEquals(4, nodes.get("total").asInt)
+        val nodeRows = nodes.getAsJsonArray("rows")
+        assertEquals(2, nodeRows.size())
+        assertEquals("EditText", nodeRows[0].asJsonArray[1].asString)
+        assertTrue(nodeRows[0].asJsonArray[4].asString.length <= 60)
+        assertEquals("nav-item-scan", nodeRows[1].asJsonArray[2].asString)
+    }
+
+    @Test
+    fun leanMapsDuplicateLogLinesToDistinctRawLines() {
+        val raw = "[1-1 1:00] Accessed device at 1.1.1.1\n[1-1 1:00] Accessed device at 1.1.1.1"
+        val dump = RawDump.create().apply {
+            rawText = raw
+            interpretation["Log"] = listOf(
+                linkedMapOf("line" to "[1-1 1:00] Accessed device at 1.1.1.1", "ip" to "1.1.1.1"),
+                linkedMapOf("line" to "[1-1 1:00] Accessed device at 1.1.1.1", "ip" to "1.1.1.1")
+            )
+        }
+        val rows = JsonParser.parseString(RawDumpJson.leanJson(RawDumpJson.fullJson(dump))).asJsonObject
+            .getAsJsonObject("interp").getAsJsonObject("Log").getAsJsonArray("rows")
+        assertEquals(setOf(0, 1), rows.map { it.asJsonArray[0].asInt }.toSet())
+    }
+
+    @Test
+    fun leanWorksOnOldAlphabeticalDumps() {
+        // Shape written by build 1.5 (14): Gson on Android emitted keys alphabetically
+        val legacy = """{"app":{"versionCode":14,"versionName":"1.5"},"capturedAtUtc":"2026-11-20T04:00:29.242Z",
+            "dbEffects":{"created":[],"knownSiphonsAfter":120,"knownSiphonsBefore":120,"profileChanges":{},"recordsAfter":4298,
+            "recordsBefore":4298,"removed":[],"siphonAlertsAdded":[],"siphonAlertsCleared":[],"updated":[],"walletConflicts":[]},
+            "detectedType":"WALLET","discardedLogLines":[],"error":null,"fallbackUsed":false,"foregroundPackage":"net.cncapps.hackex2",
+            "format":"darkindex-raw-dump","id":3,"interpretation":{"Wallet":{"username":"mjja419","wallet":"hxff13...42f1"}},
+            "logStats":null,"nodeTree":[{"bounds":[0,0,1008,2244],"cls":"android.widget.FrameLayout","d":0,"desc":null,"id":null,"text":null},
+            {"bounds":[63,1102,972,1210],"cls":"android.widget.EditText","d":9,"desc":null,"id":"steal-amount","text":"10901"}],
+            "parsersMatched":["Wallet"],"rawText":"mjja419's wallet\nWALLET ADDRESS\nhxff13eb217d263685e767a57d3942f1","result":"Saved: Wallet",
+            "timing":{"detectMs":0.04,"extractMs":1.93,"nodeCount":25,"parseMs":381.61,"totalMs":425.44},"version":1}"""
+        val lean = JsonParser.parseString(RawDumpJson.leanJson(legacy)).asJsonObject
+        assertEquals("1.5 (14)", lean.get("app").asString)
+        assertEquals("WALLET", lean.get("screen").asString)
+        assertEquals(listOf("recordsBefore", "recordsAfter"), lean.getAsJsonObject("db").keySet().toList())
+        assertFalse(lean.has("discarded"))
+        assertEquals("hxff13...42f1", lean.getAsJsonObject("interp").getAsJsonObject("Wallet").get("wallet").asString)
+        assertEquals(1, lean.getAsJsonObject("nodes").getAsJsonArray("rows").size())
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.whisk.hackexlogger
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -15,20 +16,23 @@ class DarkIndexInstrumentationTest {
         assertEquals("com.whisk.hackexlogger", appContext.packageName)
     }
 
+    /**
+     * Gson builds TargetRecord by reflection, which behaves differently on ART than on the JVM
+     * (no constructor runs, so missing lists come back null). This checks that a stored record with
+     * missing fields loads and is repaired by sanitizeRecord on a real device. Read-only: it never
+     * touches the app's saved data.
+     */
     @Test
-    fun testTargetRecordModelOnDevice() {
-        val record = TargetRecord(
-            ip = "192.168.1.100",
-            username = "TestUser",
-            level = 25,
-            firewall = 10,
-            hardware = "Nova • Fiber",
-            wallets = mutableListOf("12345678901234567890")
-        )
+    fun testStoredRecordLoadsOnDevice() {
+        val json = """{"ip":"192.168.1.100","username":"TestUser","level":25,"wallets":["hx1234...5678"]}"""
+        val record = TargetRepository.gson.fromJson(json, TargetRecord::class.java)
+        TargetRepository.sanitizeRecord(record)
+
         assertEquals("192.168.1.100", record.ip)
-        assertEquals("TestUser", record.username)
         assertEquals(25, record.level)
-        val income = record.getEstimatedIncome("12345678901234567890")
-        assertEquals(null, income)
+        assertEquals(listOf("hx1234...5678"), record.wallets)
+        assertEquals(0, record.downloads.size)     // was null in the JSON
+        assertEquals(0, record.walletThefts.size)  // was null in the JSON
+        assertNull(record.getEstimatedIncome("hx1234...5678"))
     }
 }

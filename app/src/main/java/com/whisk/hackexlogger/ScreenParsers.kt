@@ -477,10 +477,31 @@ data class StoreScreen(
     val nextDevice: String? = null,
     val nextNetwork: String? = null,
     val botnetStatus: String? = null,
-    val nextSoftwareLevels: Map<String, Int> = emptyMap()
+    val nextSoftwareLevels: Map<String, Int> = emptyMap(),
+    /** True when the device section shows MAX TIER: then [nextDevice] is the device you already own. */
+    val deviceMaxed: Boolean = false,
+    /** True when the network section shows MAX TIER: then [nextNetwork] is the network you already own. */
+    val networkMaxed: Boolean = false
 )
 
 object StoreScreenParser {
+    private enum class Section { DEVICE, NETWORK, BOTNET, SOFTWARE, OTHER }
+
+    /**
+     * Section headers differ by state: `// NEXT DEVICE` / `// NEXT NETWORK` normally, but once maxed the game shows
+     * `// DEVICE` / `// NETWORK` with the current item and `MAX TIER` instead of a price (raw dump #6).
+     */
+    private fun sectionOf(header: String): Section {
+        val h = header.uppercase()
+        return when {
+            h.contains("SOFTWARE") -> Section.SOFTWARE
+            h.contains("BOTNET") -> Section.BOTNET
+            h.contains("NETWORK") -> Section.NETWORK
+            h.contains("DEVICE") -> Section.DEVICE
+            else -> Section.OTHER
+        }
+    }
+
     fun parse(lines: List<String>): StoreScreen? {
         val text = lines.joinToString("\n")
         if (!text.lowercase().contains("proprietary key generator built for your device")) return null
@@ -488,9 +509,11 @@ object StoreScreenParser {
         var nextDevice: String? = null
         var nextNetwork: String? = null
         var botnetStatus: String? = null
+        var deviceMaxed = false
+        var networkMaxed = false
         val softwareLevels = mutableMapOf<String, Int>()
 
-        var currentSection: String? = null
+        var currentSection: Section? = null
         var currentSoftware: String? = null
 
         val validSoftwareNames = listOf(
@@ -501,37 +524,29 @@ object StoreScreenParser {
         for (i in lines.indices) {
             val line = lines[i].trim()
             if (line.startsWith("// ")) {
-                currentSection = line
+                currentSection = sectionOf(line)
                 continue
             }
 
             when (currentSection) {
-                "// NEXT DEVICE" -> {
-                    if (nextDevice == null && line.isNotEmpty()) {
-                        nextDevice = line
-                    }
+                Section.DEVICE -> {
+                    if (line.equals("MAX TIER", ignoreCase = true)) deviceMaxed = true
+                    else if (nextDevice == null && line.isNotEmpty()) nextDevice = line
                 }
-                "// NEXT NETWORK" -> {
-                    if (nextNetwork == null && line.isNotEmpty()) {
-                        nextNetwork = line
-                    }
+                Section.NETWORK -> {
+                    if (line.equals("MAX TIER", ignoreCase = true)) networkMaxed = true
+                    else if (nextNetwork == null && line.isNotEmpty()) nextNetwork = line
                 }
-                "// BOTNET" -> {
+                Section.BOTNET -> {
                     if (botnetStatus == null && line.isNotEmpty()) {
-                        botnetStatus = line
-                        // If there is another line like "64 slots", we can grab it, but the first line is usually the name
-                        // Actually, looking at the dump:
-                        // Botnet - Nexus
-                        // 64 slots
-                        // Let's just combine them or use the slots line.
-                        // Let's just capture the first line as the status for now.
+                        botnetStatus = line // e.g. "Botnet - Nexus"
                     } else if (botnetStatus != null && line.contains("slots")) {
                         botnetStatus = "$botnetStatus ($line)"
                     } else if (botnetStatus != null && line.contains("MAX TIER")) {
                         botnetStatus = "$botnetStatus [MAX]"
                     }
                 }
-                "// SOFTWARE" -> {
+                Section.SOFTWARE -> {
                     if (validSoftwareNames.contains(line)) {
                         currentSoftware = line
                     } else if (currentSoftware != null && line.startsWith("LVL ")) {
@@ -542,10 +557,11 @@ object StoreScreenParser {
                         currentSoftware = null
                     }
                 }
+                else -> {}
             }
         }
 
-        return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels)
+        return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels, deviceMaxed, networkMaxed)
     }
 }
 

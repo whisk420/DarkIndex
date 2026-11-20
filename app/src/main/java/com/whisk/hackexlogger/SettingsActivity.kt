@@ -35,8 +35,8 @@ class SettingsActivity : AppCompatActivity() {
         val hardwareText = findViewById<android.widget.TextView>(R.id.hardwareText)
         val softwareText = findViewById<android.widget.TextView>(R.id.softwareText)
         
-        val currentDevice = PlayerProfileRepository.decrementHardwareName(profile.nextDevice) ?: "Unknown"
-        val currentNetwork = PlayerProfileRepository.decrementHardwareName(profile.nextNetwork) ?: "Unknown"
+        val currentDevice = (PlayerProfileRepository.getCurrentDevice() ?: "Unknown") + if (profile.currentDevice != null && profile.nextDevice == null) " (MAX)" else ""
+        val currentNetwork = (PlayerProfileRepository.getCurrentNetwork() ?: "Unknown") + if (profile.currentNetwork != null && profile.nextNetwork == null) " (MAX)" else ""
 
         val userStr = if (profile.username != null && profile.playerLevel != null) {
             "Player: ${profile.username} (Lv. ${profile.playerLevel})\n"

@@ -99,9 +99,16 @@ object TargetRepository {
         }
     }
 
-    fun getDownloadsBackupFile(): File {
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val dir = File(downloadsDir, "DarkIndex")
+    /**
+     * Folder for the Downloads auto-backup (`Downloads/DarkIndex/`). Returns null when there is no
+     * Downloads folder (e.g. JVM unit tests), which skips the mirror. Tests point this at a temp dir.
+     */
+    @Volatile var backupDirProvider: () -> File? = {
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)?.let { File(it, "DarkIndex") }
+    }
+
+    fun getDownloadsBackupFile(): File? {
+        val dir = backupDirProvider() ?: return null
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -117,10 +124,13 @@ object TargetRepository {
         prefs.edit().putString(KEY_TARGETS, json).apply()
 
         try {
-            if (records.isNotEmpty()) {
+            // Mirror only inside the real app (init() sets appContext). Unit tests that never set a
+            // context can't write a stray DarkIndex/ folder into the project.
+            if (records.isNotEmpty() && ::appContext.isInitialized) {
                 val downloadsFile = getDownloadsBackupFile()
-                val bundleJson = exportDataBundle()
-                downloadsFile.writeText(bundleJson)
+                if (downloadsFile != null) {
+                    downloadsFile.writeText(exportDataBundle())
+                }
             }
         } catch (e: Exception) {
             android.util.Log.e("TargetRepository", "Downloads auto-backup failed: ${e.message}", e)
@@ -502,6 +512,7 @@ object TargetRepository {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
             val nowStr = isoFormat.format(Date())
+            if (!::appContext.isInitialized) return
             val exportFile = File(appContext.filesDir, "wallet_conflicts.jsonl")
             val logLine = """{"timestamp":"$nowStr","ip":"$ip","existing_wallet":"$wallet1","conflicting_wallet":"$wallet2","source":"$source"}"""
             exportFile.appendText("$logLine\n")

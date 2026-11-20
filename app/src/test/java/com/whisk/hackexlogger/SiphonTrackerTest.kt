@@ -4,25 +4,19 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-class FakeContext : android.content.ContextWrapper(null) {
-    private val tempDir = java.io.File(System.getProperty("java.io.tmpdir"), "hackex_test")
-    init { tempDir.mkdirs() }
-    override fun getFilesDir(): java.io.File = tempDir
-}
-
 class SiphonTrackerTest {
+
+    private lateinit var fakeContext: TestContext
 
     @Before
     fun setUp() {
-        TargetRepository.prefs = FakeSharedPreferences()
-        TargetRepository.isInitialized = true
-        SiphonTracker.init()
-        SiphonTracker.clearSiphonTracking()
+        // Also resets SiphonTracker.currentTimeProvider, which some tests below replace with a fake clock
+        val dir = TestEnv.freshRepository()
+        fakeContext = TestContext(dir)
     }
 
     @Test
     fun testSiphonInstalledAndReinstalledAlert() {
-        val fakeContext = FakeContext()
 
         // 1. Initial Siphon Scraping
         val initialSiphon = SiphonItem(ip = "192.168.1.50", level = 10, percent = "5%", amount = 1000, timeAgo = "1h ago")
@@ -48,7 +42,6 @@ class SiphonTrackerTest {
 
     @Test
     fun testSiphonRemovalAlert() {
-        val fakeContext = FakeContext()
 
         // Initial 1 siphon
         val initialSiphon = SiphonItem(ip = "10.0.0.99", level = 5, percent = "2%", amount = 500, timeAgo = "10m ago")
@@ -64,7 +57,6 @@ class SiphonTrackerTest {
 
     @Test
     fun testEmptyItemsWithDeployedCountGreaterThanZero_EarlyExit() {
-        val fakeContext = FakeContext()
 
         // Initial 2 siphons recorded
         val item1 = SiphonItem("192.168.1.1", 10, "5%", 1000, "1h ago")
@@ -80,7 +72,6 @@ class SiphonTrackerTest {
 
     @Test
     fun testViewportAccumulationAndRemoval() {
-        val fakeContext = FakeContext()
         var mockTime = 1_000_000L
         SiphonTracker.currentTimeProvider = { mockTime }
 
@@ -117,7 +108,6 @@ class SiphonTrackerTest {
 
     @Test
     fun testCrapInstallNotAlerted() {
-        val fakeContext = FakeContext()
         var mockTime = 1_000_000L
         SiphonTracker.currentTimeProvider = { mockTime }
 
@@ -138,7 +128,6 @@ class SiphonTrackerTest {
 
     @Test
     fun testReScrapingClearsFalseAlert() {
-        val fakeContext = FakeContext()
         var mockTime = 1_000_000L
         SiphonTracker.currentTimeProvider = { mockTime }
 

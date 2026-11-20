@@ -3,6 +3,9 @@ package com.whisk.hackexlogger
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import java.io.File
 import java.io.Writer
 import java.text.SimpleDateFormat
@@ -285,6 +288,8 @@ class DumpSession(val dump: RawDump) {
         if (a.playerLevel != b.playerLevel) out["playerLevel"] = listOf(a.playerLevel, b.playerLevel)
         if (a.nextDevice != b.nextDevice) out["nextDevice"] = listOf(a.nextDevice, b.nextDevice)
         if (a.nextNetwork != b.nextNetwork) out["nextNetwork"] = listOf(a.nextNetwork, b.nextNetwork)
+        if (a.currentDevice != b.currentDevice) out["currentDevice"] = listOf(a.currentDevice, b.currentDevice)
+        if (a.currentNetwork != b.currentNetwork) out["currentNetwork"] = listOf(a.currentNetwork, b.currentNetwork)
         if (a.botnetStatus != b.botnetStatus) out["botnetStatus"] = listOf(a.botnetStatus, b.botnetStatus)
         (a.softwareLevels.keys + b.softwareLevels.keys).sorted().forEach { k ->
             if (a.softwareLevels[k] != b.softwareLevels[k]) out["softwareLevels.$k"] = listOf(a.softwareLevels[k], b.softwareLevels[k])
@@ -312,7 +317,7 @@ class RawDumpStore(val dir: File) {
         dir.mkdirs()
         val id = nextId()
         dump.id = id
-        writeAtomic(File(dir, "$id.json"), prettyGson.toJson(dump))
+        writeAtomic(File(dir, "$id.json"), RawDumpJson.fullJson(dump))
         writeAtomic(File(dir, "$id.meta.json"), compactGson.toJson(RawDumpSummary.of(dump)))
         return id
     }
@@ -385,4 +390,220 @@ class RawDumpStore(val dir: File) {
             tmp.delete()
         }
     }
+}
+
+/**
+ * JSON shapes for raw dumps.
+ *
+ * - [fullJson]: what's stored per dump (and what EXPORT ALL concatenates). Gson's reflection order is not
+ *   guaranteed on Android (dump #1 came out alphabetical), so keys are re-ordered explicitly:
+ *   summary first, big blobs (interpretation, rawText, nodeTree) last.
+ * - [leanJson]: what single-tap copies. Built from the *stored* JSON, so it also works on dumps saved by
+ *   older builds. Compact, drops empty/duplicate data, Log interpretation as rows that reference raw-text
+ *   line numbers, and only the nodeTree rows that carry text/id/desc. Fits a chat paste (<20,000 chars)
+ *   for every screen measured so far (largest: a full 100-line log ≈ 9.5k).
+ */
+object RawDumpJson {
+    const val LEAN_FORMAT = "darkindex-raw-dump-lean"
+    const val LEAN_VERSION = 1
+    /** Chat apps truncate pasted text at 20,000 characters. */
+    const val CHAT_PASTE_LIMIT = 20_000
+    private const val NODE_TEXT_MAX = 60
+
+    private val TOP_ORDER = listOf(
+        "format", "version", "id", "capturedAtUtc", "capturedAtLocal", "capturedAtMs", "app", "foregroundPackage",
+        "detectedType", "fallbackUsed", "parsersMatched", "result", "error", "logStats", "discardedLogLines",
+        "dbEffects", "timing", "interpretation", "rawText", "nodeTree"
+    )
+    private val DB_ORDER = listOf(
+        "recordsBefore", "recordsAfter", "created", "updated", "removed", "walletConflicts", "profileChanges",
+        "siphonAlertsAdded", "siphonAlertsCleared", "knownSiphonsBefore", "knownSiphonsAfter"
+    )
+    private val LOG_STATS_ORDER = listOf("timestampedLines", "interpreted", "discarded", "partial")
+    private val TIMING_ORDER = listOf("extractMs", "detectMs", "parseMs", "totalMs", "nodeCount")
+    private val APP_ORDER = listOf("versionName", "versionCode")
+    private val DISCARD_ORDER = listOf("line", "stage", "reason")
+    private val NODE_ORDER = listOf("d", "cls", "id", "desc", "text", "bounds")
+    private val LOG_ENTRY_ORDER = listOf("line", "time", "ip", "wallet", "amount", "ownTheft", "software", "ownedSoftware")
+
+    private val compactGson: Gson = GsonBuilder().disableHtmlEscaping().create()
+
+    /** Pretty, explicitly ordered JSON for storage / EXPORT ALL. */
+    fun fullJson(dump: RawDump): String =
+        RawDumpStore.prettyGson.toJson(ordered(RawDumpStore.prettyGson.toJsonTree(dump).asJsonObject))
+
+    /** Re-orders a full dump's keys (top level and known nested objects). Unknown keys keep their order, at the end. */
+    fun ordered(dump: JsonObject): JsonObject {
+        val top = reorder(dump, TOP_ORDER)
+        top.obj("app")?.let { top.add("app", reorder(it, APP_ORDER)) }
+        top.obj("logStats")?.let { top.add("logStats", reorder(it, LOG_STATS_ORDER)) }
+        top.obj("dbEffects")?.let { top.add("dbEffects", reorder(it, DB_ORDER)) }
+        top.obj("timing")?.let { top.add("timing", reorder(it, TIMING_ORDER)) }
+        top.arr("discardedLogLines")?.let { top.add("discardedLogLines", mapObjects(it, DISCARD_ORDER)) }
+        top.arr("nodeTree")?.let { top.add("nodeTree", mapObjects(it, NODE_ORDER)) }
+        top.obj("interpretation")?.let { interp ->
+            interp.arr("Log")?.let { interp.add("Log", mapObjects(it, LOG_ENTRY_ORDER)) }
+        }
+        return top
+    }
+
+    /** Lean, paste-sized JSON from a stored (full) dump's JSON text. */
+    fun leanJson(storedJson: String): String = compactGson.toJson(lean(JsonParser.parseString(storedJson).asJsonObject))
+
+    fun lean(full: JsonObject): JsonObject {
+        val o = JsonObject()
+        o.addProperty("format", LEAN_FORMAT)
+        o.addProperty("v", LEAN_VERSION)
+        full.prim("id")?.let { o.add("dump", it) }
+        full.prim("capturedAtUtc")?.let { o.add("utc", it) }
+        full.obj("app")?.let { app ->
+            o.addProperty("app", "${app.str("versionName") ?: "?"} (${app.prim("versionCode")?.asString ?: "?"})")
+        }
+        full.prim("foregroundPackage")?.let { o.add("pkg", it) }
+        full.prim("detectedType")?.let { o.add("screen", it) }
+        if (full.prim("fallbackUsed")?.asBoolean == true) o.addProperty("fallback", true)
+        full.arr("parsersMatched")?.takeIf { it.size() > 0 }?.let { o.add("parsers", it) }
+        full.prim("result")?.let { o.add("result", it) }
+        full.prim("error")?.let { o.add("error", it) }
+        full.obj("logStats")?.let { o.add("logStats", reorder(it, LOG_STATS_ORDER)) }
+
+        full.arr("discardedLogLines")?.takeIf { it.size() > 0 }?.let { list ->
+            val rows = JsonArray()
+            for (e in list) {
+                val d = e.asJsonObject
+                rows.add(JsonArray().apply {
+                    add(d.str("line") ?: "")
+                    add("${d.str("stage") ?: "?"}:${d.str("reason") ?: "?"}")
+                })
+            }
+            o.add("discarded", rows)
+        }
+
+        full.obj("dbEffects")?.let { db -> leanDb(db)?.let { o.add("db", it) } }
+
+        full.obj("timing")?.let { t ->
+            o.add("ms", JsonObject().apply {
+                listOf("extractMs" to "extract", "parseMs" to "parse", "totalMs" to "total").forEach { (k, short) ->
+                    t.prim(k)?.let { add(short, it) }
+                }
+            })
+        }
+
+        val rawText = full.str("rawText") ?: ""
+        full.obj("interpretation")?.takeIf { it.size() > 0 }?.let { interp ->
+            val li = JsonObject()
+            for ((key, value) in interp.entrySet()) {
+                li.add(key, if (key == "Log" && value.isJsonArray) leanLog(value.asJsonArray, rawText) else value)
+            }
+            o.add("interp", li)
+        }
+
+        o.addProperty("rawText", rawText)
+
+        full.arr("nodeTree")?.let { tree ->
+            val rows = JsonArray()
+            for (e in tree) {
+                val n = e.asJsonObject
+                val text = n.str("text")?.takeIf { it.isNotEmpty() }
+                val id = n.str("id")
+                val desc = n.str("desc")?.takeIf { it.isNotEmpty() }
+                if (text == null && id == null && desc == null) continue
+                rows.add(JsonArray().apply {
+                    add(n.prim("d")?.asInt ?: -1)
+                    add(n.str("cls")?.substringAfterLast('.'))
+                    add(id)
+                    add(desc?.let { clip(it) })
+                    add(text?.let { clip(it) })
+                    n.arr("bounds")?.forEach { add(it) }
+                })
+            }
+            o.add("nodes", JsonObject().apply {
+                add("cols", JsonArray().apply {
+                    listOf("d", "cls", "id", "desc", "text", "x1", "y1", "x2", "y2").forEach { add(it) }
+                })
+                addProperty("total", tree.size())
+                add("rows", rows)
+            })
+        }
+        return o
+    }
+
+    /**
+     * Log entries as rows `[rawLineNo, ip, wallet, amount, ownTheft, software, ownedSoftware]`; the line text itself is
+     * in rawText (line number = index in rawText split on \n). Trailing null/false columns are omitted.
+     */
+    private fun leanLog(entries: JsonArray, rawText: String): JsonObject {
+        val lines = rawText.split("\n").map { it.trim() }
+        val used = HashSet<Int>()
+        val rows = JsonArray()
+        for (e in entries) {
+            val u = e.asJsonObject
+            val line = u.str("line")
+            var idx = -1
+            if (line != null) {
+                for (i in lines.indices) if (i !in used && lines[i] == line) { idx = i; break }
+                if (idx >= 0) used.add(idx)
+            }
+            val row = JsonArray().apply {
+                add(idx)
+                add(u.str("ip"))
+                add(u.str("wallet"))
+                add(u.prim("amount")?.asInt)
+                add(u.prim("ownTheft")?.asBoolean ?: false)
+                add(u.str("software"))
+                add(u.prim("ownedSoftware")?.asBoolean ?: false)
+            }
+            // Trailing null/false columns are implied: [12,"1.2.3.4"] == [12,"1.2.3.4",null,null,false,null,false]
+            while (row.size() > 1) {
+                val last = row[row.size() - 1]
+                if (last.isJsonNull || (last.isJsonPrimitive && last.asJsonPrimitive.isBoolean && !last.asBoolean)) row.remove(row.size() - 1) else break
+            }
+            if (idx < 0 && line != null) { // couldn't map to rawText: keep the line itself as an extra column
+                while (row.size() < 7) row.add(com.google.gson.JsonNull.INSTANCE)
+                row.add(line)
+            }
+            rows.add(row)
+        }
+        return JsonObject().apply {
+            add("cols", JsonArray().apply {
+                listOf("rawLine", "ip", "wallet", "amount", "ownTheft", "software", "ownedSoftware").forEach { add(it) }
+            })
+            add("rows", rows)
+        }
+    }
+
+    /** dbEffects without empty lists/maps and without unchanged siphon counts. Null when nothing is left. */
+    private fun leanDb(db: JsonObject): JsonObject? {
+        val out = JsonObject()
+        db.prim("recordsBefore")?.let { out.add("recordsBefore", it) }
+        db.prim("recordsAfter")?.let { out.add("recordsAfter", it) }
+        for (k in listOf("created", "updated", "removed", "walletConflicts", "siphonAlertsAdded", "siphonAlertsCleared")) {
+            db.arr(k)?.takeIf { it.size() > 0 }?.let { out.add(k, it) }
+        }
+        db.obj("profileChanges")?.takeIf { it.size() > 0 }?.let { out.add("profileChanges", it) }
+        val ksb = db.prim("knownSiphonsBefore")
+        val ksa = db.prim("knownSiphonsAfter")
+        if (ksb != null && ksa != null && ksb != ksa) {
+            out.add("knownSiphonsBefore", ksb); out.add("knownSiphonsAfter", ksa)
+        }
+        return if (out.size() == 0) null else out
+    }
+
+    private fun clip(s: String): String = if (s.length > NODE_TEXT_MAX) s.take(NODE_TEXT_MAX - 1) + "…" else s
+
+    private fun reorder(obj: JsonObject, order: List<String>): JsonObject {
+        val out = JsonObject()
+        for (k in order) if (obj.has(k)) out.add(k, obj.get(k))
+        for ((k, v) in obj.entrySet()) if (!out.has(k)) out.add(k, v)
+        return out
+    }
+
+    private fun mapObjects(arr: JsonArray, order: List<String>): JsonArray = JsonArray().apply {
+        for (e in arr) add(if (e.isJsonObject) reorder(e.asJsonObject, order) else e)
+    }
+
+    private fun JsonObject.obj(k: String): JsonObject? = get(k)?.takeIf { it.isJsonObject }?.asJsonObject
+    private fun JsonObject.arr(k: String): JsonArray? = get(k)?.takeIf { it.isJsonArray }?.asJsonArray
+    private fun JsonObject.prim(k: String): com.google.gson.JsonPrimitive? = get(k)?.takeIf { it.isJsonPrimitive }?.asJsonPrimitive
+    private fun JsonObject.str(k: String): String? = prim(k)?.asString
 }

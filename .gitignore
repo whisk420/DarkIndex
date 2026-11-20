@@ -41,6 +41,9 @@ Thumbs.db
 # User database exports & scratch files
 *.json
 *.jsonl
+# Local-only research data (e.g. target_console_*.json) and the old test-leak folder
+local-data/
+app/DarkIndex/
 
 # Signing keys & local signing config (never commit these)
 *.jks

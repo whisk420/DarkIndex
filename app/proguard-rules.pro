@@ -27,9 +27,3 @@
 # --- Keep Services & Accessibility Components ---
 -keep class com.whisk.hackexlogger.ScraperAccessibilityService { *; }
 -keep class com.whisk.hackexlogger.OverlayService { *; }
-
-# --- Google Identity & Credential Manager Keep Rules ---
--keep class com.google.android.libraries.identity.googleid.** { *; }
--keep class androidx.credentials.** { *; }
--dontwarn androidx.credentials.**
--dontwarn com.google.android.libraries.identity.googleid.**

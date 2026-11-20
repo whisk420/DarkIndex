@@ -37,6 +37,49 @@ if (!hasDarkIndexSigning) {
     )
 }
 
+// ---------------------------------------------------------------------------------------------
+// Versioning: automatic for every build (Android Studio Run / Build APK, command line, GitHub CI).
+//
+//   versionCode = 1000 + number of commits on HEAD  (git rev-list --count HEAD)
+//     Only ever goes up, is the same on every machine for the same commit, and is far above the
+//     old codes (the 1.5 release is 14), so a new build always installs over an older one.
+//   versionName = latest "v*" tag + "-dev.<commits>" for local builds, e.g. "1.5-dev.231".
+//     The GitHub release workflow passes the release name, e.g. -PversionName=1.6.
+//
+// Overrides (first match wins): -PversionCode / -PversionName, then env VERSION_CODE / VERSION_NAME.
+// Without git (e.g. a source zip) the build still works: code 1000, name "dev", plus a warning.
+// ---------------------------------------------------------------------------------------------
+val versionCodeBase = 1000
+
+fun gitOutput(vararg args: String): String? = try {
+    providers.exec {
+        commandLine(listOf("git") + args.toList())
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim().takeIf { it.isNotEmpty() }
+} catch (e: Exception) {
+    null
+}
+
+fun versionOverride(propKey: String, envKey: String): String? =
+    ((project.findProperty(propKey) as? String) ?: providers.environmentVariable(envKey).orNull)
+        ?.trim()?.takeIf { it.isNotEmpty() }
+
+val gitCommitCount = gitOutput("rev-list", "--count", "HEAD")?.toIntOrNull()
+val gitLatestTag = gitOutput("describe", "--tags", "--abbrev=0", "--match", "v*")?.removePrefix("v")
+
+if (gitCommitCount == null) {
+    logger.warn("DarkIndex: couldn't read the git commit count; using versionCode $versionCodeBase. Build from a git checkout for automatic versions.")
+}
+
+val appVersionCode: Int = versionOverride("versionCode", "VERSION_CODE")?.toIntOrNull()
+    ?: (versionCodeBase + (gitCommitCount ?: 0))
+
+val appVersionName: String = versionOverride("versionName", "VERSION_NAME")
+    ?: run {
+        val dev = "dev" + (gitCommitCount?.let { ".$it" } ?: "")
+        if (gitLatestTag != null) "$gitLatestTag-$dev" else dev
+    }
+
 android {
     namespace = "com.whisk.hackexlogger"
     compileSdk = 35
@@ -45,16 +88,8 @@ android {
         applicationId = "com.whisk.hackexlogger"
         minSdk = 26
         targetSdk = 35
-        val envVersionName = (project.findProperty("versionName") as? String)
-            ?: System.getenv("VERSION_NAME")
-            ?: "1.3-dev"
-
-        val envVersionCode = (project.findProperty("versionCode") as? String
-            ?: System.getenv("VERSION_CODE"))?.toIntOrNull()
-            ?: 2
-
-        versionCode = envVersionCode
-        versionName = envVersionName
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

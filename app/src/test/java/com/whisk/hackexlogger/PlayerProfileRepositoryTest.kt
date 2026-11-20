@@ -2,6 +2,7 @@ package com.whisk.hackexlogger
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class PlayerProfileRepositoryTest {
@@ -35,5 +36,22 @@ class PlayerProfileRepositoryTest {
     fun testNullAndUnknown() {
         assertNull(PlayerProfileRepository.decrementHardwareName(null))
         assertEquals("Unknown Hardware", PlayerProfileRepository.decrementHardwareName("Unknown Hardware"))
+    }
+
+    @Test
+    fun testCachedProfileStillSeesUpdates() {
+        PlayerProfileRepository.prefs = FakeSharedPreferences()
+        PlayerProfileRepository.updateOwnProfile("Seamus", 38)
+        val first = PlayerProfileRepository.getProfile()
+        assertEquals(38, first.playerLevel)
+        // Unchanged JSON: the same parsed object comes back (no re-parse per card)
+        assertSame(first, PlayerProfileRepository.getProfile())
+
+        PlayerProfileRepository.updateOwnProfile("Seamus", 39)
+        assertEquals(39, PlayerProfileRepository.getProfile().playerLevel)
+
+        // A fresh, empty store must not return the old cached profile
+        PlayerProfileRepository.prefs = FakeSharedPreferences()
+        assertNull(PlayerProfileRepository.getProfile().playerLevel)
     }
 }

@@ -60,6 +60,18 @@ class ConsoleBundleTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
+    fun testImportRejectsWrongVersion() {
+        TestEnv.freshRepository()
+        TargetRepository.importDataBundle("""{"format": "target-intelligence-console", "version": 2}""")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun testImportRejectsMalformedJson() {
+        TestEnv.freshRepository()
+        TargetRepository.importDataBundle("{ not json")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
     fun testImportInvalidFormat() {
         val invalidJson = """
             {
@@ -68,17 +80,14 @@ class ConsoleBundleTest {
             }
         """.trimIndent()
 
-        val bundle = com.google.gson.Gson().fromJson(invalidJson, ConsoleBundle::class.java)
-        if (bundle.format != "target-intelligence-console") {
-            throw IllegalArgumentException("This is not a Target Intelligence Console export.")
-        }
+        // Was tautological (the test threw the exception itself). Now the real importer must reject it.
+        TestEnv.freshRepository()
+        TargetRepository.importDataBundle(invalidJson)
     }
 
     @Test
     fun testExportImportRoundTripPreservesThefts() {
-        TargetRepository.prefs = FakeSharedPreferences()
-        TargetRepository.cachedRecords.clear()
-        TargetRepository.isInitialized = true
+        TestEnv.freshRepository()
 
         val target = TargetRecord(ip = "1.2.3.4", username = "Thief")
         target.addTheftEvent("hx999", 1000L, 500)

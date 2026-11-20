@@ -1,18 +1,20 @@
 package com.whisk.hackexlogger
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 class TargetRepositoryTest {
 
+    private lateinit var dir: File
+
     @Before
     fun setUp() {
-        TargetRepository.prefs = FakeSharedPreferences()
-        TargetRepository.cachedRecords.clear()
-        TargetRepository.isInitialized = true
+        dir = TestEnv.freshRepository()
     }
 
     @Test
@@ -47,6 +49,31 @@ class TargetRepositoryTest {
         val records = TargetRepository.getAllRecords()
         assertEquals(1, records.size)
         assertEquals("10.0.0.1", records[0].ip)
+        // Two different wallets can't both be right: keep the existing target's wallet and log the conflict
+        assertEquals(listOf("hx111"), records[0].wallets)
+        val log = TestEnv.conflictLog(dir)
+        assertEquals(1, log.size)
+        assertTrue(log[0].contains("\"existing_wallet\":\"hx111\"") && log[0].contains("\"conflicting_wallet\":\"hx222\""))
+    }
+
+    @Test
+    fun testSaveMirrorsToBackupFolderOnly() {
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "10.0.0.7", username = "Mirror")))
+
+        // The Downloads mirror goes to the configured backup folder and holds a full export bundle
+        val mirror = File(dir, "DarkIndex/darkindex_database.json")
+        assertTrue(mirror.exists())
+        assertTrue(mirror.readText().contains("\"target-intelligence-console\""))
+        assertTrue(mirror.readText().contains("10.0.0.7"))
+    }
+
+    @Test
+    fun testNoMirrorWithoutBackupFolder() {
+        // No Downloads folder available (what the JVM sees without an override): save still works, no file
+        TargetRepository.backupDirProvider = { null }
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "10.0.0.8")))
+        assertEquals(1, TargetRepository.getAllRecords().size)
+        assertFalse(File(dir, "DarkIndex").exists())
     }
 
     @Test

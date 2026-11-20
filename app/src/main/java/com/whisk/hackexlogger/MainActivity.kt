@@ -105,6 +105,53 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Wipe Database is irreversible, so it needs a typed confirmation.
+     * The Wipe button stays disabled until the user types WIPE; "Export first" opens the normal export.
+     */
+    private fun confirmWipeDatabase() {
+        val recordCount = DatabaseManager.getAllRecords().size
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val input = EditText(this).apply {
+            hint = "Type WIPE to confirm"
+            setSingleLine(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Wipe Database?")
+            .setMessage(
+                "This permanently deletes all $recordCount target records from the app.\n\n" +
+                "It can't be undone. Export your data first if you might want it back."
+            )
+            .setView(container)
+            .setPositiveButton("Wipe", null)
+            .setNeutralButton("Export first") { _, _ -> openExportPicker() }
+            .setNegativeButton("Cancel", null)
+            .create()
+        dialog.setOnShowListener {
+            val wipeButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            wipeButton.isEnabled = false
+            input.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    wipeButton.isEnabled = s?.toString()?.trim() == "WIPE"
+                }
+            })
+            wipeButton.setOnClickListener {
+                DatabaseManager.wipeDatabase()
+                refreshData()
+                Toast.makeText(this, "Database wiped", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
+    }
+
     private fun openExportPicker() {
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -259,9 +306,7 @@ class MainActivity : AppCompatActivity() {
                         true
                     }
                     4 -> {
-                        DatabaseManager.wipeDatabase()
-                        refreshData()
-                        android.widget.Toast.makeText(this, "Database wiped", android.widget.Toast.LENGTH_SHORT).show()
+                        confirmWipeDatabase()
                         true
                     }
                     5 -> {
@@ -432,10 +477,13 @@ class MainActivity : AppCompatActivity() {
 
             if (isGoodSpamEnabled) {
                 val profile = PlayerProfileRepository.getProfile()
+                val currentNetwork = PlayerProfileRepository.getCurrentNetwork()
+                val installedSpam = PlayerProfileRepository.getInstalledSpamLevel()
                 filtered = filtered.filter { record ->
                     GoodSpamUtils.isEligible(record.firewall, maxFirewallLevel)
                 }.sortedByDescending { record ->
-                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, profile.nextNetwork)
+                    // Rank by the upload time of the cheapest Spam that caps 100/hr, on the network you own
+                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, currentNetwork, profile.playerLevel, installedSpam)
                 }
             }
 
