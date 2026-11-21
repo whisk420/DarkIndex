@@ -43,7 +43,7 @@ Google Maven and services.gradle.org may be blocked. The pure-logic code can sti
 |---|---|---|
 | Code + passing tests | Highest for app behaviour | |
 | Formulas verified against real numbers (§4) | High | Store price and score formulas matched to the crypto |
-| hackex.net/guide | Medium | Dev-published, mostly right, but the user says it can mislead. Read via a summarising fetch, so exact wording may differ |
+| hackex.net/guide | Medium | Dev-published, mostly right, but the user says it can mislead, and it contradicts itself in places (Siphon flows, AV scan times). Read in full and exactly on 2026-11-21 (the `DarkIndex` cloud environment allows hackex.net); extract + derived formulas in `docs/knowledge-base-prep.md` |
 | GEMINI.md empirical sections | Medium | Some tables contradict the code (Spam payouts, clustering) |
 | GEMINI.md architecture sections | Low | Several statements are stale (§9) |
 
@@ -113,7 +113,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **Gas fee:** victims lose 100%, the thief receives 90% (guide). The "Stole N" log shows **what the victim lost** (owner). That's fine because income is only compared across targets.
 - **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+).
 - **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
-- **Over-levelling hurts:** matchmaking is about ±10 levels, rep falls off at +6..+9 gap and is zero at +10, and Spam pays less on lower-level targets.
+- **Over-levelling hurts:** matchmaking is about ±10 levels and Spam pays less on lower-level targets. Hack rep falls off at a +6..+9 **software** gap (your offence vs their defence software, not player levels) and is zero at +10 (guide).
 - **Botnet** tiers (spam slots): Free 2, Node 4, Cluster 8, Grid 16, Farm 28, Hive 44, Nexus 64. There is a scaling fee on spam income up to 30% at Nexus. The Store shows e.g. `Botnet - Nexus / 64 slots / MAX TIER`.
 - **Downloaded apps are activated manually** (owner, 2026-11-20). Activation writes **no log line**, so installed levels can rise with no `Purchased`/log evidence. **Both the Apps screen and the Store are reliable for your levels** (owner, 2026-11-20): Apps shows the installed level directly (plus `LOCKEDLVL N available <price> Crypto` for a downloaded version waiting to be activated, and `(+N)` bonuses); the Store shows next level, so subtract 1. They only disagree when one is stale (in dump #8 the owner had upgraded since the last Store scrape). The app currently only scrapes the Store.
 - **XP from purchases:** one data point: Keygen Lv26 (41,459 Crypto) → +7,045 XP (0.170 XP/crypto, close to GEMINI's 0.1717 for software in §4); Rep and Score unchanged. Score = floor(L × Rep^0.75) re-confirmed on two own-Home scrapes.
@@ -138,6 +138,8 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **Hack (bypass/crack) success — empirical, in code (`TargetRecord.calculateSuccessProbability`):**
 `delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
+
+**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Store prices round up. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
 
 **AV removal (guide, not in code):** AV−virus ≥+5 → 95, +4 → 90, +3 → 80, +2 → 70, +1 → 60, 0 → 50, −1 → 20, then −2% per level to a 5% floor at −9.
 
@@ -182,7 +184,7 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `SettingsActivity.kt` | Shows the parsed player profile (current = next − 1). Purge thefts > 30 days |
 | `SiphonAlertsActivity.kt` | Alert list: "Siphon Re-installed" clears the alert. "IP Not Found" clears it and deletes the target |
 | `ConsoleBundle.kt` | Export schema `{format:"target-intelligence-console", version:1, exportedAt, targets, ingests[{type,raw,importedAt,id}], siphonAlerts, knownSiphons}` |
-| `KnowledgeBaseActivity.kt` | Dead. Its launcher is commented out in MainActivity, but it is still in the manifest (TODO: Knowledge Base) |
+| `KnowledgeBaseActivity.kt` | Dead. Its launcher is commented out in MainActivity, but it is still in the manifest. Its 3 hard-coded topics contain errors. Rebuild plan, topic map and owner measurement list (M-01..M-25): `docs/knowledge-base-prep.md` |
 
 ### 5.1 Classifier (first match wins, case-insensitive substring)
 1. `OWN_PROFILE`: "my device" AND ("daily missions" OR "login streak")
@@ -406,7 +408,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B3 | Fixed | Downloads auto-backup broke after a reinstall forced by CI's throwaway signing key; one permanent key now |
 | B4 | Fixed | Wipe Database had no confirmation |
 | B5 | Fixed | Log-only screens fell to UNKNOWN; classifier now matches log headers and lines |
-| B6 | **Open** | Spam payout model is unvalidated (§5.7; TODO research) |
+| B6 | **Open** | Spam payout model is unvalidated (§5.7; TODO research). The guide's table (equal level: Lv1 12, Lv5 24, Lv10 42, Lv15 62, Lv20 83/hr; +10 up ≈ ×1.4; −10 down ≈ ×0.5) disagrees with the code's `spamLvl×5` (owner question Q1 in `docs/knowledge-base-prep.md`) |
 | B7 | Mitigated | Unknown hardware still gets tier 3 / 1.0×, but is marked " ?" and logged |
 | B8 | Fixed | Merges orphaned thefts of the dropped wallet; replaced by the wallet-authority rule |
 | B9 | Fixed | Search is hidden while Recon or Good Spam is on |
