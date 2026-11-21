@@ -248,13 +248,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Knowledge Base menu (Temporarily disabled while formulas are being reworked)
-        /*
+        // Knowledge Base
         findViewById<ImageButton>(R.id.knowledgeBaseBtn).setOnClickListener {
-            val intent = Intent(this, KnowledgeBaseActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, KnowledgeBaseActivity::class.java))
         }
-        */
 
         // Siphon Alerts menu
         findViewById<ImageButton>(R.id.siphonAlertsBtn).setOnClickListener {

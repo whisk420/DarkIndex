@@ -45,7 +45,7 @@ object HardwareCatalog {
     )
 
     /** Network speed multiplier by level (1-based), from hackex.net/guide. */
-    private val NETWORK_BOOST = listOf(1.0, 1.5, 2.25, 3.5, 5.0, 7.0, 9.5, 12.0, 15.0, 18.0, 21.0)
+    val NETWORK_BOOST = listOf(1.0, 1.5, 2.25, 3.5, 5.0, 7.0, 9.5, 12.0, 15.0, 18.0, 21.0)
 
     const val MAX_DEVICE_LEVEL = 12
     const val MAX_NETWORK_LEVEL = 11

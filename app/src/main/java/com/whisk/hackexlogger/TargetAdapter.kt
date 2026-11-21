@@ -391,14 +391,15 @@ class TargetAdapter(
                     val capMessage = if (!levelKnown) {
                         "★ Your own level isn't known yet, so the Spam level that hits the 100/hr cap here can't be worked out.\n" +
                             "   Scrape your own Home screen, then reopen this."
-                    } else if (payoutInfo.isCapReachable) {
-                        val haveIt = currentSpamLevel <= 0 || currentSpamLevel >= uploadLevel
+                    } else if (payoutInfo.isCapReachable && uploadLevel >= payoutInfo.recommendedSpamLevel) {
                         "★ Upload Spam Lv.$uploadLevel (~$uploadStr) → hits the 100/hr cap.\n" +
-                            "   Anything higher just uploads slower for no extra Crypto." +
-                            if (haveIt) "" else "\n   ⚠ Your installed Spam is Lv.$currentSpamLevel — upgrade needed."
+                            "   Anything higher just uploads slower for no extra Crypto."
+                    } else if (payoutInfo.isCapReachable) {
+                        "★ Spam Lv.${payoutInfo.recommendedSpamLevel} would hit the 100/hr cap here; you have Lv.$currentSpamLevel.\n" +
+                            "   Best now: Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, payoutInfo.levelMultiplier)}/hr."
                     } else {
                         "★ 100/hr is out of reach on this target (level-gap penalty).\n" +
-                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, payoutInfo.levelAdjustment)}/hr."
+                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, payoutInfo.levelMultiplier)}/hr."
                     }
 
                     androidx.appcompat.app.AlertDialog.Builder(itemView.context)
@@ -411,7 +412,7 @@ class TargetAdapter(
                             "• Virus Lv 10: ~$t10\n" +
                             "• Virus Lv 20: ~$t20\n\n" +
                             capMessage +
-                            "\n\n(Spam payouts are an estimate — the payout model is still being calibrated.)"
+                            "\n\n(Spam payouts follow hackex.net/guide's earnings table for a fresh upload; they decay after day 21. See Knowledge Base → Spam.)"
                         )
                         .setPositiveButton("OK", null)
                         .show()
