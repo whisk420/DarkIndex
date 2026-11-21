@@ -180,11 +180,18 @@ class UnmaskingTest {
 
     @Test
     fun testDatabaseMaintenanceLogic() {
-        val multiWalletRecord = TargetRecord(
+        // Several log-inferred wallets on one target are allowed now (owner rule 2026-11-20): left alone
+        val multiLogWallets = TargetRecord(
             ip = "159.164.200.186",
             username = "Nelzayy",
             wallets = mutableListOf("hx5dbe...0478", "hxe9cb...0ebc")
         )
+        // A proven (wallet-screen) wallet plus a stray extra: the extra goes
+        val provenPlusExtra = TargetRecord(
+            ip = "160.1.1.1",
+            wallets = mutableListOf("hxPROV...0001", "hxXTRA...0002"),
+            walletSource = TargetRecord.WALLET_FROM_PAGE
+        ).apply { addTheftEvent("hxXTRA...0002", 1000L, 9) }
         val maskedSoftwareRecord = TargetRecord(
             ip = "103.249.xxx.xxx",
             downloads = mutableMapOf("Rootkit" to SoftwareEntry(6, "installed", null))
@@ -193,7 +200,7 @@ class UnmaskingTest {
             ip = "101.103.xxx.xxx",
             wallets = mutableListOf("hx16a5...aac4")
         )
-        TargetRepository.saveAllRecords(listOf(multiWalletRecord, maskedSoftwareRecord, maskedWalletRecord))
+        TargetRepository.saveAllRecords(listOf(multiLogWallets, provenPlusExtra, maskedSoftwareRecord, maskedWalletRecord))
 
         val result = TargetRepository.runDatabaseMaintenance()
 
@@ -204,19 +211,17 @@ class UnmaskingTest {
         assertTrue(File(result.backupFilePath).exists())
 
         val byIp = TargetRepository.getAllRecords().associateBy { it.ip }
-        // Multi-wallet record keeps no wallet (we can't tell which is right); both move to placeholders
-        assertTrue(byIp.getValue("159.164.200.186").wallets.isEmpty())
-        assertEquals(listOf("hx5dbe...0478"), byIp["unknown:wallet_hx5dbe...0478"]?.wallets)
-        assertEquals(listOf("hxe9cb...0ebc"), byIp["unknown:wallet_hxe9cb...0ebc"]?.wallets)
+        assertEquals(listOf("hx5dbe...0478", "hxe9cb...0ebc"), byIp.getValue("159.164.200.186").wallets)
+        assertEquals(listOf("hxPROV...0001"), byIp.getValue("160.1.1.1").wallets)
+        assertNull(byIp.getValue("160.1.1.1").walletThefts["hxXTRA...0002"])
         // Masked software cleared
         assertTrue(byIp.getValue("103.249.xxx.xxx").downloads.isEmpty())
         // Masked wallet migrated to a placeholder
         assertTrue(byIp.getValue("101.103.xxx.xxx").wallets.isEmpty())
         assertEquals(listOf("hx16a5...aac4"), byIp["unknown:wallet_hx16a5...aac4"]?.wallets)
 
-        // Each dropped wallet is written to the conflict log
         val log = TestEnv.conflictLog(dir)
-        assertEquals(2, log.size)
-        assertTrue(log.all { "MaintenanceCleanupAllDropped" in it && "159.164.200.186" in it })
+        assertEquals(1, log.size)
+        assertTrue("MaintenanceDroppedUnproven" in log[0] && "hxXTRA...0002" in log[0])
     }
 }

@@ -49,11 +49,27 @@ class TargetRepositoryTest {
         val records = TargetRepository.getAllRecords()
         assertEquals(1, records.size)
         assertEquals("10.0.0.1", records[0].ip)
-        // Two different wallets can't both be right: keep the existing target's wallet and log the conflict
-        assertEquals(listOf("hx111"), records[0].wallets)
+        // Both wallets came from logs (not proof), so both are kept as candidates and nothing is logged
+        assertEquals(listOf("hx111", "hx222"), records[0].wallets)
+        assertTrue(TestEnv.conflictLog(dir).isEmpty())
+    }
+
+    @Test
+    fun testEditTargetIpMergeKeepsTheProvenWallet() {
+        val targetA = TargetRecord(ip = "10.0.0.1", username = "UserA", wallets = mutableListOf("hx111"))
+        val targetB = TargetRecord(ip = "10.0.0.2", username = "UserB", wallets = mutableListOf("hx222"), walletSource = TargetRecord.WALLET_FROM_PAGE)
+        targetA.addTheftEvent("hx111", 1000L, 5)
+        TargetRepository.saveAllRecords(listOf(targetA, targetB))
+
+        TargetRepository.editTargetIp("10.0.0.2", "10.0.0.1")
+
+        val merged = TargetRepository.getAllRecords().single()
+        assertEquals(listOf("hx222"), merged.wallets)
+        assertTrue(merged.walletFromPage)
+        assertTrue(merged.walletThefts["hx111"] == null)   // the unproven wallet's thefts are dropped
         val log = TestEnv.conflictLog(dir)
         assertEquals(1, log.size)
-        assertTrue(log[0].contains("\"existing_wallet\":\"hx111\"") && log[0].contains("\"conflicting_wallet\":\"hx222\""))
+        assertTrue(log[0].contains("\"existing_wallet\":\"hx222\"") && log[0].contains("\"conflicting_wallet\":\"hx111\""))
     }
 
     @Test

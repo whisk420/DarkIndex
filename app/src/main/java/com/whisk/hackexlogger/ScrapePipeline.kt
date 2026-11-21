@@ -17,8 +17,11 @@ object ScrapePipeline {
         val parseMs: Double
     )
 
-    fun run(combinedText: String, allLines: List<String>, session: DumpSession? = null): Result {
+    fun run(rawText: String, rawLines: List<String>, session: DumpSession? = null): Result {
         val savedItems = mutableListOf<String>()
+        // The game's WebView leaks HTML entities (e.g. "&#39;s wallet"); decode before anything reads the text
+        val combinedText = CommonParserUtil.decodeEntities(rawText)
+        val allLines = if (combinedText === rawText) rawLines else rawLines.map { CommonParserUtil.decodeEntities(it) }
 
         val detectStart = System.nanoTime()
         val detectedType = ScreenClassifier.detectScreenType(combinedText, allLines)
@@ -31,6 +34,7 @@ object ScrapePipeline {
             ScreenType.WALLET -> wallet(combinedText, savedItems, session)
             ScreenType.LOGS -> logs(allLines, savedItems, session)
             ScreenType.SIPHON -> siphon(combinedText, savedItems, session)
+            ScreenType.SPAM_EARNINGS -> spamEarnings(combinedText, savedItems, session)
             ScreenType.CREW -> crew(allLines, savedItems, session)
             ScreenType.OWN_PROFILE -> ownHome(combinedText, savedItems, session)
             ScreenType.STORE -> store(allLines, savedItems, session)
@@ -85,7 +89,7 @@ object ScrapePipeline {
         val updates = result.updates
         if (updates.isEmpty()) return
         s?.matched("Log", updates.map { describe(it) })
-        DatabaseManager.processUpdates(updates)
+        DatabaseManager.processUpdates(updates, result.lastSavedUtcMs)
         saved.add("${updates.size} Log Events")
     }
 
@@ -96,6 +100,12 @@ object ScrapePipeline {
         saved.add("Siphons")
     }
 
+    /** Recognised and parsed so Raw Dump shows it; nothing is stored yet (the Spam tracker will use it). */
+    private fun spamEarnings(text: String, saved: MutableList<String>, s: DumpSession?) {
+        val parsed = SpamEarningsParser.parse(text) ?: return
+        s?.matched("SpamEarnings", parsed)
+        saved.add("Spam earnings (${parsed.items.size + parsed.maskedCount}/${parsed.deployedCount} read, not stored yet)")
+    }
     private fun crew(lines: List<String>, saved: MutableList<String>, s: DumpSession?) {
         val parsed = CrewScreenParser.parse(lines) ?: return
         s?.matched("Crew", parsed)

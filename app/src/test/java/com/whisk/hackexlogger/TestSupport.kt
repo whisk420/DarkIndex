@@ -33,6 +33,8 @@ object TestEnv {
         TargetRepository.appContext = TestContext(dir)
         TargetRepository.backupDirProvider = { File(dir, "DarkIndex") }
         TargetRepository.walletConflictListener = null
+        // Run the background disk writes on the calling thread so tests are deterministic
+        TargetRepository.persistExecutor = java.util.concurrent.Executor { it.run() }
         DatabaseManager.activeDiscardSink = null
         PlayerProfileRepository.prefs = FakeSharedPreferences()
         SiphonTracker.currentTimeProvider = { System.currentTimeMillis() }

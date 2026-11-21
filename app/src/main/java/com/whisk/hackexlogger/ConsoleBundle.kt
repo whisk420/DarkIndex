@@ -10,6 +10,8 @@ package com.whisk.hackexlogger
  * @property ingests Optional list of archived raw log entries or screen captures.
  * @property siphonAlerts Archived IPs that triggered a siphon removal or drop alert.
  * @property knownSiphons Archived map of IPs to their last known siphon amounts.
+ * @property playerProfile Your own profile (level, hardware, software levels). Added 2026-11-20; optional, so
+ *   older exports (without it) still import, and older app versions simply ignore it.
  */
 data class ConsoleBundle(
     val format: String = "target-intelligence-console",
@@ -18,7 +20,10 @@ data class ConsoleBundle(
     val targets: Array<TargetRecord>? = null,
     val ingests: Array<ConsoleIngest>? = null,
     val siphonAlerts: Array<String>? = null,
-    val knownSiphons: Map<String, Int>? = null
+    val knownSiphons: Map<String, Int>? = null,
+    val playerProfile: PlayerProfile? = null,
+    /** True for exports whose theft times are UTC (2026-11-20 and later). Older exports are converted on import. */
+    val theftTimesUtc: Boolean? = null
 )
 
 /**

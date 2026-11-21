@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 object TargetRepository {
     const val PREFS_NAME = "HackExDB"
     const val KEY_TARGETS = "targets"
+    /** Set once stored theft times have been converted from phone-local to UTC (2026-11-20 fix). */
+    const val KEY_THEFTS_UTC = "thefts_utc_v1"
 
     lateinit var prefs: SharedPreferences
     lateinit var appContext: Context
@@ -39,7 +41,7 @@ object TargetRepository {
         }
     }
 
-    private fun loadCacheFromDisk() {
+    internal fun loadCacheFromDisk() {
         try {
             val json = prefs.getString(KEY_TARGETS, "[]")
             val loadedArray: Array<TargetRecord>? = gson.fromJson(json, Array<TargetRecord>::class.java)
@@ -51,6 +53,12 @@ object TargetRepository {
                         cachedRecords.add(record)
                     }
                 }
+            }
+            if (!prefs.getBoolean(KEY_THEFTS_UTC, false)) {
+                // One-time fix: log times used to be read in the phone's time zone instead of UTC
+                val shifted = synchronized(cachedRecords) { shiftTheftsLocalToUtc(cachedRecords, java.util.TimeZone.getDefault()) }
+                prefs.edit().putBoolean(KEY_THEFTS_UTC, true).apply()
+                if (shifted > 0) schedulePersist()
             }
         } catch (e: Exception) {
             android.util.Log.e("TargetRepository", "Error loading target records cache: ${e.message}", e)
@@ -115,35 +123,84 @@ object TargetRepository {
         return File(dir, "darkindex_database.json")
     }
 
+    /**
+     * Updates the in-memory database immediately and queues the disk writes (prefs JSON + Downloads mirror).
+     *
+     * Disk writes run on one background thread, in order. Each write persists the **latest** in-memory state,
+     * so when several saves queue up quickly, the extra ones are skipped and nothing older can overwrite
+     * something newer. The stored format is unchanged.
+     */
     fun saveAllRecords(records: List<TargetRecord>) {
         synchronized(cachedRecords) {
             cachedRecords.clear()
             cachedRecords.addAll(records)
         }
-        val json = gson.toJson(records)
-        prefs.edit().putString(KEY_TARGETS, json).apply()
-
-        try {
-            // Mirror only inside the real app (init() sets appContext). Unit tests that never set a
-            // context can't write a stray DarkIndex/ folder into the project.
-            if (records.isNotEmpty() && ::appContext.isInitialized) {
-                val downloadsFile = getDownloadsBackupFile()
-                if (downloadsFile != null) {
-                    downloadsFile.writeText(exportDataBundle())
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("TargetRepository", "Downloads auto-backup failed: ${e.message}", e)
-        }
-
+        schedulePersist()
         notifyDataUpdated()
+    }
+
+    // ---- Ordered background persistence ------------------------------------------------------------
+
+    /** Where disk writes run. A single background thread in the app; tests swap in a same-thread executor. */
+    @Volatile var persistExecutor: java.util.concurrent.Executor = newPersistExecutor()
+
+    private fun newPersistExecutor(): java.util.concurrent.ExecutorService =
+        java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "DarkIndex-save") }
+
+    private val requestedGeneration = java.util.concurrent.atomic.AtomicLong(0)
+    @Volatile private var persistedGeneration = 0L
+    private val persistLock = Any()
+
+    /** Re-writes the Downloads backup (e.g. after your profile changed). No-op before [init]. */
+    fun requestBackupWrite() {
+        if (isInitialized) schedulePersist()
+    }
+
+    private fun schedulePersist() {
+        val generation = requestedGeneration.incrementAndGet()
+        persistExecutor.execute { persistLatest(generation) }
+    }
+
+    private fun persistLatest(generation: Long) {
+        synchronized(persistLock) {
+            // A newer save already wrote everything this one would have.
+            if (generation <= persistedGeneration) return
+            val target = requestedGeneration.get()
+            val snapshot = synchronized(cachedRecords) { cachedRecords.toList() }
+            try {
+                if (snapshot.isEmpty()) {
+                    prefs.edit().remove(KEY_TARGETS).apply()
+                } else {
+                    prefs.edit().putString(KEY_TARGETS, gson.toJson(snapshot)).apply()
+                    // Mirror only inside the real app (init() sets appContext). Unit tests that never set a
+                    // context can't write a stray DarkIndex/ folder into the project.
+                    if (::appContext.isInitialized) {
+                        getDownloadsBackupFile()?.writeText(exportDataBundle())
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TargetRepository", "Saving the database failed: ${e.message}", e)
+            }
+            persistedGeneration = target
+        }
+    }
+
+    /**
+     * Blocks until every queued disk write has finished (or [timeoutMs] passes). Returns true if all writes
+     * are done. Used before exports and by tests.
+     */
+    fun flushPendingWrites(timeoutMs: Long = 10_000): Boolean {
+        val latch = java.util.concurrent.CountDownLatch(1)
+        persistExecutor.execute { latch.countDown() }
+        return latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
     }
 
     fun wipeDatabase() {
         synchronized(cachedRecords) {
             cachedRecords.clear()
         }
-        prefs.edit().remove(KEY_TARGETS).apply()
+        // Through the queue, so an older save still waiting can't bring the data back afterwards.
+        schedulePersist()
         notifyDataUpdated()
     }
 
@@ -241,31 +298,15 @@ object TargetRepository {
 
         for (record in recordMap.values.toList()) {
 
-            if (record.wallets.size > 1) {
-                val walletsToDrop = record.wallets.toList()
-                record.wallets.clear()
+            // Several log-inferred wallets on one target are allowed (owner rule 2026-11-20), so only a
+            // target holding a wallet-screen wallet plus extras is cleaned (keep the proven one).
+            if (record.wallets.size > 1 && record.walletFromPage) {
+                val proven = record.wallets.first()
+                val extras = record.wallets.drop(1)
+                record.wallets.retainAll(listOf(proven))
+                extras.forEach { record.walletThefts.remove(it); logWalletConflict(record.ip, proven, it, "MaintenanceDroppedUnproven") }
                 multiWalletCount++
-
-                for (w in walletsToDrop) {
-                    logWalletConflict(record.ip, walletsToDrop[0], w, "MaintenanceCleanupAllDropped")
-                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(w) }
-                    if (owner == null) {
-                        val placeholderIp = "unknown:wallet_$w"
-                        var placeholder = recordMap[placeholderIp]
-                        if (placeholder == null) {
-                            placeholder = TargetRecord(ip = placeholderIp, wallets = mutableListOf(w))
-                            recordMap[placeholderIp] = placeholder
-                        } else if (!placeholder.wallets.contains(w)) {
-                            placeholder.wallets.add(w)
-                        }
-                        val thefts = record.walletThefts.remove(w)
-                        if (thefts != null) {
-                            placeholder.walletThefts.getOrPut(w) { mutableListOf() }.addAll(thefts)
-                        }
-                    }
-                }
             }
-
             if (record.isMasked) {
                 if (record.downloads.isNotEmpty()) {
                     record.downloads.clear()
@@ -356,10 +397,30 @@ object TargetRepository {
             targets = records.toTypedArray(),
             ingests = emptyArray(),
             siphonAlerts = SiphonTracker.getSiphonAlerts().toTypedArray(),
-            knownSiphons = SiphonTracker.getKnownSiphons()
+            knownSiphons = SiphonTracker.getKnownSiphons(),
+            playerProfile = if (PlayerProfileRepository.isReady()) PlayerProfileRepository.getProfile().takeIf { it != PlayerProfile() } else null,
+            theftTimesUtc = true
         )
         val exportGson = GsonBuilder().setPrettyPrinting().serializeNulls().create()
         return exportGson.toJson(bundle)
+    }
+
+    /**
+     * Before 2026-11-20, `[M-D H:MM]` log times (UTC in the game) were read as phone-local time, so every
+     * stored theft is off by the phone's UTC offset at that moment. Moves each one to the correct UTC time.
+     * @return number of theft events moved.
+     */
+    fun shiftTheftsLocalToUtc(records: List<TargetRecord>, zone: java.util.TimeZone): Int {
+        var count = 0
+        for (record in records) {
+            for ((wallet, events) in record.walletThefts) {
+                if (events.isEmpty()) continue
+                record.walletThefts[wallet] = events.map { TheftEvent(it.timestampMs + zone.getOffset(it.timestampMs), it.amount) }
+                    .sortedBy { it.timestampMs }.toMutableList()
+                count += events.size
+            }
+        }
+        return count
     }
 
     fun importDataBundle(jsonString: String): ImportResult {
@@ -374,9 +435,17 @@ object TargetRepository {
         }
 
         SiphonTracker.restoreSiphonData(bundle.siphonAlerts?.toList(), bundle.knownSiphons)
+        if (bundle.playerProfile != null && PlayerProfileRepository.isReady()) {
+            PlayerProfileRepository.restoreFromBackup(bundle.playerProfile)
+        }
 
         val importedTargets = bundle.targets ?: emptyArray()
         val importedIngests = bundle.ingests ?: emptyArray()
+        // Exports made before the UTC fix carry phone-local theft times
+        if (bundle.theftTimesUtc != true) {
+            importedTargets.forEach { sanitizeRecord(it) }
+            shiftTheftsLocalToUtc(importedTargets.toList(), java.util.TimeZone.getDefault())
+        }
 
         val currentRecords = getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
@@ -409,6 +478,10 @@ object TargetRepository {
             }
         }
 
+        // Save the merged targets first: the ingests below read and write through DatabaseManager, and saving
+        // afterwards used to overwrite everything they added (bug B2).
+        saveAllRecords(recordMap.values.toList())
+
         // Process raw ingests included in the bundle
         for (ingest in importedIngests) {
             val raw = ingest.raw
@@ -438,7 +511,6 @@ object TargetRepository {
             }
         }
 
-        saveAllRecords(recordMap.values.toList())
         reconcileDatabase()
 
         if (::appContext.isInitialized) {
@@ -456,15 +528,38 @@ object TargetRepository {
         val canonicalIp = if ((!incomingIsMasked && baseIsMasked) || (base.isTemporary && !incoming.isTemporary)) incoming.ip else base.ip
         val ignoreMaskedData = (baseIsMasked != incomingIsMasked)
 
+        // Wallets (owner rule 2026-11-20): a wallet-screen wallet is proof and beats log-inferred ones, whose
+        // thefts are then dropped (logged as a conflict). Log-inferred wallets alone are all kept as candidates.
+        var droppedWallets: List<String> = emptyList()
+        var finalSource: String?
         val finalWallets = if (ignoreMaskedData) {
             val unmasked = if (!baseIsMasked) base else incoming
+            finalSource = unmasked.walletSource
             unmasked.wallets.toMutableList()
         } else {
             val distinctWallets = (base.wallets + incoming.wallets).distinct()
-            if (distinctWallets.size > 1) {
-                logWalletConflict(canonicalIp, distinctWallets[0], distinctWallets[1], "MergeRecords")
-                mutableListOf(distinctWallets[0])
+            val pageSide = when {
+                base.walletFromPage && base.wallets.isNotEmpty() -> base
+                incoming.walletFromPage && incoming.wallets.isNotEmpty() -> incoming
+                else -> null
+            }
+            if (distinctWallets.size > 1 && pageSide != null) {
+                // A wallet-screen wallet is proof: keep it, drop the log-inferred ones (and their thefts)
+                val keep = pageSide.wallets.first()
+                droppedWallets = distinctWallets.filter { it != keep }
+                logWalletConflict(canonicalIp, keep, droppedWallets.first(), "MergeRecords")
+                finalSource = TargetRecord.WALLET_FROM_PAGE
+                mutableListOf(keep)
+            } else if (distinctWallets.size > 1) {
+                // Only log-inferred wallets: keep them all as candidates
+                finalSource = TargetRecord.WALLET_FROM_LOG
+                distinctWallets.toMutableList()
             } else {
+                finalSource = when {
+                    distinctWallets.isEmpty() -> null
+                    base.walletFromPage || incoming.walletFromPage -> TargetRecord.WALLET_FROM_PAGE
+                    else -> base.walletSource ?: incoming.walletSource
+                }
                 distinctWallets.toMutableList()
             }
         }
@@ -480,7 +575,7 @@ object TargetRepository {
             val unmasked = if (!baseIsMasked) base else incoming
             unmasked.walletThefts.toMutableMap()
         } else {
-            (base.walletThefts.keys + incoming.walletThefts.keys).distinct().associateWith { wallet ->
+            (base.walletThefts.keys + incoming.walletThefts.keys).distinct().filter { it !in droppedWallets }.associateWith { wallet ->
                 val listA = base.walletThefts[wallet] ?: emptyList()
                 val listB = incoming.walletThefts[wallet] ?: emptyList()
                 (listA + listB).distinctBy { "${it.timestampMs}_${it.amount}" }.sortedBy { it.timestampMs }.toMutableList()
@@ -498,7 +593,8 @@ object TargetRepository {
             wallets = finalWallets,
             downloads = mergedDownloads,
             walletThefts = mergedThefts,
-            lastValidated = incoming.lastValidated ?: base.lastValidated
+            lastValidated = incoming.lastValidated ?: base.lastValidated,
+            walletSource = finalSource
         )
     }
 
@@ -521,9 +617,34 @@ object TargetRepository {
         }
     }
 
+    /** True if any two records share a username (ignoring case) or a wallet. O(n). */
+    fun hasSharedUsernameOrWallet(records: List<TargetRecord>): Boolean {
+        val usernames = HashSet<String>()
+        val wallets = HashSet<String>()
+        for (record in records) {
+            val user = record.username
+            if (user != null && !usernames.add(caseInsensitiveKey(user))) return true
+            for (wallet in record.wallets.toSet()) {
+                if (!wallets.add(wallet)) return true
+            }
+        }
+        return false
+    }
+
+    /** Matches String.equals(other, ignoreCase = true): compare each char's upper-then-lower case form. */
+    private fun caseInsensitiveKey(s: String): String {
+        val sb = StringBuilder(s.length)
+        for (c in s) sb.append(Character.toLowerCase(Character.toUpperCase(c)))
+        return sb.toString()
+    }
+
     fun reconcileDatabase() {
         val records = getAllRecords().toMutableList()
         if (records.size < 2) return
+        // Fast path: the full pairwise merge below is O(n²) (~0.25 s on 4,300 records on a desktop, several
+        // times that on a phone) and almost always finds nothing. Only run it when two records share a
+        // username or a wallet. Same rules as below: usernames ignore case, wallets match exactly.
+        if (!hasSharedUsernameOrWallet(records)) return
 
         var changed = false
         var i = 0

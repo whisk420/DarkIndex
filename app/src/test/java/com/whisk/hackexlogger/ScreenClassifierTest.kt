@@ -45,9 +45,24 @@ class ScreenClassifierTest {
 
     @Test
     fun testProcessScreenDetection() {
-        val text = "Active process task list\nDownloading Lv.10 Spam from 192.168.1.1"
-        val lines = text.split("\n")
-        assertEquals(ScreenType.PROCESS, ScreenClassifier.detectScreenType(text, lines))
+        // Real format (2026-11-20 dump)
+        val text = "< back\nDISCONNECT\n// PROCESSES\n3 active tasks\nFirewall Bypass \nLv.25\nDONE\n64.59.40.157"
+        assertEquals(ScreenType.PROCESS, ScreenClassifier.detectScreenType(text, text.split("\n")))
+        // The nav bar's "PROCESSES" button plus the word "task" is not a process screen
+        val notProcess = "Daily missions\nComplete a task\nHOME\nSCAN\nPROCESSES\nAPPS\nSTORE\nCREWS 1"
+        assertEquals(ScreenType.UNKNOWN, ScreenClassifier.detectScreenType(notProcess, notProcess.split("\n")))
+    }
+
+    @Test
+    fun testLogScreenDetectionFromHeadersAndLines() {
+        for (text in listOf(
+            "// LOG\nSAVE\n~/log.txt\n[11-20 12:38] Downloaded Lv25 Firewall from 113.149.48.111",
+            "// VICTIM LOG\n~/victim_log.txt",
+            "[11-20 4:18] Failed to crack password on 44.204.208.233",
+            "[11-20 12:37] Purchased Keygen Lv26"
+        )) {
+            assertEquals(text, ScreenType.LOGS, ScreenClassifier.detectScreenType(text, text.split("\n")))
+        }
     }
 
     @Test

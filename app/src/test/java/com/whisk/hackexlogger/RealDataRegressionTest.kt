@@ -51,6 +51,15 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun logFooterAnchorsTheYearAndTimesAreUtc() {
+        val parsed = LogScreenParser.parseDetailed(TestEnv.fixture("log_2026-11-20.txt").split("\n"))
+        // "Last saved: 2026-11-20 12:38:57" (UTC)
+        assertEquals(1795178337000L, parsed.lastSavedUtcMs)
+        // "[11-20 4:00] Stole 10,901 Crypto from hxff13...42f1" is 04:00 UTC on 2026-11-20
+        assertEquals(1795147200000L, DatabaseManager.parseLogTime("11-20 4:00", parsed.lastSavedUtcMs))
+    }
+
+    @Test
     fun ownLogIsSavedWithTheftsOnTheRightTargets() {
         val result = scrape("log_2026-11-19.txt")
         assertEquals(ScreenType.LOGS, result.detectedType)
@@ -64,18 +73,31 @@ class RealDataRegressionTest {
     }
 
     @Test
-    fun missingAccessedLineCannotStealAnotherTargetsWallet() {
-        // Day 1 teaches the DB that 8.83.197.176 owns hx77bd...ea69.
+    fun missingAccessedLineAddsAWalletCandidateUntilTheWalletScreenProvesIt() {
+        // Day 1 links hx77bd...ea69 to 8.83.197.176 (log, so "highly probable").
         scrape("log_2026-11-19.txt")
         // Day 2: the hx77bd line has scrolled off (100-line cap), so the parser now pairs
-        // hxe94d...72db with 8.83.197.176. The DB must refuse that and log a conflict.
+        // hxe94d...72db with 8.83.197.176 as well.
         val day2 = LogScreenParser.parseDetailed(TestEnv.fixture("log_2026-11-20.txt").split("\n"))
         assertEquals("8.83.197.176", day2.updates.single { it.wallet == "hxe94d...72db" }.ip)
-
         scrape("log_2026-11-20.txt")
 
+        // Logs aren't proof, so both stay as candidates (owner rule 2026-11-20)
+        assertEquals(listOf("hx77bd...ea69", "hxe94d...72db"), record("8.83.197.176")?.wallets)
+
+        // The target's wallet screen settles it: the proven wallet stays, the other one and its thefts go
+        TargetRepository.saveAllRecords(TargetRepository.getAllRecords().map { if (it.ip == "8.83.197.176") it.apply { username = "victim883" } else it })
+        DatabaseManager.processWalletScreen(WalletScreen(username = "victim883", wallet = "hx77bd...ea69"))
+
+        val target = record("8.83.197.176")!!
+        assertEquals(listOf("hx77bd...ea69"), target.wallets)
+        assertTrue(target.walletFromPage)
+        assertNull(target.walletThefts["hxe94d...72db"])
+        assertTrue(TestEnv.conflictLog(dir).any { "WalletScreenReplaced" in it && "hxe94d...72db" in it })
+
+        // From now on a log can't attach another wallet to it
+        scrape("log_2026-11-20.txt")
         assertEquals(listOf("hx77bd...ea69"), record("8.83.197.176")?.wallets)
-        assertTrue(TestEnv.conflictLog(dir).any { "hxe94d...72db" in it && "8.83.197.176" in it })
     }
 
     @Test
@@ -94,13 +116,14 @@ class RealDataRegressionTest {
     }
 
     @Test
-    fun logDiscardsAreTheKnownSix() {
+    fun logDiscardsAreTheKnownOnes() {
         val parsed = LogScreenParser.parseDetailed(TestEnv.fixture("log_2026-11-20.txt").split("\n"))
         assertEquals(99, parsed.timestampedLineCount)
-        // Purchased lines and failed cracks aren't parsed yet (both are open TODO items)
+        // Failed cracks are parsed since 2026-11-20; Purchased lines are a planned feature (profile from log)
         val reasons = parsed.discarded.map { it.line.substringAfter("] ").substringBefore(" on ").substringBefore(" Lv") }
-        assertEquals(listOf("Failed to crack password", "Purchased Keygen", "Failed to crack password",
-            "Failed to crack password", "Purchased Keygen").sorted(), reasons.sorted())
+        assertEquals(listOf("Purchased Keygen", "Purchased Keygen"), reasons)
+        assertEquals(setOf("44.204.208.233", "203.137.119.10", "231.130.229.178"),
+            parsed.updates.filter { it.raw.contains("Failed to crack") }.map { it.ip }.toSet())
         assertTrue(parsed.discarded.all { it.reason == LogDiscardReason.NO_PATTERN })
     }
 

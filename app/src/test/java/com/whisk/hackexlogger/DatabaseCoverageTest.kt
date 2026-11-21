@@ -6,7 +6,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -173,8 +172,7 @@ class DatabaseCoverageTest {
         assertEquals(3, TargetRepository.getAllRecords().size)
     }
 
-    @Ignore("Known bug B2 (TODO: 'Import drops raw ingests'): the final save overwrites what the ingests wrote. Un-ignore when fixed.")
-    @Test
+    @Test // was @Ignore'd for bug B2 until 2026-11-20
     fun importAppliesRawIngests() {
         val bundle = """
             {"format":"target-intelligence-console","version":1,"targets":[],

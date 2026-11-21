@@ -280,14 +280,15 @@ class TargetAdapter(
             target.encryptor?.let { addMeta("ENC", it.toString()) }
             if (target.hardware != null) {
                 val hwStr = target.hardware!!
+                // A trailing "?" marks a name missing from HardwareCatalog (maths then uses a fallback)
                 if (hwStr.contains(" • ")) {
                     val parts = hwStr.split(" • ")
-                    addMeta("DEV", parts[0])
+                    addMeta("DEV", parts[0] + if (HardwareCatalog.device(parts[0]) == null) HardwareCatalog.noteUnknown(parts[0]) else "")
                     if (parts.size > 1) {
-                        addMeta("NET", parts[1])
+                        addMeta("NET", parts[1] + if (HardwareCatalog.network(parts[1]) == null) HardwareCatalog.noteUnknown(parts[1]) else "")
                     }
                 } else {
-                    addMeta("HW", hwStr)
+                    addMeta("HW", hwStr + if (HardwareCatalog.parse(hwStr) == null) HardwareCatalog.noteUnknown(hwStr) else "")
                 }
             }
             target.clan?.let { addMeta("CREW", it) }
@@ -375,7 +376,9 @@ class TargetAdapter(
                     uploadSecs <= 45 * 60 -> "#854d0e"
                     else -> "#991b1b"
                 }
-                val chip = addIntelligenceChip("⏱ Spam Lv.$uploadLevel ~$uploadStr", colorHex)
+                val levelKnown = playerLevel != null
+                val chip = if (levelKnown) addIntelligenceChip("⏱ Spam Lv.$uploadLevel ~$uploadStr", colorHex)
+                    else addIntelligenceChip("⏱ Spam Lv.? (your level unknown)", "#334155")
                 chip.setOnClickListener {
                     val t1 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 1))
                     val t5 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 5))
@@ -385,7 +388,10 @@ class TargetAdapter(
                     val netName = playerNetwork ?: "Unknown (scrape your Store)"
                     val devName = target.hardware!!.substringBefore(" • ").trim()
 
-                    val capMessage = if (payoutInfo.isCapReachable) {
+                    val capMessage = if (!levelKnown) {
+                        "★ Your own level isn't known yet, so the Spam level that hits the 100/hr cap here can't be worked out.\n" +
+                            "   Scrape your own Home screen, then reopen this."
+                    } else if (payoutInfo.isCapReachable) {
                         val haveIt = currentSpamLevel <= 0 || currentSpamLevel >= uploadLevel
                         "★ Upload Spam Lv.$uploadLevel (~$uploadStr) → hits the 100/hr cap.\n" +
                             "   Anything higher just uploads slower for no extra Crypto." +

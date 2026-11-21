@@ -51,8 +51,12 @@ class PlayerIntelligenceTest {
         assertEquals(5.0, NetworkSpeedUtils.getNetworkSpeedBoost("5G"), 0.01)
         assertEquals(9.5, NetworkSpeedUtils.getNetworkSpeedBoost("Fiber"), 0.01)
         assertEquals(21.0, NetworkSpeedUtils.getNetworkSpeedBoost("Quantum Link"), 0.01)
-        assertEquals(21.0, NetworkSpeedUtils.getNetworkSpeedBoost("Null Route XII"), 0.01)
-        assertEquals(12.0, NetworkSpeedUtils.getNetworkSpeedBoost("Dark Routing VIII"), 0.01)
+        assertEquals(21.0, NetworkSpeedUtils.getNetworkSpeedBoost("Null Route XI"), 0.01)
+        assertEquals(12.0, NetworkSpeedUtils.getNetworkSpeedBoost("Contra Band VIII"), 0.01)
+        assertEquals(18.0, NetworkSpeedUtils.getNetworkSpeedBoost("Harvest Node X"), 0.01)
+        // Target hardware strings work too, and unknown names fall back to DSL speed
+        assertEquals(7.0, NetworkSpeedUtils.getNetworkSpeedBoost("Bolt III • 5G+"), 0.01)
+        assertEquals(1.0, NetworkSpeedUtils.getNetworkSpeedBoost("Dark Routing VIII"), 0.01)
     }
 
     @Test

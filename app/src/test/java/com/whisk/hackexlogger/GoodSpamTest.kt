@@ -26,26 +26,25 @@ class GoodSpamTest {
 
     @Test
     fun testPrestigeHardwarePenaltyMapping() {
-        // Prestige devices with Roman numerals map 1-to-1 to standard tiers
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Vector I • Dark Routing"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Scythe II • Fast Deploy"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Cipher III • Adaptive Block"))
-        assertEquals(1, GoodSpamUtils.getHardwarePenalty("Apex IV • Deep Link"))
-        assertEquals(2, GoodSpamUtils.getHardwarePenalty("Ghost V • Dark Routing"))
-        assertEquals(3, GoodSpamUtils.getHardwarePenalty("Vector VI • Backchannel"))
-        assertEquals(4, GoodSpamUtils.getHardwarePenalty("Scythe VII • Fast Deploy"))
-        assertEquals(5, GoodSpamUtils.getHardwarePenalty("Cipher VIII • Hardened Core"))
-        assertEquals(6, GoodSpamUtils.getHardwarePenalty("Apex IX • Overreach"))
-        assertEquals(7, GoodSpamUtils.getHardwarePenalty("Ghost X • Dark Routing"))
-        assertEquals(8, GoodSpamUtils.getHardwarePenalty("Vector XI • Backchannel"))
-        assertEquals(9, GoodSpamUtils.getHardwarePenalty("Nova Ultra XII • Null Route IX"))
+        // Prestige devices: the numeral is the level, same tier as the standard device at that level.
+        // (Old version used invented network names like "Dark Routing"; only the device half matters here.)
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Vector I • Contra Band I"))
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Scythe II • Harvest Node IV"))
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Cipher III • Void Net III"))
+        assertEquals(1, GoodSpamUtils.getHardwarePenalty("Apex IV • Null Route IV"))
+        assertEquals(2, GoodSpamUtils.getHardwarePenalty("Ghost V • Ghost Link V"))
+        assertEquals(3, GoodSpamUtils.getHardwarePenalty("Vector VI • Harvest Node VI"))
+        assertEquals(4, GoodSpamUtils.getHardwarePenalty("Scythe VII • Contra Band VII"))
+        assertEquals(5, GoodSpamUtils.getHardwarePenalty("Cipher VIII • Void Net VIII"))
+        assertEquals(6, GoodSpamUtils.getHardwarePenalty("Apex IX • Null Route IX"))
+        assertEquals(7, GoodSpamUtils.getHardwarePenalty("Ghost X • Ghost Link X"))
+        assertEquals(8, GoodSpamUtils.getHardwarePenalty("Vector XI • Null Route XI"))
+        assertEquals(9, GoodSpamUtils.getHardwarePenalty("Apex XII • Null Route XI"))
 
-        // Base prestige without numerals default to tier 0
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Ghost • Dark Routing"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Vector • Backchannel"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Scythe • Slow Burn"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Cipher • Adaptive Block"))
-        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Apex • Overreach"))
+        // A bare line name (old data) counts as level 1
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Ghost • Ghost Link"))
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Vector • Contra Band"))
+        assertEquals(0, GoodSpamUtils.getHardwarePenalty("Apex"))
     }
 
     @Test

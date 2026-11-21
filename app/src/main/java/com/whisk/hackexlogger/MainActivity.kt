@@ -219,6 +219,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.siphonAlertsBtn).visibility = if (rawDumpMode) View.GONE else View.VISIBLE
         findViewById<ImageButton>(R.id.rawDumpsBtn).visibility = if (rawDumpMode) View.VISIBLE else View.GONE
 
+        updateSearchAvailability()
+        updateLevelBanner()
         refreshData()
         if (Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled()) {
             startService(Intent(this, OverlayService::class.java))
@@ -331,6 +333,7 @@ class MainActivity : AppCompatActivity() {
             validateBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(if (isChecked) "#f59e0b" else "#16a34a"))
             validateBtn.setIconResource(if (isChecked) android.R.drawable.ic_menu_search else android.R.drawable.ic_menu_crop)
             forceFastSwap = true
+            updateSearchAvailability()
             refreshData()
         }
 
@@ -350,6 +353,7 @@ class MainActivity : AppCompatActivity() {
                 maxFirewallSeekBar.progress = playerBypasser.coerceIn(0, 31)
                 maxFirewallValue.text = if (playerBypasser >= 31) "Uncapped" else playerBypasser.toString()
             }
+            updateSearchAvailability()
             refreshData()
         }
 
@@ -390,6 +394,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var forceFastSwap = false
+
+    /** Search doesn't combine with Recon or Spam Priority (they show their own lists), so hide and clear it while either is on. */
+    private fun updateSearchAvailability() {
+        val searchLayout = findViewById<View>(R.id.searchLayout)
+        val searchInput = findViewById<EditText>(R.id.searchInput)
+        if (isReconModeEnabled || isGoodSpamEnabled) {
+            if (!searchInput.text.isNullOrEmpty()) searchInput.setText("")
+            currentSearchQuery = ""
+            searchLayout.visibility = View.GONE
+        } else {
+            searchLayout.visibility = View.VISIBLE
+        }
+    }
+
+    /** Warns while your own level is unknown (e.g. after a reinstall), since Spam advice depends on it. */
+    private fun updateLevelBanner() {
+        val unknown = PlayerProfileRepository.getProfile().playerLevel == null
+        findViewById<View>(R.id.levelUnknownBanner).visibility = if (unknown) View.VISIBLE else View.GONE
+    }
 
     private fun onToggleFull() {
         isFullVisible = !isFullVisible

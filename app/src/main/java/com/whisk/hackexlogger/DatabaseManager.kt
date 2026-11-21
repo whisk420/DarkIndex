@@ -66,25 +66,8 @@ object DatabaseManager {
 
     fun markValidated(ip: String) = TargetRepository.markValidated(ip)
 
-    fun parseLogTime(timeStr: String): Long? {
-        val match = Regex("""^(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$""").find(timeStr.trim()) ?: return null
-        val month = match.groupValues[1].toIntOrNull() ?: return null
-        val day = match.groupValues[2].toIntOrNull() ?: return null
-        val hour = match.groupValues[3].toIntOrNull() ?: return null
-        val minute = match.groupValues[4].toIntOrNull() ?: return null
-
-        val cal = java.util.Calendar.getInstance()
-        var year = cal.get(java.util.Calendar.YEAR)
-        val currentMonth = cal.get(java.util.Calendar.MONTH) + 1
-
-        if (month > currentMonth + 1) {
-            year -= 1
-        }
-
-        cal.set(year, month - 1, day, hour, minute, 0)
-        cal.set(java.util.Calendar.MILLISECOND, 0)
-        return cal.timeInMillis
-    }
+    /** `M-D H:MM` log time (UTC) → epoch ms. See [LogTime]. */
+    fun parseLogTime(timeStr: String, anchorUtcMs: Long? = null): Long? = LogTime.toEpochMs(timeStr, anchorUtcMs)
 
     fun exportDataBundle(): String = TargetRepository.exportDataBundle()
 
@@ -92,7 +75,7 @@ object DatabaseManager {
         return TargetRepository.importDataBundle(jsonString)
     }
 
-    fun processUpdates(updates: List<ParsedUpdate>) {
+    fun processUpdates(updates: List<ParsedUpdate>, logAnchorUtcMs: Long? = null) {
         if (updates.isEmpty()) return
         val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
@@ -124,12 +107,22 @@ object DatabaseManager {
             }
 
             if (update.wallet != null) {
-                if (record.wallets.isNotEmpty() && !record.wallets.contains(update.wallet)) {
+                // Log-inferred wallets are only "highly probable", so a target may collect several of them.
+                // Once its wallet screen has been scraped, that wallet is proof and logs can't add another.
+                if (record.walletFromPage && !record.wallets.contains(update.wallet)) {
                     TargetRepository.logWalletConflict(ip, record.wallets.first(), update.wallet, "LogUpdate")
                     dbDiscard(update, LogDiscardReason.WALLET_CONFLICT)
                 } else {
                     val previousOwner = recordMap.values.find { it.ip != ip && it.wallets.contains(update.wallet) }
+                    if (previousOwner != null && !previousOwner.isTemporary && !record.isTemporary) {
+                        // The wallet already belongs to another real target. A log line can't move it
+                        // (owner rule 2026-11-20: only a wallet-screen scrape may), so drop this line.
+                        TargetRepository.logWalletConflict(ip, previousOwner.ip, update.wallet, "LogWalletOwnedElsewhere")
+                        dbDiscard(update, LogDiscardReason.WALLET_CONFLICT)
+                        continue
+                    }
                     if (previousOwner != null) {
+                        // A wallet placeholder (or this placeholder) joins its real target
                         val merged = TargetRepository.mergeRecords(record, previousOwner)
                         recordMap.remove(record.ip)
                         recordMap.remove(previousOwner.ip)
@@ -139,10 +132,11 @@ object DatabaseManager {
                     }
                     if (!record.wallets.contains(update.wallet)) {
                         record.wallets.add(update.wallet)
+                        if (record.walletSource == null) record.walletSource = TargetRecord.WALLET_FROM_LOG
                     }
                     
                     if (update.stolenAmount != null && update.isOwnLogTheft) {
-                        val timestampMs = update.time?.let { parseLogTime(it) }
+                        val timestampMs = update.time?.let { parseLogTime(it, logAnchorUtcMs) }
                         if (timestampMs != null) {
                             record.addTheftEvent(update.wallet, timestampMs, update.stolenAmount)
                         } else {
@@ -223,39 +217,62 @@ object DatabaseManager {
         TargetRepository.reconcileDatabase()
     }
 
+    /**
+     * The wallet screen is the authority on a target's wallet (owner rule 2026-11-20):
+     * - it **replaces** whatever wallet the target had (from a log or an older wallet screen); thefts recorded
+     *   under the replaced wallet are dropped, and the change goes to the conflict log;
+     * - if another real target holds this wallet (wrongly inferred from a log, or the wallet moved), it is
+     *   taken from that target together with its thefts;
+     * - a placeholder holding the wallet (`unknown:wallet_…`) merges into this target.
+     * Logs can only fill in a wallet that's missing; they never replace or move one.
+     */
     fun processWalletScreen(walletScreen: WalletScreen) {
         val currentRecords = TargetRepository.getAllRecords().toMutableList()
         val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-        
+
         val username = walletScreen.username
         val wallet = walletScreen.wallet
-        
+
         var targetRecord = recordMap.values.find { it.username.equals(username, ignoreCase = true) }
-        
+
         if (targetRecord == null) {
             val newIp = "unknown:${username}"
             targetRecord = TargetRecord(ip = newIp, username = username)
             recordMap[newIp] = targetRecord
         }
 
-        if (targetRecord.wallets.isNotEmpty() && !targetRecord.wallets.contains(wallet)) {
-            TargetRepository.logWalletConflict(targetRecord.ip, targetRecord.wallets.first(), wallet, "WalletScreen")
-        } else {
-            val previousOwner = recordMap.values.find { it.ip != targetRecord.ip && it.wallets.contains(wallet) }
-            if (previousOwner != null) {
+        val previousOwner = recordMap.values.find { it.ip != targetRecord.ip && it.wallets.contains(wallet) }
+        if (previousOwner != null) {
+            if (previousOwner.isTemporary || targetRecord.isTemporary) {
                 val merged = TargetRepository.mergeRecords(targetRecord, previousOwner)
                 recordMap.remove(targetRecord.ip)
                 recordMap.remove(previousOwner.ip)
                 targetRecord = merged
                 recordMap[targetRecord.ip] = targetRecord
-            }
-            
-            if (!targetRecord.wallets.contains(wallet)) {
-                targetRecord.wallets.add(wallet)
+            } else {
+                previousOwner.wallets.remove(wallet)
+                if (previousOwner.wallets.isEmpty()) previousOwner.walletSource = null
+                val movedThefts = previousOwner.walletThefts.remove(wallet)
+                if (movedThefts != null) {
+                    val list = targetRecord.walletThefts.getOrPut(wallet) { mutableListOf() }
+                    for (event in movedThefts) {
+                        if (list.none { it.timestampMs == event.timestampMs && it.amount == event.amount }) list.add(event)
+                    }
+                    list.sortBy { it.timestampMs }
+                }
+                TargetRepository.logWalletConflict(previousOwner.ip, wallet, wallet, "WalletScreenMovedFrom")
             }
         }
+
+        val replaced = targetRecord.wallets.filter { it != wallet }
+        if (replaced.isNotEmpty()) {
+            TargetRepository.logWalletConflict(targetRecord.ip, replaced.first(), wallet, "WalletScreenReplaced")
+            replaced.forEach { targetRecord.walletThefts.remove(it) }
+        }
+        targetRecord.wallets = mutableListOf(wallet)
+        targetRecord.walletSource = TargetRecord.WALLET_FROM_PAGE
         targetRecord.lastValidated = TargetRepository.getCurrentTimestamp()
-        
+
         TargetRepository.saveAllRecords(recordMap.values.toList())
         TargetRepository.reconcileDatabase()
     }
@@ -306,7 +323,10 @@ object DatabaseManager {
         val map = currentRecords.associateBy { it.ip }.toMutableMap()
         var foundClanTag: String? = null
 
-        for (ip in crewScreen.members) {
+        // Masked members (44.72.45.xxx, xxx.xxx.xxx.xxx) can't be keyed: skip them entirely
+        val members = crewScreen.members.filterNot { CommonParserUtil.isMaskedIp(it) }
+
+        for (ip in members) {
             val record = map[ip]
             if (record != null && !record.clan.isNullOrBlank()) {
                 foundClanTag = record.clan
@@ -319,7 +339,7 @@ object DatabaseManager {
         var changed = false
         val now = TargetRepository.getCurrentTimestamp()
 
-        for (ip in crewScreen.members) {
+        for (ip in members) {
             val existing = map[ip]
             if (existing != null) {
                 if (existing.clan != foundClanTag) {
@@ -360,6 +380,7 @@ object DatabaseManager {
         val allIps = processScreen.ips + processScreen.invalidatedIps
 
         for (ip in allIps) {
+            if (CommonParserUtil.isMaskedIp(ip)) continue // can't key a target on a hidden IP
             if (!map.containsKey(ip)) {
                 val isInvalidated = processScreen.invalidatedIps.contains(ip) && !processScreen.ips.contains(ip)
                 val newRecord = TargetRecord(

@@ -58,11 +58,11 @@ class RawDumpTest {
     fun parseDetailedReportsEveryDiscardWithReason() {
         val r = LogScreenParser.parseDetailed(mixedLog.lines())
         assertEquals(7, r.timestampedLineCount)
-        assertEquals(2, r.updates.size) // access + stole
+        assertEquals(3, r.updates.size) // access + stole + failed crack (parsed since 2026-11-20)
         assertEquals(r.timestampedLineCount, r.updates.size + r.discarded.size)
 
         fun reasonOf(fragment: String) = r.discarded.single { it.line.contains(fragment) }.reason
-        assertEquals(LogDiscardReason.NO_PATTERN, reasonOf("Failed to crack"))
+        assertTrue(r.updates.any { it.ip == "1.2.3.4" && it.raw.contains("Failed to crack") })
         assertEquals(LogDiscardReason.NO_PATTERN, reasonOf("being cracked by"))
         assertEquals(LogDiscardReason.UNKNOWN_SOURCE, reasonOf("[UNKNOWN]"))
         assertEquals(LogDiscardReason.NO_PATTERN, reasonOf("Purchased Keygen"))
@@ -105,7 +105,8 @@ class RawDumpTest {
 
     @Test
     fun dbStageReportsEmptyIpMaskedSoftwareConflictAndBadTimestamp() {
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxAAAA...1111"))))
+        // Wallet proven by the wallet screen, so a log line naming another wallet is a conflict
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxAAAA...1111"), walletSource = TargetRecord.WALLET_FROM_PAGE)))
         val updates = listOf(
             ParsedUpdate(ip = "", time = "11-19 16:00", raw = "[11-19 16:00] Cracked password on ???"),
             ParsedUpdate(ip = "4.4.4.xxx", time = "11-19 16:01", software = Software("downloaded", 9, "Spam"), isOwnedSoftware = true, raw = "masked-dl"),
@@ -144,14 +145,14 @@ class RawDumpTest {
         assertEquals(listOf("Log"), dump.parsersMatched)
         val stats = dump.logStats!!
         assertEquals(7, stats.timestampedLines)
-        assertEquals(5, stats.discarded)
-        assertEquals(2, stats.interpreted)
+        assertEquals(4, stats.discarded)
+        assertEquals(3, stats.interpreted)
         assertEquals(0, stats.partial)
-        assertEquals(5, dump.discardedLogLines.size)
+        assertEquals(4, dump.discardedLogLines.size)
 
         val effects = dump.dbEffects!!
         assertEquals(0, effects.recordsBefore)
-        assertEquals(listOf("5.6.7.8"), effects.created)
+        assertEquals(listOf("1.2.3.4", "5.6.7.8"), effects.created.sorted()) // 1.2.3.4 from the failed crack
         // Hooks are removed after the session
         assertNull(DatabaseManager.activeDiscardSink)
         assertNull(TargetRepository.walletConflictListener)
@@ -181,8 +182,8 @@ class RawDumpTest {
     @Test
     fun pipelineWithoutSessionBehavesAsBefore() {
         val result = ScrapePipeline.run(mixedLog, mixedLog.lines(), null)
-        assertEquals(listOf("2 Log Events"), result.savedItems)
-        assertEquals("Saved: 2 Log Events", ScrapePipeline.toastMessage(result.savedItems))
+        assertEquals(listOf("3 Log Events"), result.savedItems)
+        assertEquals("Saved: 3 Log Events", ScrapePipeline.toastMessage(result.savedItems))
         assertEquals("Nothing found to save", ScrapePipeline.toastMessage(emptyList()))
     }
 
@@ -259,11 +260,12 @@ class RawDumpTest {
     }
 
     @Test
-    fun unknownScreenRecordsFallbackAndMatchedParsers() {
-        // Only "Uploaded" lines: no LOGS signature → UNKNOWN → fallback still parses it
+    fun uploadOnlyLogIsRecognisedAsALog() {
+        // Used to fall through to UNKNOWN (no "Accessed"/"Cracked" line); since 2026-11-20 any timestamped
+        // log line is enough to recognise the log screen
         val dump = record("[9-19 15:08] Uploaded Lv25 Siphon to 5.225.204.180")
-        assertEquals("UNKNOWN", dump.detectedType)
-        assertTrue(dump.fallbackUsed)
+        assertEquals("LOGS", dump.detectedType)
+        assertFalse(dump.fallbackUsed)
         assertEquals(listOf("Log"), dump.parsersMatched)
         assertEquals(1, dump.logStats!!.timestampedLines)
         assertEquals(1, dump.logStats!!.interpreted)
@@ -376,15 +378,15 @@ class RawDumpTest {
 
         // discarded rows: [line, "stage:reason"]
         val discarded = lean.getAsJsonArray("discarded")
-        assertEquals(5, discarded.size())
+        assertEquals(4, discarded.size())
         assertTrue(discarded.any { it.asJsonArray[1].asString == "parser:NO_TARGET_IP" })
 
         // Log rows reference rawText line numbers
         val rows = lean.getAsJsonObject("interp").getAsJsonObject("Log").getAsJsonArray("rows")
-        assertEquals(2, rows.size())
+        assertEquals(3, rows.size())
         val rawLines = mixedLog.split("\n")
         val stole = rows.map { it.asJsonArray }.single { it.size() > 2 && !it[2].isJsonNull }
-        val access = rows.map { it.asJsonArray }.single { it !== stole && it.size() == 2 }
+        val access = rows.map { it.asJsonArray }.single { it !== stole && it.size() == 2 && it[1].asString == "5.6.7.8" }
         assertTrue("trailing null/false trimmed", rawLines[access[0].asInt].contains("Accessed device at 5.6.7.8"))
         assertTrue(rawLines[stole[0].asInt].contains("Stole 1,226"))
         assertEquals("5.6.7.8", stole[1].asString)
@@ -393,7 +395,7 @@ class RawDumpTest {
         // db: empty lists dropped, created kept
         val db = lean.getAsJsonObject("db")
         assertFalse(db.has("removed"))
-        assertEquals("5.6.7.8", db.getAsJsonArray("created")[0].asString)
+        assertTrue(db.getAsJsonArray("created").map { it.asString }.contains("5.6.7.8"))
 
         // nodes: only text/id/desc rows, short class names, text truncated
         val nodes = lean.getAsJsonObject("nodes")

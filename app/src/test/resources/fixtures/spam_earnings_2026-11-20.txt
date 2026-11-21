@@ -1,0 +1,401 @@
+// APPS
+Notepad
+Wallet:
+43,643
+Credits:
+1,387
+SPAM
+58
+/ 67
++3
+Botnet - Nexus
+5,728/hr
+137,472/day
+>
+SIPHON
+122
+76,228
+DEPLOYED EARNED
+>
+▼ Installed Applications
+List view
+Grid view
+[-]
+Antivirus
+LVL 20
+LOCKEDLVL 24 available10,865 Crypto
+Firewall
+LVL 23
+Password Encryptor
+LVL 18
+LOCKEDLVL 24 available14,097 Crypto
+Proxy 
+ACTIVE
+23h 54m
+LVL 26
+Trace
+LVL 26
+Bypasser
+LVL 20
+(+3)
+LOCKEDLVL 22 available7,493 Crypto
+Password Cracker
+LVL 20
+(+3)
+LOCKEDLVL 24 available14,060 Crypto
+Spam 
+5,728/hr
+LVL 20
+LOCKEDLVL 26 available30,113 Crypto
+Rootkit
+LVL 6
+LOCKEDLVL 7 available2,636 Crypto
+Siphon 
+76,228 siphoned
+LVL 20
+LOCKEDLVL 25 available23,501 Crypto
+Keygen
+LVL 26
+Notepad
+Message Encryptor
+▼ Consumables
+[-]
+IP Scrambler
+New identity, who dis? Generates a fresh random IP. Current active bypasses against you will fail.
+Use
+x6
+System Purge
+Nuke every virus on your device. No scan, no wait, just gone. Restores 90% of lost reputation.
+Use
+x15
+EMP Pulse
+Kill switch. Cancels all pending processes against you and blocks new ones for 1 hour. 2hr cooldown.
+Use
+x14
+Wallet Shield
+Blocks crypto theft for 24 hours. 48hr cooldown between uses.
+Use
+x17
+Backdoor
+Instantly bypass the firewall. Targets with Firewall Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x38
+Exploit Kit
+Skip the password crack entirely. Targets with Encryptor Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x10
+Log Lock
+Locks your device log for 8 hours so attackers can't edit it. Trap a traced attacker's IP — they can't scrub their tracks. 12hr cooldown between uses. Requires app v1.3.0 or later to use.
+Use
+x9
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS 1
+SPAM EARNINGS
+DEPLOYED
+58
+RATE
+5,728/hr
+DAILY
+137,472/d
+Botnet - Nexus
+58/67 slots
++3
+14% fee
+-50%
+CURRENT DEPLOYED EARNED
+615,618
+DAILY BOTNET FEES
+19,246 
+/ day
+175.223.63.126
+LV.17
+100/hr
+12,100 earned
+5d
+206.213.191.7
+LV.17
+100/hr
+2,267 earned
+1d
+202.183.19.174
+LV.17
+100/hr
+4,312 earned
+2d
+216.82.9.51
+LV.17
+100/hr
+9,173 earned
+4d
+15.108.173.181
+LV.17
+100/hr
+12,192 earned
+5d
+152.24.26.62
+LV.17
+100/hr
+7,954 earned
+3d
+14.81.161.70
+LV.17
+100/hr
+9,143 earned
+4d
+161.179.49.0
+LV.18
+100/hr
+11,005 earned
+5d
+23.158.189.248
+LV.18
+100/hr
+11,967 earned
+5d
+197.151.19.198
+LV.17
+100/hr
+4,312 earned
+2d
+224.220.14.189
+LV.17
+100/hr
+2,293 earned
+1d
+203.137.119.10
+LV.17
+100/hr
+2,445 earned
+1d
+19.153.240.166
+LV.17
+100/hr
+3,985 earned
+1d
+180.210.255.76
+LV.17
+100/hr
+4,636 earned
+2d
+215.48.118.206
+LV.17
+100/hr
+11,408 earned
+5d
+238.163.216.232
+LV.18
+100/hr
+2,483 earned
+1d
+181.184.30.5
+LV.17
+100/hr
+7,677 earned
+3d
+200.208.19.5
+LV.17
+100/hr
+7,755 earned
+3d
+229.201.126.144
+LV.17
+100/hr
+11,234 earned
+5d
+204.60.185.152
+LV.17
+100/hr
+11,881 earned
+5d
+181.151.2.103
+LV.17
+100/hr
+4,355 earned
+2d
+19.1.71.17
+LV.17
+100/hr
+12,213 earned
+5d
+93.194.40.177
+LV.17
+100/hr
+4,368 earned
+2d
+178.107.169.237
+LV.20
+100/hr
+11,871 earned
+5d
+203.236.60.135
+LV.17
+100/hr
+12,101 earned
+5d
+231.130.229.178
+LV.17
+100/hr
+2,560 earned
+1d
+101.158.203.22
+LV.17
+100/hr
+5,674 earned
+2d
+47.13.160.89
+LV.17
+100/hr
+12,188 earned
+5d
+62.35.243.175
+LV.17
+100/hr
+5,520 earned
+2d
+23.121.78.14
+LV.17
+100/hr
+5,674 earned
+2d
+223.153.146.200
+LV.17
+100/hr
+9,250 earned
+4d
+44.204.208.233
+LV.17
+100/hr
+913 earned
+today
+21.78.128.117
+LV.17
+100/hr
+9,144 earned
+4d
+58.93.225.179
+LV.17
+100/hr
+11,868 earned
+5d
+231.65.164.95
+LV.17
+100/hr
+2,415 earned
+1d
+113.149.48.111
+LV.17
+100/hr
+4,639 earned
+2d
+104.72.157.156
+LV.17
+100/hr
+12,183 earned
+5d
+162.179.24.187
+LV.17
+100/hr
+5,552 earned
+2d
+2.134.225.154
+LV.17
+100/hr
+11,288 earned
+5d
+9.104.128.81
+LV.18
+99/hr
+3,788 earned
+1d
+248.178.158.73
+LV.16
+99/hr
+20,687 earned
+9d
+107.204.232.142
+LV.16
+99/hr
+24,339 earned
+11d
+159.164.200.186
+LV.16
+99/hr
+25,394 earned
+11d
+xxx.xxx.xxx.xxx
+LV.16
+99/hr
+17,961 earned
+8d
+20.52.213.253
+LV.16
+99/hr
+17,952 earned
+8d
+14.184.207.242
+LV.16
+99/hr
+18,105 earned
+8d
+167.62.217.80
+LV.16
+99/hr
+23,032 earned
+10d
+197.207.121.67
+LV.16
+99/hr
+22,952 earned
+10d
+6.38.121.129
+LV.16
+98/hr
+18,265 earned
+8d
+117.238.79.186
+LV.16
+98/hr
+24,756 earned
+11d
+191.213.136.158
+LV.17
+98/hr
+7,786 earned
+3d
+204.35.57.82
+LV.16
+96/hr
+22,346 earned
+10d
+152.18.145.50
+LV.16
+96/hr
+23,580 earned
+11d
+234.157.155.125
+LV.17
+93/hr
+2,376 earned
+1d
+215.40.70.164
+LV.17
+93/hr
+2,245 earned
+1d
+151.38.87.134
+LV.16
+90/hr
+22,264 earned
+11d
+67.29.121.49
+LV.16
+88/hr
+21,772 earned
+11d
+226.189.216.255
+LV.18
+87/hr
+2,020 earned
+1d

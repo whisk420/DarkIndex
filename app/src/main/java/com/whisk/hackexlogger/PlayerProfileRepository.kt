@@ -33,6 +33,37 @@ object PlayerProfileRepository {
     /** Last parsed profile and the JSON it came from. Every target card reads the profile several times, so this skips re-parsing unchanged JSON. */
     @Volatile private var parsedCache: Pair<String, PlayerProfile>? = null
 
+    /** False until [init] (or a test) sets [prefs]. */
+    fun isReady(): Boolean = ::prefs.isInitialized
+
+    /** Writes the profile and refreshes the Downloads backup, which now includes the profile. */
+    private fun save(updated: PlayerProfile) {
+        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+        TargetRepository.requestBackupWrite()
+    }
+
+    /**
+     * Restores a profile from an export/backup without overwriting anything newer: each field is only
+     * filled in where the current profile has nothing (software levels: per app). Used by Import.
+     */
+    fun restoreFromBackup(imported: PlayerProfile) {
+        val current = getProfile()
+        @Suppress("USELESS_ELVIS", "UNNECESSARY_SAFE_CALL") // Gson can leave non-null fields null
+        val importedSoftware: Map<String, Int> = imported.softwareLevels ?: emptyMap()
+        val mergedSoftware = importedSoftware.toMutableMap().apply { putAll(current.softwareLevels) }
+        val merged = current.copy(
+            username = current.username ?: imported.username,
+            playerLevel = current.playerLevel ?: imported.playerLevel,
+            nextDevice = current.nextDevice ?: imported.nextDevice,
+            nextNetwork = current.nextNetwork ?: imported.nextNetwork,
+            botnetStatus = current.botnetStatus ?: imported.botnetStatus,
+            softwareLevels = mergedSoftware,
+            currentDevice = current.currentDevice ?: imported.currentDevice,
+            currentNetwork = current.currentNetwork ?: imported.currentNetwork
+        )
+        if (merged != current) save(merged)
+    }
+
     fun getProfile(): PlayerProfile {
         val json = prefs.getString(KEY_PROFILE, null) ?: return PlayerProfile()
         parsedCache?.let { (cachedJson, cachedProfile) -> if (cachedJson == json) return cachedProfile }
@@ -82,7 +113,7 @@ object PlayerProfileRepository {
             softwareLevels = mergedSoftware
         )
 
-        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+        save(updated)
     }
 
     fun updateBypasserLevel(effectiveBypasserLevel: Int) {
@@ -90,13 +121,13 @@ object PlayerProfileRepository {
         val mergedSoftware = current.softwareLevels.toMutableMap()
         mergedSoftware["Bypasser"] = effectiveBypasserLevel + 1 // Store format (+1 for next upgrade level)
         val updated = current.copy(softwareLevels = mergedSoftware)
-        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+        save(updated)
     }
 
     fun updatePlayerLevel(level: Int) {
         val current = getProfile()
         val updated = current.copy(playerLevel = level)
-        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+        save(updated)
     }
 
     fun updateOwnProfile(username: String?, level: Int?) {
@@ -105,7 +136,7 @@ object PlayerProfileRepository {
             username = username ?: current.username,
             playerLevel = level ?: current.playerLevel
         )
-        prefs.edit().putString(KEY_PROFILE, gson.toJson(updated)).apply()
+        save(updated)
     }
 
     /** The network you own (for upload maths). Falls back to "one below NEXT" for profiles saved before currentNetwork existed. */
@@ -120,12 +151,9 @@ object PlayerProfileRepository {
         return profile.currentDevice ?: decrementHardwareName(profile.nextDevice)
     }
 
-    fun isApexDeviceOwned(): Boolean {
-        val profile = getProfile()
-        // Same behaviour as before (pending owner verification), but still works once the device is maxed and NEXT is gone.
-        val dev = (profile.nextDevice ?: profile.currentDevice)?.lowercase() ?: return false
-        return dev.contains("apex")
-    }
+    /** True when the device you own is from the Apex prestige line (its perk: Bypasser/Cracker count +3). */
+    fun isApexDeviceOwned(): Boolean =
+        HardwareCatalog.device(getCurrentDevice())?.line == HardwareCatalog.Line.APEX
 
     fun getEffectiveBypasserLevel(): Int {
         val profile = getProfile()
@@ -149,55 +177,10 @@ object PlayerProfileRepository {
         return (nextLevel - 1).coerceAtLeast(0)
     }
 
-    fun decrementHardwareName(nextName: String?): String? {
-        if (nextName == null) return null
-        val trimmed = nextName.trim()
-
-        // 1. Check Standard Devices list
-        val standardDevices = listOf(
-            "Raider", "Raider II", "Raider III",
-            "Bolt", "Bolt II", "Bolt III",
-            "Nova", "Nova II", "Nova III",
-            "Nova S", "Nova X", "Nova Ultra"
-        )
-        val stdIndex = standardDevices.indexOfFirst { it.equals(trimmed, ignoreCase = true) }
-        if (stdIndex > 0) {
-            return standardDevices[stdIndex - 1]
-        } else if (stdIndex == 0) {
-            return "Raider" // Lowest standard device
-        }
-
-        // 2. Check Roman Numeral Suffix (e.g., "Apex VII", "Null Route X", "Ghost IV")
-        val romanNumerals = listOf(
-            "XII" to "XI",
-            "XI" to "X",
-            "X" to "IX",
-            "IX" to "VIII",
-            "VIII" to "VII",
-            "VII" to "VI",
-            "VI" to "V",
-            "V" to "IV",
-            "IV" to "III",
-            "III" to "II",
-            "II" to "I",
-            "I" to ""
-        )
-
-        for ((currentRoman, prevRoman) in romanNumerals) {
-            if (trimmed.endsWith(" $currentRoman", ignoreCase = true)) {
-                val baseName = trimmed.substring(0, trimmed.length - currentRoman.length).trim()
-                return if (prevRoman.isEmpty()) {
-                    if (baseName.equals("Null Route", ignoreCase = true)) {
-                        "Base Network"
-                    } else {
-                        "Nova Ultra" // Tier I prestige comes after Nova Ultra
-                    }
-                } else {
-                    "$baseName $prevRoman"
-                }
-            }
-        }
-
-        return trimmed
-    }
+    /**
+     * What you own when the Store offers [nextName] as NEXT: one level below, via [HardwareCatalog]
+     * (standard and prestige devices and networks). Level 1 (`Raider`, `DSL`, `<Line> I`) stays the same.
+     * Unknown names come back unchanged.
+     */
+    fun decrementHardwareName(nextName: String?): String? = HardwareCatalog.previous(nextName)
 }

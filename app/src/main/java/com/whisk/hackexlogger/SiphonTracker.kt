@@ -17,6 +17,7 @@ object SiphonTracker {
     private val knownSiphonStartTimes = mutableMapOf<String, Long>()
     private val siphonAlerts = mutableSetOf<String>()
     private val accumulatedSiphons = mutableSetOf<String>()
+    private var accumulatedMaskedSiphons = 0
 
     fun init() {
         val prefs = TargetRepository.prefs
@@ -97,6 +98,7 @@ object SiphonTracker {
         knownSiphonStartTimes.clear()
         siphonAlerts.clear()
         accumulatedSiphons.clear()
+        accumulatedMaskedSiphons = 0
         currentTimeProvider = { System.currentTimeMillis() }
         saveSiphonData()
     }
@@ -112,6 +114,8 @@ object SiphonTracker {
 
         val currentTime = currentTimeProvider()
 
+        // Masked rows can't be told apart, so keep the most seen in one scrape of this scroll-through
+        accumulatedMaskedSiphons = maxOf(accumulatedMaskedSiphons, siphonScreen.maskedCount)
         for (item in siphonScreen.items) {
             accumulatedSiphons.add(item.ip)
             // If the user goes back and scans their list, remove anything that was falsely alerted
@@ -120,7 +124,7 @@ object SiphonTracker {
             }
         }
 
-        if (siphonScreen.deployedCount == 0 || accumulatedSiphons.size >= siphonScreen.deployedCount) {
+        if (siphonScreen.deployedCount == 0 || accumulatedSiphons.size + accumulatedMaskedSiphons >= siphonScreen.deployedCount) {
             val missingIps = knownSiphons.keys - accumulatedSiphons
             for (missingIp in missingIps) {
                 val amount = knownSiphons[missingIp] ?: 0
@@ -138,6 +142,7 @@ object SiphonTracker {
                 exportFile.appendText("$logLine\n")
             }
             accumulatedSiphons.clear()
+            accumulatedMaskedSiphons = 0
         }
 
         for (item in siphonScreen.items) {

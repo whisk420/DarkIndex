@@ -13,14 +13,20 @@ class PlayerProfileRepositoryTest {
         assertEquals("Apex XI", PlayerProfileRepository.decrementHardwareName("Apex XII"))
         assertEquals("Ghost III", PlayerProfileRepository.decrementHardwareName("Ghost IV"))
         assertEquals("Vector I", PlayerProfileRepository.decrementHardwareName("Vector II"))
-        assertEquals("Nova Ultra", PlayerProfileRepository.decrementHardwareName("Scythe I"))
+        // A reboot starts at <Line> I, so nothing sits below it (old code wrongly returned "Nova Ultra")
+        assertEquals("Scythe I", PlayerProfileRepository.decrementHardwareName("Scythe I"))
     }
 
     @Test
     fun testDecrementHardwareNameNetworks() {
         assertEquals("Null Route IX", PlayerProfileRepository.decrementHardwareName("Null Route X"))
         assertEquals("Null Route I", PlayerProfileRepository.decrementHardwareName("Null Route II"))
-        assertEquals("Base Network", PlayerProfileRepository.decrementHardwareName("Null Route I"))
+        assertEquals("Null Route I", PlayerProfileRepository.decrementHardwareName("Null Route I"))
+        assertEquals("Harvest Node IX", PlayerProfileRepository.decrementHardwareName("Harvest Node X"))
+        // Standard networks (old code returned them unchanged)
+        assertEquals("Fiber+", PlayerProfileRepository.decrementHardwareName("10G Fiber"))
+        assertEquals("10G Fiber+", PlayerProfileRepository.decrementHardwareName("Quantum Link"))
+        assertEquals("DSL", PlayerProfileRepository.decrementHardwareName("Cable"))
     }
 
     @Test

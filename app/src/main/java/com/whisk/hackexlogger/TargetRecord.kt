@@ -43,8 +43,16 @@ data class TargetRecord(
     var wallets: MutableList<String> = mutableListOf(),
     var downloads: MutableMap<String, SoftwareEntry> = mutableMapOf(),
     var walletThefts: MutableMap<String, MutableList<TheftEvent>> = mutableMapOf(),
-    var lastValidated: String? = null
+    var lastValidated: String? = null,
+    /**
+     * Where the wallet came from: [WALLET_FROM_PAGE] (the target's wallet screen, the authority) or
+     * [WALLET_FROM_LOG] (inferred from your log). Null for records saved before 2026-11-20 (treated like a log).
+     * Only a wallet-screen scrape may replace or move a wallet that's already known.
+     */
+    var walletSource: String? = null
 ) {
+    val walletFromPage: Boolean get() = walletSource == WALLET_FROM_PAGE
+
     /**
      * True if the target IP address contains masked components (e.g., "192.168.xxx.12" or "[UNKNOWN]").
      */
@@ -173,6 +181,9 @@ data class TargetRecord(
     }
 
     companion object {
+        const val WALLET_FROM_PAGE = "wallet_page"
+        const val WALLET_FROM_LOG = "log"
+
         /**
          * Calculates the hack success probability percentage (5% to 95%) based on level delta.
          * Delta = PlayerOffenseLevel - TargetDefenseLevel

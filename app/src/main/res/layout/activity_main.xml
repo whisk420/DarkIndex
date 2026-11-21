@@ -191,6 +191,21 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- Shown while your own level is unknown (Spam advice can't account for the level gap) -->
+        <TextView
+            android:id="@+id/levelUnknownBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:background="#422006"
+            android:padding="10dp"
+            android:text="⚠ Your level isn't known yet. Scrape your own Home screen for accurate Spam advice."
+            android:textColor="#fde68a"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/firewallSliderLayout" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/targetsRecycler"
             android:layout_width="match_parent"
@@ -200,7 +215,7 @@
             android:paddingHorizontal="6dp"
             android:paddingBottom="88dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            app:layout_constraintTop_toBottomOf="@id/firewallSliderLayout"
+            app:layout_constraintTop_toBottomOf="@id/levelUnknownBanner"
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <LinearLayout

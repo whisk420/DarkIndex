@@ -3,47 +3,12 @@ package com.whisk.hackexlogger
 object NetworkSpeedUtils {
 
     /**
-     * Maps network string (standard name or prestige line) to its Speed Boost Multiplier.
-     * Capped at 21.0x (Quantum Link / Prestige XII equivalent).
+     * Speed multiplier for your network (standard or prestige `<Line> <Roman>`), via [HardwareCatalog].
+     * Accepts a bare network name or a target's `"<Device> • <Network>"` string.
+     * Unknown names fall back to 1.0× (DSL) — see TODO "Unknown device and network fallbacks".
      */
-    fun getNetworkSpeedBoost(networkStr: String?): Double {
-        if (networkStr == null) return 1.0
-        val net = networkStr.substringAfter(" • ").ifEmpty { networkStr }.trim().lowercase()
-
-        // 1. Standard Networks
-        if (net == "dsl") return 1.0
-        if (net == "cable") return 1.5
-        if (net == "cable+") return 2.25
-        if (net == "4g lte" || net == "4g") return 3.5
-        if (net == "5g") return 5.0
-        if (net == "5g+") return 7.0
-        if (net == "fiber") return 9.5
-        if (net == "fiber+") return 12.0
-        if (net == "10g fiber") return 15.0
-        if (net == "10g fiber+") return 18.0
-        if (net == "quantum link") return 21.0
-
-        // 2. Prestige Networks (Suffix I - XII mapped to 1.0x - 21.0x)
-        return when {
-            net.endsWith(" xii") -> 21.0
-            net.endsWith(" xi") -> 21.0
-            net.endsWith(" x") -> 18.0
-            net.endsWith(" ix") -> 15.0
-            net.endsWith(" viii") -> 12.0
-            net.endsWith(" vii") -> 9.5
-            net.endsWith(" vi") -> 7.0
-            net.endsWith(" v") -> 5.0
-            net.endsWith(" iv") -> 3.5
-            net.endsWith(" iii") -> 2.25
-            net.endsWith(" ii") -> 1.5
-            net.endsWith(" i") -> 1.0
-            // Base prestige network line without numeral defaults to 1.0x
-            net.contains("null route") || net.contains("dark routing") ||
-            net.contains("backchannel") || net.contains("fast deploy") ||
-            net.contains("deep link") -> 1.0
-            else -> 1.0
-        }
-    }
+    fun getNetworkSpeedBoost(networkStr: String?): Double =
+        HardwareCatalog.networkBoost(networkStr) ?: 1.0
 
     /**
      * Calculates the base 1.0x DSL upload duration in seconds for a target device hardware tier (0 to 9).

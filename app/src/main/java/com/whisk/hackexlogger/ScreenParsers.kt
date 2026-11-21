@@ -7,10 +7,18 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
 }
 
 object ScreenClassifier {
+    private val LOG_LINE = Regex("""^\[\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}]\s+(stole |uploaded lv|downloaded lv|failed to bypass|failed to crack|bypassed firewall|cracked password|accessed device|uploading lv|purchased )""", RegexOption.IGNORE_CASE)
+
+    private fun isLogScreen(lowerText: String, lines: List<String>): Boolean {
+        if (lowerText.contains("device accessed") || lowerText.contains("accessed device") || lowerText.contains("cracked password") || lowerText.contains("bypassed firewall")) return true
+        if (lines.any { val t = it.trim().lowercase(); t == "// log" || t == "~/log.txt" || t == "// victim log" || t == "~/victim_log.txt" }) return true
+        return lines.any { LOG_LINE.containsMatchIn(it.trim()) }
+    }
+
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
         if (lowerText.contains("my device") && (lowerText.contains("daily missions") || lowerText.contains("login streak"))) return ScreenType.OWN_PROFILE
@@ -18,9 +26,11 @@ object ScreenClassifier {
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE
         if (lowerText.contains("wallet address") || lowerText.contains("'s wallet") || lowerText.contains("’s wallet")) return ScreenType.WALLET
+        // The Spam and Siphon earnings pages both start with the Apps page text, so check Spam first
+        if (text.contains("SPAM EARNINGS")) return ScreenType.SPAM_EARNINGS
         if (lowerText.contains("siphoned") && lowerText.contains("deployed")) return ScreenType.SIPHON
-        if (lowerText.contains("device accessed") || lowerText.contains("accessed device") || lowerText.contains("cracked password") || lowerText.contains("bypassed firewall")) return ScreenType.LOGS
-        if (lowerText.contains("process") && lowerText.contains("task")) return ScreenType.PROCESS
+        if (isLogScreen(lowerText, lines)) return ScreenType.LOGS
+        if (lines.any { it.trim().equals("// PROCESSES", ignoreCase = true) } || Regex("""\b\d+ active tasks?\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)) return ScreenType.PROCESS
         if (lowerText.contains("firewall") && (lowerText.contains("encryptor") || lowerText.contains("ip") || lowerText.contains("device"))) return ScreenType.HOME
         if (lines.any { it.trim().equals("LEADER", ignoreCase = true) || it.contains("Members", ignoreCase = true) }) return ScreenType.CREW
 
@@ -39,6 +49,47 @@ object CommonParserUtil {
             return wallet.take(6) + "..." + wallet.takeLast(4)
         }
         return wallet
+    }
+
+    /** True for IPs we can't use as a target key: masked (`xxx`), `[UNKNOWN]` (Ghost), or blank. */
+    fun isMaskedIp(ip: String?): Boolean =
+        ip.isNullOrBlank() || ip.contains("xxx", ignoreCase = true) || ip.contains("UNKNOWN", ignoreCase = true)
+
+    private val NAV_BAR = listOf("HOME", "SCAN", "PROCESSES", "APPS", "STORE")
+
+    /**
+     * Removes the game's bottom navigation block (`HOME SCAN PROCESSES APPS STORE CREWS[ n]`), wherever it
+     * appears in the snapshot. It shows up on your own screens and contains words like "PROCESSES"/"CREWS"
+     * that fooled the Crew and Process parsers.
+     */
+    fun stripNavBar(lines: List<String>): List<String> {
+        val trimmed = lines.map { it.trim() }
+        val out = ArrayList<String>(lines.size)
+        var i = 0
+        while (i < lines.size) {
+            val isBlock = i + NAV_BAR.size < lines.size &&
+                NAV_BAR.indices.all { trimmed[i + it].equals(NAV_BAR[it], ignoreCase = true) } &&
+                Regex("""CREWS(\s+\d+)?""", RegexOption.IGNORE_CASE).matches(trimmed[i + NAV_BAR.size])
+            if (isBlock) { i += NAV_BAR.size + 1; continue }
+            out.add(lines[i]); i++
+        }
+        return out
+    }
+
+    private val ENTITY = Regex("""&(#\d+|#[xX][0-9a-fA-F]+|amp|lt|gt|quot|apos|nbsp);""")
+
+    /** Decodes the HTML entities the game's WebView leaks into text (e.g. `jaywat2550&#39;s wallet`). */
+    fun decodeEntities(text: String): String {
+        if (!text.contains('&')) return text
+        return ENTITY.replace(text) { m ->
+            when (val e = m.groupValues[1]) {
+                "amp" -> "&"; "lt" -> "<"; "gt" -> ">"; "quot" -> "\""; "apos" -> "'"; "nbsp" -> " "
+                else -> {
+                    val code = if (e.startsWith("#x") || e.startsWith("#X")) e.substring(2).toIntOrNull(16) else e.substring(1).toIntOrNull()
+                    if (code != null && Character.isValidCodePoint(code)) String(Character.toChars(code)) else m.value
+                }
+            }
+        }
     }
 
     fun extractIp(text: String): String? {
@@ -170,8 +221,53 @@ object LogDiscardReason {
 data class LogParseResult(
     val updates: List<ParsedUpdate>,
     val discarded: List<DiscardedLogLine>,
-    val timestampedLineCount: Int
+    val timestampedLineCount: Int,
+    /** The log footer's `Last saved: YYYY-MM-DD HH:MM:SS` (UTC) as epoch ms, if shown. Anchors the year of `[M-D H:MM]` lines. */
+    val lastSavedUtcMs: Long? = null
 )
+
+/**
+ * Log timestamps. The game writes `[M-D H:MM]` in **UTC** with no year (owner-confirmed 2026-11-19).
+ * The year comes from an anchor: the log's `Last saved:` footer when present, else the current UTC time.
+ * A line whose month is after the anchor's month belongs to the previous year (December lines read in January).
+ */
+object LogTime {
+    private val REGEX_LINE_TIME = Regex("""^(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})$""")
+    private val REGEX_LAST_SAVED = Regex("""Last saved:\s*(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})""", RegexOption.IGNORE_CASE)
+    private val UTC = java.util.TimeZone.getTimeZone("UTC")
+
+    /** Overridable clock for tests. */
+    @Volatile var nowProvider: () -> Long = { System.currentTimeMillis() }
+
+    fun lastSaved(lines: List<String>): Long? {
+        for (line in lines) {
+            val m = REGEX_LAST_SAVED.find(line) ?: continue
+            val v = m.groupValues.drop(1).map { it.toInt() }
+            return utc(v[0], v[1], v[2], v[3], v[4], v[5])
+        }
+        return null
+    }
+
+    /** `M-D H:MM` (UTC) → epoch ms, or null if it isn't a valid log time. */
+    fun toEpochMs(timeStr: String, anchorUtcMs: Long? = null): Long? {
+        val m = REGEX_LINE_TIME.find(timeStr.trim()) ?: return null
+        val month = m.groupValues[1].toInt()
+        val day = m.groupValues[2].toInt()
+        val hour = m.groupValues[3].toInt()
+        val minute = m.groupValues[4].toInt()
+        if (month !in 1..12 || day !in 1..31 || hour > 23 || minute > 59) return null
+        val ref = java.util.Calendar.getInstance(UTC).apply { timeInMillis = anchorUtcMs ?: nowProvider() }
+        var year = ref.get(java.util.Calendar.YEAR)
+        if (month > ref.get(java.util.Calendar.MONTH) + 1) year -= 1
+        return utc(year, month, day, hour, minute, 0)
+    }
+
+    private fun utc(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Long =
+        java.util.Calendar.getInstance(UTC).apply {
+            clear()
+            set(year, month - 1, day, hour, minute, second)
+        }.timeInMillis
+}
 
 object LogScreenParser {
     private val REGEX_LOG_PREFIX = Regex("""^\[.+?\]""")
@@ -180,16 +276,17 @@ object LogScreenParser {
     private val REGEX_LOG_ACCESS = Regex("""(?:Device accessed from|Accessed device at)\s+((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
     private val REGEX_LOG_SOFTWARE = Regex("""(Downloaded|Uploaded|Downloading|Uploading)\s+Lv(\d+)\s+(.+?)(?:\s+(?:from|to)\b|\.|\.\.|\s*$)""", RegexOption.IGNORE_CASE)
     private val REGEX_LOG_WALLET = Regex("""(?:Stole\s+([\d,]+)\s+Crypto\s+from|([\d,]+)\s+Crypto\s+transferred\s+to)\s+([a-zA-Z0-9.]{6,})""", RegexOption.IGNORE_CASE)
-    private val REGEX_LOG_CRACK = Regex("""(Cracking|Cracked)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
+    private val REGEX_LOG_CRACK = Regex("""(Cracking|Cracked|Failed to crack)\s+password\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
     private val REGEX_LOG_FIREWALL = Regex("""(Bypassed|Failed to bypass)\s+firewall\s+(?:on\s+)?((?:(?:\d{1,3}|xxx)\.){3}(?:\d{1,3}|xxx)|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
 
-    fun parseLogMinutes(timeStr: String?): Int? {
+    /**
+     * Minutes since the epoch (UTC) for a `M-D H:MM` log time, so the 3-minute "steal belongs to the last
+     * access" window also works across midnight, month ends and New Year. (It used to ignore the month.)
+     */
+    fun parseLogMinutes(timeStr: String?, anchorUtcMs: Long? = null): Long? {
         if (timeStr == null) return null
         val match = REGEX_TIME_MINUTES.find(timeStr) ?: return null
-        val day = match.groupValues[2].toIntOrNull() ?: return null
-        val hour = match.groupValues[3].toIntOrNull() ?: return null
-        val minute = match.groupValues[4].toIntOrNull() ?: return null
-        return day * 1440 + hour * 60 + minute
+        return LogTime.toEpochMs(match.value, anchorUtcMs)?.div(60_000L)
     }
 
     fun parse(rawLines: List<String>): List<ParsedUpdate> = parseDetailed(rawLines).updates
@@ -203,7 +300,8 @@ object LogScreenParser {
         val discarded = mutableListOf<DiscardedLogLine>()
         var timestampedCount = 0
         var lastAccessIp: String? = null
-        var lastAccessMinutes: Int? = null
+        var lastAccessMinutes: Long? = null
+        val lastSaved = LogTime.lastSaved(rawLines)
 
         fun discard(line: String, reason: String) {
             discarded.add(DiscardedLogLine(line, "parser", reason))
@@ -220,7 +318,7 @@ object LogScreenParser {
             timestampedCount++
 
             val timeStr = REGEX_TIME_HEADER.find(line)?.groupValues?.get(1)
-            val currentMinutes = parseLogMinutes(timeStr)
+            val currentMinutes = parseLogMinutes(timeStr, lastSaved)
 
             if (line.contains("[UNKNOWN]")) {
                 lastAccessIp = null
@@ -302,7 +400,7 @@ object LogScreenParser {
                 discard(line, LogDiscardReason.NO_PATTERN)
             }
         }
-        return LogParseResult(updates, discarded, timestampedCount)
+        return LogParseResult(updates, discarded, timestampedCount, lastSaved)
     }
 }
 
@@ -359,7 +457,8 @@ object WalletScreenParser {
 // Siphon Screen
 // ----------------------------------------
 data class SiphonItem(val ip: String, val level: Int, val percent: String, val amount: Int, val timeAgo: String)
-data class SiphonScreen(val deployedCount: Int, val items: List<SiphonItem>)
+/** [maskedCount]: rows whose IP is hidden (`xxx.xxx.xxx.xxx`); they can't be tracked but still count towards [deployedCount]. */
+data class SiphonScreen(val deployedCount: Int, val items: List<SiphonItem>, val maskedCount: Int = 0)
 
 object SiphonScreenParser {
     private val REGEX_SIPHON_DEPLOYED = Regex("""DEPLOYED\s+(\d+)""")
@@ -373,7 +472,38 @@ object SiphonScreenParser {
         for (match in matches) {
             items.add(SiphonItem(match.groupValues[1], match.groupValues[2].toIntOrNull() ?: 0, match.groupValues[3], match.groupValues[4].replace(",", "").toIntOrNull() ?: 0, match.groupValues[5]))
         }
-        return SiphonScreen(deployedCount, items)
+        val masked = REGEX_MASKED_ITEM.findAll(text).count { it.groupValues[1].contains("xxx", ignoreCase = true) }
+        return SiphonScreen(deployedCount, items, masked)
+    }
+
+    private val REGEX_MASKED_ITEM = Regex("""((?:\d{1,3}|xxx)(?:\.(?:\d{1,3}|xxx)){3})\s+LV\.\d+\s+[\d.]+%\s+[\d,]+\s+siphoned""", RegexOption.IGNORE_CASE)
+}
+
+// ----------------------------------------
+// Spam Earnings Screen (Apps → Spam card)
+// ----------------------------------------
+data class SpamItem(val ip: String, val level: Int, val perHour: Int, val earned: Int, val age: String)
+data class SpamEarningsScreen(val deployedCount: Int, val ratePerHour: Int?, val items: List<SpamItem>, val maskedCount: Int)
+
+object SpamEarningsParser {
+    private val REGEX_DEPLOYED = Regex("""SPAM EARNINGS\s+DEPLOYED\s+(\d+)""")
+    private val REGEX_RATE = Regex("""RATE\s+([\d,]+)/hr""")
+    // Row: <ip> / LV.17 / 100/hr / 12,100 earned / 5d (age can also be e.g. "today")
+    private val REGEX_ROW = Regex("""((?:\d{1,3}|xxx)(?:\.(?:\d{1,3}|xxx)){3})\s+LV\.(\d+)\s+(\d+)/hr\s+([\d,]+)\s+earned\s+(\S+)""", RegexOption.IGNORE_CASE)
+
+    fun parse(text: String): SpamEarningsScreen? {
+        if (!text.contains("SPAM EARNINGS")) return null
+        val body = text.substring(text.indexOf("SPAM EARNINGS"))
+        val deployed = REGEX_DEPLOYED.find(body)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        val rate = REGEX_RATE.find(body)?.groupValues?.get(1)?.replace(",", "")?.toIntOrNull()
+        val items = mutableListOf<SpamItem>()
+        var masked = 0
+        for (m in REGEX_ROW.findAll(body)) {
+            val ip = m.groupValues[1]
+            if (ip.contains("xxx", ignoreCase = true)) { masked++; continue }
+            items.add(SpamItem(ip, m.groupValues[2].toInt(), m.groupValues[3].toInt(), m.groupValues[4].replace(",", "").toInt(), m.groupValues[5]))
+        }
+        return SpamEarningsScreen(deployed, rate, items, masked)
     }
 }
 
@@ -383,13 +513,13 @@ object SiphonScreenParser {
 data class CrewScreen(val members: List<String>)
 
 object CrewScreenParser {
-    fun parse(rawLines: List<String>): CrewScreen? {
-        val isCrewScreen = rawLines.any { line ->
-            line.contains("Crew", ignoreCase = true) || line.contains("Cr3w", ignoreCase = true) ||
-            line.contains("Members", ignoreCase = true) || line.trim().equals("LEADER", ignoreCase = true) ||
-            line.trim().equals("OFFICER", ignoreCase = true) || line.trim().equals("MEMBER", ignoreCase = true)
-        }
-        if (!isCrewScreen) return null
+    fun parse(allLines: List<String>): CrewScreen? {
+        // A real crew page has a "// <crew> Members" header and a LEADER line. The old check accepted any
+        // line containing "Crew", which matched the nav bar's "CREWS" on every one of your own screens.
+        val rawLines = CommonParserUtil.stripNavBar(allLines)
+        val hasHeader = rawLines.any { val t = it.trim(); t.startsWith("//") && t.endsWith("Members", ignoreCase = true) }
+        val hasLeader = rawLines.any { it.trim().equals("LEADER", ignoreCase = true) }
+        if (!hasHeader || !hasLeader) return null
 
         val members = mutableListOf<String>()
         for (line in rawLines) {
@@ -410,9 +540,11 @@ data class ProcessDownloadedSoftware(val ip: String, val name: String, val level
 data class ProcessScreen(val ips: List<String>, val invalidatedIps: List<String>, val downloads: List<ProcessDownloadedSoftware>)
 
 object ProcessScreenParser {
-    fun parse(rawLines: List<String>): ProcessScreen? {
+    fun parse(allLines: List<String>): ProcessScreen? {
+        // Requires the real header; "PROCESSES" alone is also a nav bar button on your own screens.
+        val rawLines = CommonParserUtil.stripNavBar(allLines)
         val isProcessScreen = rawLines.any { line ->
-            line.contains("PROCESS", ignoreCase = true) || line.contains("active tasks", ignoreCase = true)
+            line.trim().equals("// PROCESSES", ignoreCase = true) || Regex("""\b\d+ active tasks?\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)
         }
         if (!isProcessScreen) return null
 
