@@ -28,7 +28,7 @@
                 android:layout_gravity="end"
                 android:orientation="horizontal">
 
-                <!-- Knowledge Base Button (Temporarily disabled while formulas are being reworked) -->
+                <!-- Knowledge Base -->
                 <ImageButton
                     android:id="@+id/knowledgeBaseBtn"
                     android:layout_width="48dp"
@@ -36,7 +36,6 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Knowledge Base"
                     android:src="@android:drawable/ic_menu_agenda"
-                    android:visibility="gone"
                     app:tint="#e2e8f0" />
 
                 <ImageButton

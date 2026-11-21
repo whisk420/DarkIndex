@@ -1,7 +1,12 @@
 # Knowledge Base — preparation (2026-11-21)
 
-Prep for rebuilding the in-app Knowledge Base. Nothing in the app is changed yet; this file is the plan,
-the topic map, and the list of values the owner needs to measure. Fold the plan into `TODO.md` when ready.
+Plan, topic map and the owner's measurement list for the in-app Knowledge Base.
+
+**Status (2026-11-21): built.** Owner answers: use the guide's Spam numbers (done: `GameFormulas`, all 17 cells
+exact); content stays in Kotlin (`KnowledgeBaseContent.kt`); calculators implemented (9, in `KbCalculators`);
+IAPs kept brief (one short topic). §2's asset-file recommendation was declined. §4 (M-01..M-25) is the live
+to-do list for the owner; when a value is measured, update `GameFormulas`/`KnowledgeBaseContent` and switch the
+fact's badge to MEASURED.
 
 Sources: CLAUDE.md, the code, and a full read of **hackex.net/guide on 2026-11-21** (fetched directly this
 time, not through a summariser, so the guide figures below are exact).
@@ -84,11 +89,10 @@ Order below is the proposed index order. Each topic lists what we already know a
   | 15 | 62 | 87 | 31 |
   | 20 | 83 | 100 | 42 |
 
-  - Equal-level fit [F, from guide]: `≈ 9.07 + 2.89·L + 0.0404·L²` (12.0 / 24.5 / 42.0 / 61.5 / 83.0).
+  - Exact fit [F]: `round((8.85 + 2.89·L + 0.0415·L²) × m)`, m = 1 + 4.1%/level above (max 1.5), 1 − 5%/level below: all 17 cells.
   - +10 above ≈ ×1.40 on every row; −10 below ≈ ×0.50. Guide tips say "up to 50% more against higher-level
     victims", so the bonus probably caps at +50%. Shape between 0 and ±10 unknown → **M-01**.
-  - ⚠ **Conflicts with the app's model** (`spamLvl×5`, B6): code gives Lv20 = 100 at equal level, guide 83.
-    Code would recommend too-low Spam levels. See question Q1.
+  - The app now uses this model (owner, Q1). Before, `spamLvl×5` gave Lv20 = 100 at equal level (guide: 83).
 - **Decay** [G], fits a straight line exactly [F]: 100% for days 1–21, then `100 − (day − 21) × 90/79` %,
   floor 10% from day 100 (gives 89.7 / 67.0 / 44.2 / 10 for days 30/50/70/100; guide 90/67/44/10).
   Per deployment, not per victim. Scythe device halves decay speed [G] → **M-02** (does that mean floor at day ~179?).
@@ -143,7 +147,7 @@ Order below is the proposed index order. Each topic lists what we already know a
 
 ### 3.8 Processes
 - Statuses: Pending, Completed, Failed, Invalidated, EMP Killed [G].
-- OC skips 90 s each; ads cut remaining time 10/9/8/7% (34% total, max 4 per process) [G].
+- OC skips 90 s each; ads cut 10/9/8/7% (34% total, so additive, max 4 per process) [G].
 - Limits: 500 running, 1,000 rows total [G].
 - Concurrency +75% per extra process in the **pool**; AV shares the hack pool [G]. Do upload/download share a
   separate pool? → **M-13**.
@@ -179,8 +183,9 @@ Order below is the proposed index order. Each topic lists what we already know a
   vs Trace and 2× duration [G].
 
 ### 3.12 Keygen & software prices
-- Store price cubic, verified to the crypto at L19–25 [M][F, CLAUDE §4]; prices round **up** (guide Lv5 FW 5,511 =
-  ceil(4,862 × 800/600 × 0.85)) [F].
+- Store price cubic, verified to the crypto at L19–25 [M][F, CLAUDE §4]. Offensive prices round to nearest,
+  defensive (×0.85) round up: fits every exact verified price and the guide's Lv10 column [F]. Encryptor 19's
+  recorded "42,973/4" vs 42,975 is unresolved.
 - ⚠ Cubic fails at low levels: guide Keygen Lv5 = 4,862 (cubic 4,568), Lv10 = 11,972 (cubic 11,938),
   Lv15 = 20,281 (cubic 20,283). → **M-16**.
 - Key fee: 15% of target-level Store price at a 1-level jump, linear to 50% at 20+ [G]. Exact interpolation and

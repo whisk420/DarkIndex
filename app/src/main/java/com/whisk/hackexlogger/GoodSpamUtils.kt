@@ -1,5 +1,7 @@
 package com.whisk.hackexlogger
 
+import kotlin.math.roundToInt
+
 object GoodSpamUtils {
     /**
      * Upload-defence tier (0–9) of a target's device, via [HardwareCatalog]: Raider I–III = 0, then one tier per
@@ -30,18 +32,19 @@ object GoodSpamUtils {
     ): Double {
         val lvl = (level ?: 0).toDouble()
         val fw = (firewall ?: 0).toDouble()
-        val uploadLevel = spamUploadLevel(calculateSpamPayoutInfo(level, playerLevel, installedSpamLevel), installedSpamLevel)
+        val uploadLevel = if (playerLevel == null) 20
+            else spamUploadLevel(calculateSpamPayoutInfo(level, playerLevel, installedSpamLevel), installedSpamLevel)
         val uploadSecs = NetworkSpeedUtils.getUploadSecondsForLevel(hardware, playerNetwork, uploadLevel)
         val uploadMins = uploadSecs / 60.0
         return (lvl * 10.0) - (uploadMins * 0.5) - fw
     }
 
     /**
-     * The Spam level worth uploading to a target: the minimum level that hits the 100/hr cap, or, if the cap is
-     * out of reach (big level gap), the strongest level you can actually upload.
+     * The Spam level worth uploading to a target: the minimum level that hits the 100/hr cap, but never more than
+     * you have installed (then your installed level is the best you can do).
      */
     fun spamUploadLevel(info: SpamPayoutInfo, installedSpamLevel: Int): Int =
-        if (info.isCapReachable || installedSpamLevel <= 0) info.recommendedSpamLevel
+        if (installedSpamLevel <= 0) info.recommendedSpamLevel
         else minOf(info.recommendedSpamLevel, installedSpamLevel)
 
     /**
@@ -57,56 +60,50 @@ object GoodSpamUtils {
     /**
      * Calculates the minimum Spam level required to reach the 100 Crypto/hr payout cap
      * against a specific target level.
-     * Returns Pair(RecommendedSpamLevel, MaxAchievableHourlyCrypto [0..100]).
+     * Returns Pair(RecommendedSpamLevel, HourlyCrypto at max(20, installed) [0..100]).
      */
     fun calculateRecommendedSpamLevel(targetLevel: Int?, playerLevel: Int?): Pair<Int, Int> {
         val info = calculateSpamPayoutInfo(targetLevel, playerLevel, 20)
         return Pair(info.recommendedSpamLevel, info.maxAchievableIncome)
     }
 
-    /** Hourly payout of a Spam of [spamLevel] under the (unvalidated) payout model, clamped to 0..100. */
-    fun spamIncome(spamLevel: Int, levelAdjustment: Double): Int =
-        if (spamLevel <= 0) 0 else (spamLevel * 5.0 + levelAdjustment).toInt().coerceIn(0, 100)
+    /** Highest Spam level the cap search looks at when your installed level is lower (the game goes past Lv.20). */
+    const val SPAM_SEARCH_MAX_LEVEL = 30
+
+    /** Hourly payout (day 1, no decay) of a Spam of [spamLevel] with a [levelMultiplier] from [GameFormulas.spamLevelGapMultiplier]. */
+    fun spamIncome(spamLevel: Int, levelMultiplier: Double): Int {
+        if (spamLevel <= 0) return 0
+        return (GameFormulas.spamBaseIncome(spamLevel) * levelMultiplier).roundToInt().coerceIn(0, GameFormulas.SPAM_CAP_PER_HOUR)
+    }
 
     /**
-     * Calculates Spam payout metrics for a target:
+     * Calculates Spam payout metrics for a target (fresh deployment, no decay):
      * - currentSpamIncome: what your installed Spam level would earn
-     * - recommendedSpamLevel: the **minimum** Spam level that hits the 100/hr cap (or the model's top level if unreachable)
-     * - maxAchievableIncome: the best payout the model allows (at max(20, installed))
+     * - recommendedSpamLevel: the **minimum** Spam level that hits the 100/hr cap (searched up to
+     *   max(30, installed)); max(20, installed) when the cap is out of reach
+     * - maxAchievableIncome: the payout at max(20, installed)
      *
-     * Model (unvalidated, see TODO Research: Spam payout): 5 Crypto/hr per Spam level; +2.5 per level the target is
-     * above you; −3.3 per level beyond a 9-level buffer when the target is below you.
+     * Model: the guide's earnings table (see [GameFormulas.spamBaseIncome] and [GameFormulas.spamLevelGapMultiplier]).
      */
     fun calculateSpamPayoutInfo(targetLevel: Int?, playerLevel: Int?, currentSpamLevel: Int): SpamPayoutInfo {
         val currSpam = currentSpamLevel.coerceAtLeast(0)
-        val modelMaxLevel = maxOf(20, currSpam)
+        val fallbackLevel = maxOf(20, currSpam)
         val tLvl = targetLevel ?: return SpamPayoutInfo(currSpam, if (currSpam == 0) 0 else 100, 20, 100, currSpam >= 20, true)
         val pLvl = playerLevel ?: tLvl
 
-        val delta = tLvl - pLvl
-        val levelAdjustment = when {
-            delta > 0 -> delta * 2.5 // Target higher level: +2.5 bonus per target level
-            delta < 0 -> {
-                val gap = -delta
-                // Lv 20 Spam absorbs the first 9 gap levels before penalty kicks in
-                val gapBeyondBuffer = (gap - 9).coerceAtLeast(0)
-                -gapBeyondBuffer * 3.3
-            }
-            else -> 0.0
-        }
-
-        val currIncome = spamIncome(currSpam, levelAdjustment)
-        val minCapLevel = (1..modelMaxLevel).firstOrNull { spamIncome(it, levelAdjustment) >= 100 }
-        val maxIncome = spamIncome(modelMaxLevel, levelAdjustment)
+        val multiplier = GameFormulas.spamLevelGapMultiplier(tLvl - pLvl)
+        val currIncome = spamIncome(currSpam, multiplier)
+        val searchTop = maxOf(SPAM_SEARCH_MAX_LEVEL, currSpam)
+        val minCapLevel = (1..searchTop).firstOrNull { spamIncome(it, multiplier) >= GameFormulas.SPAM_CAP_PER_HOUR }
 
         return SpamPayoutInfo(
             currentSpamLevel = currSpam,
             currentSpamIncome = currIncome,
-            recommendedSpamLevel = minCapLevel ?: modelMaxLevel,
-            maxAchievableIncome = maxIncome,
-            isCapReachedAtCurrent = currIncome >= 100,
+            recommendedSpamLevel = minCapLevel ?: fallbackLevel,
+            maxAchievableIncome = spamIncome(fallbackLevel, multiplier),
+            isCapReachedAtCurrent = currIncome >= GameFormulas.SPAM_CAP_PER_HOUR,
             isCapReachable = minCapLevel != null,
-            levelAdjustment = levelAdjustment
+            levelMultiplier = multiplier
         )
     }
 }
@@ -118,8 +115,8 @@ data class SpamPayoutInfo(
     val recommendedSpamLevel: Int,
     val maxAchievableIncome: Int,
     val isCapReachedAtCurrent: Boolean,
-    /** False when no Spam level (up to max(20, installed)) reaches 100/hr on this target. */
+    /** False when no Spam level (up to max(30, installed)) reaches 100/hr on this target. */
     val isCapReachable: Boolean = true,
-    /** Model's level-gap adjustment in Crypto/hr (+ above you, − below the 9-level buffer); use with [GoodSpamUtils.spamIncome]. */
-    val levelAdjustment: Double = 0.0
+    /** Level-gap income multiplier (×1.0 at equal level); use with [GoodSpamUtils.spamIncome]. */
+    val levelMultiplier: Double = 1.0
 )
