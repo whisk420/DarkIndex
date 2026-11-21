@@ -247,6 +247,19 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/marathonBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="84dp"
+        android:layout_gravity="bottom|end"
+        android:text="MARATHON"
+        android:textColor="#ffffff"
+        app:backgroundTint="#2563eb"
+        app:icon="@android:drawable/ic_menu_recent_history"
+        app:iconTint="#ffffff" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/validateBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

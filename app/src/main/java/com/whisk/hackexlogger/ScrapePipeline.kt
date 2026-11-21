@@ -87,10 +87,17 @@ object ScrapePipeline {
         // Record stats whenever the log parser saw timestamped lines, even if none were usable.
         if (s != null && result.timestampedLineCount > 0) s.recordLogParse(result)
         val updates = result.updates
-        if (updates.isEmpty()) return
-        s?.matched("Log", updates.map { describe(it) })
-        DatabaseManager.processUpdates(updates, result.lastSavedUtcMs)
-        saved.add("${updates.size} Log Events")
+        if (updates.isNotEmpty()) {
+            s?.matched("Log", updates.map { describe(it) })
+            DatabaseManager.processUpdates(updates, result.lastSavedUtcMs)
+            saved.add("${updates.size} Log Events")
+        }
+        // Marathon Mode: every own-log grab feeds the run, even an empty (wiped) log, which still
+        // counts as "log grabbed" for advancing the flow. Runs after the DB save so wallet owners resolve.
+        if (Marathon.isActive && Marathon.isOwnLogScreen(lines)) {
+            val added = Marathon.onOwnLog(updates, result.lastSavedUtcMs, System.currentTimeMillis())
+            if (added != null) saved.add("Marathon +$added (${Marathon.stealCount} steals)")
+        }
     }
 
     private fun siphon(text: String, saved: MutableList<String>, s: DumpSession?) {

@@ -1,0 +1,35 @@
+// LOG
+SAVE
+~/log.txt
+[11-21 20:14] Stole 29 Crypto from hxfa9b...769b
+[11-21 20:14] Accessed device at 15.148.54.125
+[11-21 20:14] Stole 174 Crypto from hxde80...9532
+[11-21 20:14] Accessed device at 15.134.137.139
+[11-21 20:14] Stole 748 Crypto from hx6672...9ebb
+[11-21 20:13] Accessed device at 14.184.207.242
+[11-21 20:13] Stole 904 Crypto from hx76c1...d525
+[11-21 20:13] Accessed device at 11.254.178.82
+[11-21 20:13] Stole 110 Crypto from hx6227...b1f0
+[11-21 20:13] Accessed device at 8.204.244.137
+[11-21 20:13] Stole 1,011 Crypto from hx1e2b...9695
+[11-21 20:13] Accessed device at 4.238.136.37
+[11-21 20:13] Stole 262 Crypto from hxfec3...ace3
+[11-21 20:12] Accessed device at 1.163.20.168
+[11-21 20:12] Stole 1,755 Crypto from hx3b73...f43c
+[11-21 20:12] Accessed device at xxx.xxx.xxx.xxx
+[11-21 20:12] Stole 33 Crypto from hx90dc...69d5
+[11-21 20:12] Accessed device at xxx.xxx.xxx.xxx
+[11-21 20:11] Downloading Lv29 Trace from xxx.xxx.xxx.xxx...
+[11-21 20:11] Downloading Lv27 Proxy from xxx.xxx.xxx.xxx...
+[11-21 20:11] Downloading Lv31 Bypasser from xxx.xxx.xxx.xxx...
+[11-21 20:11] Downloading Lv20 Rootkit from xxx.xxx.xxx.xxx...
+[11-21 20:11] Stole 380 Crypto from hx90dc...69d5
+[11-21 20:11] Accessed device at xxx.xxx.xxx.xxx
+
+Last saved: 2026-11-21 20:14:36
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS
