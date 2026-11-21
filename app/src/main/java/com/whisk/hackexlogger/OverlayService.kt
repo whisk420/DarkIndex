@@ -44,6 +44,9 @@ class OverlayService : Service() {
         const val ACTION_STOP_VALIDATION = "com.whisk.hackexlogger.STOP_VALIDATION"
         
         const val ACTION_TOGGLE_ADVANCED_TARGETING = "com.whisk.hackexlogger.TOGGLE_ADVANCED_TARGETING"
+
+        const val ACTION_START_MARATHON = "com.whisk.hackexlogger.START_MARATHON"
+        const val EXTRA_MARATHON_MINUTES = "marathon_minutes"
     }
 
     private lateinit var windowManager: WindowManager
@@ -61,6 +64,7 @@ class OverlayService : Service() {
     private var closeTargetView: TextView? = null
     
     private var toastView: TextView? = null
+    private var marathonOverlay: MarathonOverlay? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     // Raw Dump Mode: the 📸 button turns into 📼 with a red ring while dumps are being recorded.
@@ -85,6 +89,7 @@ class OverlayService : Service() {
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupCameraFloatingButton()
+        marathonOverlay = MarathonOverlay(this, windowManager) { showMinimalToast(it) }
 
         settingsPrefs = getSharedPreferences(RawDumpSettings.PREFS_NAME, Context.MODE_PRIVATE).also {
             it.registerOnSharedPreferenceChangeListener(settingsListener)
@@ -112,6 +117,10 @@ class OverlayService : Service() {
             }
             ACTION_TOGGLE_ADVANCED_TARGETING -> {
                 if (isTargetingMode) stopTargetingMode() else startTargetingMode()
+            }
+            ACTION_START_MARATHON -> {
+                val minutes = intent.getIntExtra(EXTRA_MARATHON_MINUTES, 0)
+                if (minutes > 0) marathonOverlay?.start(minutes)
             }
         }
         return START_STICKY
@@ -612,5 +621,7 @@ class OverlayService : Service() {
             try { windowManager.removeView(cameraFloatingButton) } catch (e: Exception) {}
         }
         stopValidationMode()
+        marathonOverlay?.destroy()
+        marathonOverlay = null
     }
 }

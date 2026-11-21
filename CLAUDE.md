@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 205 tests, all passing as of 2026-11-21
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 211 tests, all passing as of 2026-11-21
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -185,6 +185,8 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `SettingsActivity.kt` | Shows the parsed player profile (current = next − 1). Purge thefts > 30 days |
 | `SiphonAlertsActivity.kt` | Alert list: "Siphon Re-installed" clears the alert. "IP Not Found" clears it and deletes the target |
 | `ConsoleBundle.kt` | Export schema `{format:"target-intelligence-console", version:1, exportedAt, targets, ingests[{type,raw,importedAt,id}], siphonAlerts, knownSiphons}` |
+| `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§5.11) |
+| `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
 | `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
 | `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (owner choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry M-ids from `docs/knowledge-base-prep.md` §4 |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
@@ -342,7 +344,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Prefs `HackExPlayerProfile`: `player_profile`.
 - Prefs `HackExSettings`: `pref_advanced_targeting`.
 - Prefs `AppPrefs`: `hide_permission_warning`.
-- `filesDir`: `siphon_history.jsonl`, `wallet_conflicts.jsonl`, `maintenance_backup_<ts>.json`.
+- `filesDir`: `siphon_history.jsonl`, `wallet_conflicts.jsonl`, `maintenance_backup_<ts>.json`, `marathon_history.jsonl` (one finished Marathon run per line).
 - `Downloads/DarkIndex/darkindex_database.json` (pretty-printed full DB + player profile) is rewritten after saves, on the background save queue (superseded saves are skipped). The SAF pickers open in `Download/DarkIndex`.
 - The manifest has `allowBackup=true`.
 
@@ -357,7 +359,15 @@ The last two could feed the player profile automatically (TODO: profile from own
 - **Bug batch (2026-11-20 afternoon):** `CommonParserUtil.isMaskedIp/stripNavBar/decodeEntities`; masked IPs never become records (Process/Crew); `SiphonScreen.maskedCount` counts towards the full-scroll check; `ScreenType.SPAM_EARNINGS` + `SpamEarningsParser` (parsed, not stored); log classifier matches headers and any timestamped log line; `Failed to crack` parsed; **log times are UTC** via `LogTime` (anchor = `Last saved:` footer; one-time migration of stored thefts, flag `thefts_utc_v1`; `ConsoleBundle.theftTimesUtc`); import saves targets before ingests (B2 fixed); Lv.? chip + level banner; search hidden in Recon/Spam Priority; unknown hardware marked " ?". Tests: `ScreenFixesTest`, `LogTimeTest`.
 - **Plans** for the remaining work live inline in `TODO.md`.
 
-## 6. Test suite (205 JVM + 2 instrumented; audited and rewritten 2026-11-20)
+### 5.11 Marathon Mode (built 2026-11-21, owner spec)
+- **MARATHON** FAB (above VALIDATE) → pick 5/10/20 min → `OverlayService.ACTION_START_MARATHON`. Manifest has `VIBRATE` (the only new permission).
+- Phases: `TIMED` → (timer ends, or **End early**) `AWAITING_LOG` (timer shows a big red `0`, one buzz) → own-log grab → `READY_PASS2` (prompt) → `PASS2` (untimed; shows + copies the run's **first** target) → **Finish** → `AWAITING_FINAL_LOG` (Back undoes) → own-log grab → `RESULTS` panel → ✕ → `CHAIN_PROMPT` (5m/10m/20m chain, shows + copies where the last run ended = its latest steal; or End). ✕ on the bar ends the marathon (two taps within 3 s).
+- **Every own-log grab during a run feeds it** (`ScrapePipeline.logs` → `Marathon.onOwnLog`, after the DB save), so wiping the log mid-run loses nothing; an empty own log still advances the flow. Own log = `// LOG` / `~/log.txt` with no victim header and no `CONNECTED`/`DISCONNECT`. Toast appends `Marathon +N (M steals)`.
+- Steals count from the run's start minute; a chained run never recounts the previous run's steals (key `wallet|time|amount`). Ordering = log time, then parse order (bottom→top = chronological).
+- Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
+- In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
+
+## 6. Test suite (211 JVM + 2 instrumented; audited and rewritten 2026-11-20)
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
 5 in `UnmaskingTest` (re-implemented the logic inside the test), `ConsoleBundleTest.testImportInvalidFormat`
 (threw the exception itself), the instrumented `testTargetRecordModelOnDevice` (only read back constructor
@@ -373,6 +383,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | UnmaskingTest | Classification + real `mergeRecords` / `processUpdates` / `runDatabaseMaintenance` (incl. backup file + conflict log) |
 | TargetRepositoryTest | Validate doesn't wipe, IP-edit merge keeps the existing wallet + logs the conflict, delete, maintenance keeps thefts, purge shield, Downloads mirror goes only to the backup folder |
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
+| **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
 | **KnowledgeBaseTest** (new 2026-11-21) | `GameFormulas` against every guide number (Spam 17 cells, decay, fee + botnet example, proxy 20 cells, AV, hardening) and the verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; search |
 | ScreenClassifierTest, GoodSpamTest, PlayerIntelligenceTest, SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, TargetAdapterTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests, FakeSharedPreferencesTest | As named. GoodSpamTest pins the guide-fitted payout model |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |

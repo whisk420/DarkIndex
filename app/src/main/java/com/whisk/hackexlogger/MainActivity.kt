@@ -248,6 +248,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Marathon Mode: guided timed steal run → income ranking (MarathonOverlay)
+        findViewById<ExtendedFloatingActionButton>(R.id.marathonBtn).setOnClickListener {
+            if (!(Settings.canDrawOverlays(this) && isAccessibilityServiceEnabled())) {
+                showPermissionDialog(force = true)
+                return@setOnClickListener
+            }
+            if (Marathon.isActive) {
+                AlertDialog.Builder(this)
+                    .setTitle("Marathon running")
+                    .setMessage("Run ${Marathon.runNumber} is in progress. Use the 🏃 bar over the game, or end the marathon here.")
+                    .setPositiveButton("Keep going", null)
+                    .setNegativeButton("End marathon") { _, _ -> Marathon.end() }
+                    .show()
+                return@setOnClickListener
+            }
+            val options = Marathon.DURATIONS_MINUTES
+            AlertDialog.Builder(this)
+                .setTitle("Marathon: how long is the timed run?")
+                .setItems(options.map { "$it minutes" }.toTypedArray()) { _, which ->
+                    startService(Intent(this, OverlayService::class.java).apply {
+                        action = OverlayService.ACTION_START_MARATHON
+                        putExtra(OverlayService.EXTRA_MARATHON_MINUTES, options[which])
+                    })
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
         // Knowledge Base
         findViewById<ImageButton>(R.id.knowledgeBaseBtn).setOnClickListener {
             startActivity(Intent(this, KnowledgeBaseActivity::class.java))
