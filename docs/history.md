@@ -1,6 +1,6 @@
 # DarkIndex: history
 
-Fixed bugs and known-wrong statements in the old GEMINI.md reference, kept so the same mistakes aren't made again. Moved out of CLAUDE.md on 2026-11-22.
+Fixed bugs, kept so the same mistakes aren't made again. Moved out of CLAUDE.md on 2026-11-22.
 
 ## 1. Bugs found in the 2026-11-19 review
 
@@ -23,20 +23,3 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B13 | Fixed | Log minutes ignored the month; now UTC epoch minutes |
 | B14 | Fixed | Leftover ProGuard Google Identity rules removed; releases signed with the permanent key |
 | B15 | Fixed | Repo clutter removed; tests no longer write `DarkIndex/` |
-
----
-
-## 2. GEMINI.md drift (don't trust these GEMINI statements)
-- Theft clusters are split on a 1 h gap, not 24 h.
-- Good Spam is the upload-time formula, not either of GEMINI's two hardware formulas.
-- Siphons: there's no 15-min TTL.
-- The Recon/Advanced Targeting switch is on MainActivity, not Settings.
-- There are 10 screen types, not 7.
-- The cubic price formula is Keygen's, not "offensive" (docs/game.md §3).
-- "Proxy/Trace 1.00x" conflicts with the guide (0.85×).
-- GEMINI's prestige network names are wrong (docs/game.md §2).
-- Test counts are now 80 + 3. `ExampleUnitTest` no longer exists.
-- Files GEMINI omits: `GoodSpamUtils`, `NetworkSpeedUtils`, `PlayerProfileRepository`, and tests `GoodSpamTest`, `ScreenClassifierTest`, `StoreScreenParserTest`, `OwnHomeScreenParserTest`, `PlayerIntelligenceTest`, `PlayerProfileRepositoryTest`, `TargetAdapterTest`, `FakeSharedPreferencesTest`.
-- GEMINI's "Raider I–III upload identically" claim is **correct** (developer-confirmed). The guide's per-device multipliers are process speed, not upload defence.
-
----

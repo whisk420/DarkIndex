@@ -9,7 +9,6 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 - `compileSdk/targetSdk 35`, `minSdk 26`.
 - Deps: Gson 2.10.1, kotlinx-datetime 0.6.1, Flexbox 3.0.0, RecyclerView 1.3.2, AppCompat, Material, ConstraintLayout, activity-ktx, core-ktx.
 - **No INTERNET permission. Never add networking, analytics or cloud SDKs.**
-- `GEMINI.md` (local-only, not committed) is the older long-form reference (empirical XP/price logs, post-mortems). It is **partly stale**. Code beats GEMINI.md, and verified data beats both. See "Source reliability" below.
 - **Work tracking:** `TODO.md` (owned by the user) holds the open items **and their implementation plans**. Add new ideas there and don't execute them unless asked. Keep it short: when an item is done, move it to the one-line Done log and record any lasting facts here in CLAUDE.md. `docs/plans/` is the developer's local-only scratch folder (not committed); don't reference it from committed files.
 - **Developer preference:** queue work as to-do items first. Implement only when explicitly asked.
 - **Bugs found while working (developer, 2026-11-20): fix them on the fly**, don't add them to TODO.md. If unsure it's really a bug, ask for context first: the game is dynamic, so a "bug" may be a screen, layout or player you haven't seen before. Only **new ideas** go on the to-do list.
@@ -44,7 +43,7 @@ Google Maven and services.gradle.org were reachable on 2026-11-22, so the real G
 |---|---|
 | `CLAUDE.md` (this file) | The app: commands, pipeline and code map, storage, tests, rules |
 | `docs/game.md` | The game: mechanics, measured and verified numbers, formulas, screen text formats, the developer's answers. **Read it before touching parsers or game maths** |
-| `docs/history.md` | Fixed bugs (B1–B15) and wrong statements in GEMINI.md |
+| `docs/history.md` | Fixed bugs (B1–B15) |
 | `docs/knowledge-base-prep.md` | The developer's Knowledge Base review tracker and open questions (Q-ids) |
 
 Facts about the game go in `docs/game.md`, not here.

@@ -13,8 +13,6 @@ Code and its tests beat this file for app behaviour; data verified in-game beats
 | Code + passing tests | Highest for app behaviour | |
 | Formulas verified against real numbers (§3) | High | Store price and score formulas matched to the crypto |
 | hackex.net/guide | Medium | Dev-published, mostly right, but the user says it can mislead, and it contradicts itself in places (Siphon flows, AV scan times). Read in full and exactly on 2026-11-21 (the `DarkIndex` cloud environment allows hackex.net); the guide's numbers now live in `KnowledgeBaseContent`/`GameFormulas`; `docs/knowledge-base-prep.md` is the developer's review tracker |
-| GEMINI.md empirical sections | Medium | Some tables contradict the code (Spam payouts, clustering) |
-| GEMINI.md architecture sections | Low | Several statements are stale (docs/history.md §2) |
 
 ---
 
@@ -24,7 +22,7 @@ Code and its tests beat this file for app behaviour; data verified in-game beats
 Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password Cracker → then any of: steal Hot Wallet crypto, download better software (unlock it with Keygen), or upload viruses (Spam/Siphon/Rootkit). XP comes **only** from spending (upgrades, Keygen unlocks), plus missions and login streaks, never from hacking. Rep comes from hacking.
 
 ### Identities on screen
-- **IP**: pseudo-IPv4 (e.g. `12.34.56.78`). GEMINI.md claims octets can exceed 255, but none were seen in 786 real targets. `0.0.0.0` / `0.0.*` is your own localhost (AV scans) and must never be stored.
+- **IP**: pseudo-IPv4 (e.g. `12.34.56.78`). No octet above 255 has been seen in 786 real targets. `0.0.0.0` / `0.0.*` is your own localhost (AV scans) and must never be stored.
 - **Masking**: Proxy Lv1–5 masks the last octet, 6–10 two, 11–15 three, 16–19 all (`xxx.xxx.xxx.xxx`). Lv20+ unlocks Stealth. `[UNKNOWN]` appears for Ghost-loadout players. A victim's Trace may unmask an attacker and append ` [TRACED]`.
 - **Own log can show masked targets too** (e.g. `Uploaded Lv20 Spam to xxx.xxx.xxx.xxx`).
 - **Wallet**: `hx` + 30 hex = 32 chars. Logs show `hx1a2b...9f0e`, and the app normalises everything to `first6...last4`.
@@ -76,7 +74,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - Names seen in real data: `Vector`, `Scythe IV`, `Apex VII` (Store `LVL 7`), `Contra Band III`, `Harvest Node IV/X`, `Null Route IX/X` (Store `LVL 10`).
   - The numeral equals the level, and is the same speed as the standard item at that position.
   - Networks max at tier 11. At max, the Store shows the current item with `MAX TIER` instead of a price.
-  - GEMINI.md's names `Dark Routing, Backchannel, Fast Deploy, Deep Link` are wrong (they look like perk names). All names now live in `HardwareCatalog` (CLAUDE.md §3.10).
+  - `Dark Routing, Backchannel, Fast Deploy, Deep Link` are not hardware names (they look like perk names). All names now live in `HardwareCatalog` (CLAUDE.md §3.10).
 
 ### Economy & progression
 - **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-11).
@@ -86,7 +84,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **Over-levelling hurts:** matchmaking is about ±10 levels. (Spam income ignores your level: CLAUDE.md §3.7.) Hack rep falls off at a +6..+9 **software** gap (your offence vs their defence software, not player levels) and is zero at +10 (guide).
 - **Botnet** tiers (spam slots): Free 2, Node 4, Cluster 8, Grid 16, Farm 28, Hive 44, Nexus 64. There is a scaling fee on spam income up to 30% at Nexus. The Store shows e.g. `Botnet - Nexus / 64 slots / MAX TIER`.
 - **Downloaded apps are activated manually** (developer, 2026-11-20). Activation writes **no log line**, so installed levels can rise with no `Purchased`/log evidence. **Both the Apps screen and the Store are reliable for your levels** (developer, 2026-11-20): Apps shows the installed level directly (plus `LOCKEDLVL N available <price> Crypto` for a downloaded version waiting to be activated, and `(+N)` bonuses); the Store shows next level, so subtract 1. They only disagree when one is stale (in dump #8 the developer had upgraded since the last Store scrape). The app currently only scrapes the Store.
-- **XP from purchases:** one data point: Keygen Lv26 (41,459 Crypto) → +7,045 XP (0.170 XP/crypto, close to GEMINI's 0.1717 for software in §3); Rep and Score unchanged. Score = floor(L × Rep^0.75) re-confirmed on two own-Home scrapes.
+- **XP from purchases:** one data point: Keygen Lv26 (41,459 Crypto) → +7,045 XP (0.170 XP/crypto, close to the 0.1717 for software in §3); Rep and Score unchanged. Score = floor(L × Rep^0.75) re-confirmed on two own-Home scrapes.
 - **Rep loss** per virus = min(500, 25×virus level). Daily loss cap 500, floor 50% of peak. AV restores 90%.
 
 ---
@@ -100,7 +98,7 @@ Price(app, L) = Cubic(L) × base(app)/600 × (0.85 if defensive)
 base: Keygen 600, Firewall 800, Bypasser 800, Cracker 1100, Encryptor 1100,
       Antivirus 1000, Spam 1800, Siphon 1600, Rootkit 1400, Proxy 900, Trace 900
 ```
-The cubic is only valid at higher levels (verified L19–25). It goes **negative at L1**, so don't use it below roughly L5 without data. GEMINI.md's claim that the cubic is the "offensive" price is wrong: it is the Keygen price.
+The cubic is only valid at higher levels (verified L19–25). It goes **negative at L1**, so don't use it below roughly L5 without data. It is the Keygen price, not a general "offensive" price.
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
@@ -115,7 +113,7 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **AV removal (guide, not in code):** AV−virus ≥+5 → 95, +4 → 90, +3 → 80, +2 → 70, +1 → 60, 0 → 50, −1 → 20, then −2% per level to a 5% floor at −9.
 
-**Upload base seconds** (`NetworkSpeedUtils`, from GEMINI benchmark: Lv20 virus vs a 15× network, ×15 to normalise to DSL):
+**Upload base seconds** (`NetworkSpeedUtils`, from an old benchmark: Lv20 virus vs a 15× network, ×15 to normalise to DSL):
 tier 0..9 → 45,285 / 60,390 / 75,480 / 90,585 / 105,720 / 120,825 / 135,930 / 151,035 / 166,140 / 181,245 s, about +15,100 s per tier. Virus level scaling is `(L/20)^2.25`.
 
 ---

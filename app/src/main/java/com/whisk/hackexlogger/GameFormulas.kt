@@ -191,7 +191,7 @@ object GameFormulas {
         return (price * ratio).roundToInt() // rounding unconfirmed (Q-08)
     }
 
-    /** XP per Store crypto for software (GEMINI empirical 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
+    /** XP per Store crypto for software (older measurements 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
     const val SOFTWARE_XP_PER_CRYPTO = 0.1717
 
     // ── Proxy / Trace / hardening ───────────────────────────────────────────────────────────────────────────
@@ -231,7 +231,7 @@ object GameFormulas {
 
     // ── Hacking, antivirus, processes ───────────────────────────────────────────────────────────────────────
 
-    /** Bypass/crack success % by offence − defence (GEMINI empirical; not in the guide). */
+    /** Bypass/crack success % by offence − defence (measured from the developer's logged attempts; not in the guide). */
     fun hackSuccessChance(offence: Int, defence: Int): Int = TargetRecord.calculateSuccessProbability(offence, defence)
 
     /** Antivirus removal % per virus per scan by AV level − virus level (guide table). */
