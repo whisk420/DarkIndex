@@ -1008,6 +1008,14 @@ object KnowledgeBaseContent {
             ),
             h("Income estimate"),
             p("Your own Stole lines are grouped into sessions split at gaps over 1 hour. Each session's rate (all steals except the first, divided by hours) is averaged and shown as ₵/hr.", CONFIRMED),
+            h("Search"),
+            bullets(
+                CONFIRMED,
+                "lvl 30 (or level 30, lv30): players at level 30. lvl 28-32 for a range. Lowest Firewall first.",
+                "sw 20 (or software 20, all 20): where to download Lv 20 software. Targets with the most apps at exactly Lv 20 come first; a target's own Firewall level isn't counted, and among equals the lowest Firewall, then Encryptor, wins. A Firewall 1 target with everything else at 20 tops the list.",
+                "fw 20, enc 20, av 20, pc 20, bp 20, spam 20, siphon 20, rootkit 20, proxy 20, trace 20 (or the full name, with or without lv): one app at that level; if nobody has it, ±1 then ±2. Closest level first, then lowest Firewall.",
+                "Anything else matches IP, username, clan, hardware, wallet, app name, or an exact player level.",
+            ),
             h("Good Spam & Recon"),
             bullets(
                 CONFIRMED,
