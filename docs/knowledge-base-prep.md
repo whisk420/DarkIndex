@@ -52,7 +52,6 @@ are deleted; the others keep their numbers.
 - Leveling & XP
 - Missions, streaks & Watch & Earn
 - Hardware
-- Crews & the crew server
 - Reboot Protocol
 - Premium (Credits, OC, passes)
 - How DarkIndex works
@@ -116,11 +115,6 @@ times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen i
 ### Missions
 - **Q-20 Mission odds.** The guide's spawn rates (80% / 50% / 20%) don't add up to 100%, so each slot probably
   rolls separately. *To measure:* tally mission difficulties for a couple of weeks.
-
-### Crews
-- **Q-21 6-hour surge price.** Every upgrade and 12/24-hour surge is worked out from the crew's server log. A 6-hour
-  surge hasn't been bought yet; the app assumes full price (no discount).
-  *To measure:* the price of a 6-hour surge, or its line in the server log.
 
 ---
 

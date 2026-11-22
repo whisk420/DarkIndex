@@ -952,7 +952,7 @@ object KnowledgeBaseContent {
                             listOf(6, 12, 24).map { n(GameFormulas.crewSurgePrice(part, lvl, it)!!.toInt()) }
                     }
                 },
-                "Price = the next two levels' price × hours ÷ 1,200, minus 5% for 12 h or 10% for 24 h. Matches all 19 surges in the log. 6 h is assumed full price (not seen yet)."
+                "Price = the next two levels' price × hours ÷ 1,200, minus 5% for 12 h or 10% for 24 h. Matches all 19 surges in the log; 6 h is full price (confirmed)."
             ),
             facts(
                 f("Extending", "Costs the same as starting a new surge", MEASURED),
@@ -968,7 +968,6 @@ object KnowledgeBaseContent {
                 "Surge: CPU, NIC or Uplink +2 levels for 6/12/24 h (up to +21% or 17 targets), paid up front.",
                 "Every contribution, upgrade and upkeep day shows in the Server Log.",
             ),
-            unknowns("Q-21" to "Price of a 6-hour surge"),
         ),
         related = listOf("rootkit", "botnet", "scanning")
     )

@@ -362,7 +362,7 @@ object GameFormulas {
     /**
      * Price of a surge (+2 levels) on [part] at [level] for [hours] (6/12/24): the next two levels' price
      * × hours/1200, with 5% off for 12 h and 10% off for 24 h. Matches all 19 surges in the log (L1–L3, 12 h and 24 h;
-     * extending costs the same as starting). 6 h is assumed full price (not seen yet). Null if the part can't surge.
+     * extending costs the same as starting). 6 h is full price (developer-confirmed). Null if the part can't surge.
      */
     fun crewSurgePrice(part: CrewPart, level: Int, hours: Int): Long? {
         if (!part.surgeable || level !in 0..5) return null
