@@ -188,7 +188,7 @@ object GameFormulas {
     fun keygenFee(app: App, fromLevel: Int, toLevel: Int): Int? {
         val ratio = keygenFeeRatio(toLevel - fromLevel) ?: return null
         val price = storePrice(app, toLevel) ?: return null
-        return (price * ratio).roundToInt() // rounding unconfirmed (Q-13)
+        return (price * ratio).roundToInt() // rounding unconfirmed (Q-08)
     }
 
     /** XP per Store crypto for software (GEMINI empirical 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
@@ -324,10 +324,10 @@ object GameFormulas {
         else -> (10 - softwareGap) / 5.0
     }
 
-    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-19). */
+    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-13). */
     val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
-    /** Cold storage cap, known points only (guide). Q-16. */
+    /** Cold storage cap, known points only (guide). Q-10. */
     val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */

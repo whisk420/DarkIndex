@@ -72,7 +72,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (§5.7). Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-04) |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-02) |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
@@ -110,7 +110,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - GEMINI.md's names `Dark Routing, Backchannel, Fast Deploy, Deep Link` are wrong (they look like perk names). All names now live in `HardwareCatalog` (§5.10).
 
 ### Economy & progression
-- **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-17).
+- **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-11).
 - **Gas fee:** victims lose 100%, the thief receives 90% (guide). The "Stole N" log shows **what the victim lost** (developer). That's fine because income is only compared across targets.
 - **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+).
 - **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
@@ -192,7 +192,7 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§5.11) |
 | `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
 | `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges: MEASURED, CALCULATED, GUIDE, CONFIRMED, EMPIRICAL, UNKNOWN; developer renamed OWNER→CONFIRMED and EXACT FIT→CALCULATED 2026-11-22), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
-| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-03…Q-20; answered ones are deleted) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
+| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-14; answered ones are deleted) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
 ### 5.1 Classifier (first match wins, case-insensitive substring)

@@ -144,7 +144,7 @@ object KnowledgeBaseContent {
             h("Fees"),
             p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
             unknowns(
-                "Q-03" to "Is the fee on collection exactly 0.5% per Spam?",
+                "Q-01" to "Is the fee on collection exactly 0.5% per Spam?",
             ),
         ),
         related = listOf("botnet", "transfers", "virusRules", "siphon")
@@ -216,14 +216,14 @@ object KnowledgeBaseContent {
                 "Never skimmed (lands straight in cold storage): subscription daily Crypto, Black Market Crypto Stash, login-streak Crypto (days 3 and 5), daily mission Crypto, Watch & Earn Crypto, and the victim's own hot → cold transfers.",
                 "Outbound spending (Store, OC packs, proxy activations) doesn't trigger it either.",
             ),
-            warn("The guide contradicts itself here: its Viruses section adds Spam collections, its Software section adds incoming transfers, mission and login rewards too. Play suggests theft only (Q-04)."),
+            warn("The guide contradicts itself here: its Viruses section adds Spam collections, its Software section adds incoming transfers, mission and login rewards too. Play suggests theft only (Q-02)."),
             h("Strategy"),
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
             p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately, with all its info: the row and its siphoned total are gone, and the game keeps no history of it. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
             unknowns(
-                "Q-04" to "Is theft the only flow skimmed? (Spam collections look untouched)",
+                "Q-02" to "Is theft the only flow skimmed? (Spam collections look untouched)",
             ),
         ),
         related = listOf("virusRules", "spam", "antivirus", "darkindex")
@@ -310,7 +310,7 @@ object KnowledgeBaseContent {
             calc(KbCalculators.UPLOAD),
             tip("Upload the lowest Spam level that caps 100/hr on that victim: it can be hours faster than your max level on a Nova Ultra."),
             unknowns(
-                "Q-05" to "Download time by software level and network",
+                "Q-03" to "Download time by software level and network",
             ),
         ),
         related = listOf("hardware", "spam", "processes")
@@ -356,8 +356,8 @@ object KnowledgeBaseContent {
             h("Rep"),
             p("Successful bypass/crack rep scales with their defence level and the software gap, up to ~105 on hard targets, once per victim per process type per 24 h. Zero rep at a gap of +10 or more.", GUIDE),
             unknowns(
-                "Q-08" to "Base bypass/crack duration by level and gap",
-                "Q-10" to "Hack rep formula",
+                "Q-04" to "Base bypass/crack duration by level and gap",
+                "Q-05" to "Hack rep formula",
             ),
         ),
         related = listOf("rootkit", "consumables", "processes", "reputation")
@@ -428,11 +428,11 @@ object KnowledgeBaseContent {
                 },
                 "Scans share the hack pool with bypasses and cracks"
             ),
-            warn("The guide's text says ~55 min at device Lv 10 and ~48 min at Lv 12, its table says 53 and 45. The table is used here (Q-11)."),
+            warn("The guide's text says ~55 min at device Lv 10 and ~48 min at Lv 12, its table says 53 and 45. The table is used here (Q-06)."),
             calc(KbCalculators.ANTIVIRUS),
             tip("AV level decides removal, device level decides speed. Scan when you're not hacking to avoid the +75% pool penalty."),
             tip("Behind on AV? A −2 AV still removes 18% per virus per scan: repeated scans clear infections over time."),
-            unknowns("Q-11" to "Scan time at device Lv 8, 10, 12"),
+            unknowns("Q-06" to "Scan time at device Lv 8, 10, 12"),
         ),
         related = listOf("virusRules", "hardware", "processes")
     )
@@ -529,7 +529,7 @@ object KnowledgeBaseContent {
             ),
             tip("Keep a Log Lock (12 Credits) running: an attacker who bypassed you can edit your log and scrub a [TRACED] IP."),
             tip("Returning to the same victim many times gives their Trace many rolls. Get in, do everything, get out."),
-            unknowns("Q-12" to "Trace vs Proxy unmask chance by level gap"),
+            unknowns("Q-07" to "Trace vs Proxy unmask chance by level gap"),
         ),
         related = listOf("logs", "scanning", "crews", "reboot")
     )
@@ -553,7 +553,7 @@ object KnowledgeBaseContent {
             table(
                 GUIDE, listOf("Jump", "Fee"),
                 listOf(1, 2, 3, 5, 8, 10, 15, 20, 25).map { j -> listOf("+$j", String.format(Locale.US, "%.1f%%", GameFormulas.keygenFeeRatio(j)!! * 100)) },
-                "Exact interpolation and rounding are unconfirmed (Q-13)"
+                "Exact interpolation and rounding are unconfirmed (Q-08)"
             ),
             tip("A single big jump is far cheaper than stepping: each step pays 15% of its own level's price. Download the highest copy you can find and key it directly."),
             h("Store prices"),
@@ -565,7 +565,7 @@ object KnowledgeBaseContent {
                         listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
                 }
             ),
-            warn("Below about Lv 15 the curve drifts from the guide (guide Keygen Lv 5 = 4,862 and Lv 10 = 11,972; curve 4,568 and 11,938). Q-14."),
+            warn("Below about Lv 15 the curve drifts from the guide (guide Keygen Lv 5 = 4,862 and Lv 10 = 11,972; curve 4,568 and 11,938). Q-09."),
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
@@ -575,8 +575,8 @@ object KnowledgeBaseContent {
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking. Upgrade what you use."),
             unknowns(
-                "Q-13" to "Exact key fee by jump (Apps page LOCKED rows)",
-                "Q-14" to "Store prices below Lv 15",
+                "Q-08" to "Exact key fee by jump (Apps page LOCKED rows)",
+                "Q-09" to "Store prices below Lv 15",
             ),
         ),
         related = listOf("software", "leveling")
@@ -651,8 +651,8 @@ object KnowledgeBaseContent {
             tip("Stash right after every steal: tap the Wallet: badge at the top of any page, then transfer to cold."),
             tip("Your theft log shows the thief's wallet, not their IP. Match timestamps against \"Device accessed from\" lines to find them."),
             unknowns(
-                "Q-16" to "Cold storage cap at every level",
-                "Q-17" to "The daily steal maximum",
+                "Q-10" to "Cold storage cap at every level",
+                "Q-11" to "The daily steal maximum",
             ),
         ),
         related = listOf("logs", "siphon", "darkindex")
@@ -717,7 +717,7 @@ object KnowledgeBaseContent {
             ),
             p("The list starts with the target count (\"12 targets\") and each row shows the IP and Firewall, e.g. \"1.2.3.4 FW Lv.23 >\"; on an Apex reboot it adds \"ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
-            unknowns("Q-18" to "Exact level window of a scan at your level"),
+            unknowns("Q-12" to "Exact level window of a scan at your level"),
         ),
         related = listOf("leveling", "proxy", "spam")
     )
@@ -767,7 +767,7 @@ object KnowledgeBaseContent {
                 f("Floor", "Never below 50% of your peak", GUIDE),
                 f("AV / Purge", "Restores 90%; 10% scar", GUIDE),
             ),
-            unknowns("Q-10" to "Hack rep formula (rep before/after a bypass and crack with both levels)"),
+            unknowns("Q-05" to "Hack rep formula (rep before/after a bypass and crack with both levels)"),
         ),
         related = listOf("leveling", "hacking", "virusRules")
     )
@@ -806,7 +806,7 @@ object KnowledgeBaseContent {
             ),
             tip("Spend on what you use (Bypasser, Cracker, Spam, Keygen, device). Upgrading unused apps for XP only drags your level ahead of your offence."),
             unknowns(
-                "Q-19" to "XP to next for every level",
+                "Q-13" to "XP to next for every level",
             ),
         ),
         related = listOf("keygen", "reputation", "scanning")
@@ -853,7 +853,7 @@ object KnowledgeBaseContent {
                 f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", GUIDE),
                 f("Overclocks", "5 × 4 per day = 20", GUIDE),
             ),
-            unknowns("Q-20" to "Mission spawn rates (they don't add to 100%, so probably separate rolls)"),
+            unknowns("Q-14" to "Mission spawn rates (they don't add to 100%, so probably separate rolls)"),
         ),
         related = listOf("leveling", "premium")
     )
