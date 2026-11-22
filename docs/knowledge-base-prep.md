@@ -131,7 +131,7 @@ Order below is the proposed index order. Each topic lists what we already know a
   10G Fiber+ 18 / 120,000, Quantum Link 21 / 170,000.
 - Upload time ≈ `base(victim device tier) × (virusLv/20)^2.25 / network boost` [E, CLAUDE §4], victim tiers 0–9 with
   Raider I–III equal [O]. Scythe network −50% upload, Apex network −40% download [G].
-- Download time formula unknown → **M-08**. Upload model needs re-checking at more points → **M-09**.
+- Download time formula unknown → **M-08**. Upload model: M-09 closed 2026-11-22 (owner: the model was built from extensive in-game upload data; badges → MEASURED).
 - Concurrency: +75% per extra process [G] (app deliberately doesn't model it).
 
 ### 3.7 Bypass & crack (device)
@@ -283,7 +283,7 @@ Ordered by value. "Capture" says what to send; a 📼 Raw Dump of the screen is 
   Need ~20+ attempts per gap value to tell 58% from 66%.
 - **M-11 Bypass/crack durations.** Start time + duration shown for a bypass/crack, with your device, their FW/ENC,
   your Bypasser/Cracker level, and how many hack processes were running. Single-process runs are cleanest.
-- **M-09 Upload durations.** Virus type + level, victim device, your network, concurrent processes, duration shown.
+- ~~**M-09 Upload durations.**~~ Done (owner, 2026-11-22: covered extensively; the data built the card upload times). Virus type + level, victim device, your network, concurrent processes, duration shown.
   Several virus levels on the same victim device give the level exponent.
 - **M-08 Download durations.** Software + level, your network, duration.
 - **M-17 Keygen fees.** Apps page `LOCKED LVL N available <price>` rows: your installed level, locked level, price.

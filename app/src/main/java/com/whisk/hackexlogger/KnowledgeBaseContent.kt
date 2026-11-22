@@ -287,7 +287,7 @@ object KnowledgeBaseContent {
             facts(
                 f("Your network", "Divides download and upload time by its boost", GUIDE),
                 f("Upload: victim device", "Slower on better devices; 10 tiers, Raider I–III all tier 0", CONFIRMED),
-                f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", EMPIRICAL),
+                f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", MEASURED),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
                 f("Concurrency", "+75% per extra process", GUIDE),
                 f("Virus penalty", "−1% speed per virus on your device (max −40%)", GUIDE),
@@ -296,7 +296,7 @@ object KnowledgeBaseContent {
                 f("Crew-server NIC", "+3% transfer speed per level (max +15%)", GUIDE),
             ),
             table(
-                EMPIRICAL, listOf("Victim device tier", "Lv 20 upload on DSL"),
+                MEASURED, listOf("Victim device tier", "Lv 20 upload on DSL"),
                 (0..9).map { tier ->
                     val device = HardwareCatalog.STANDARD_DEVICES[if (tier == 0) 0 else tier + 2]
                     listOf("$tier (${if (tier == 0) "Raider I–III" else device})", KbCalculators.duration(NetworkSpeedUtils.getUploadSecondsForLevel(device, "DSL", 20).toDouble()))
@@ -307,7 +307,6 @@ object KnowledgeBaseContent {
             tip("Upload the lowest Spam level that caps 100/hr on that victim: it can be hours faster than your max level on a Nova Ultra."),
             unknowns(
                 "M-08" to "Download time by software level and network",
-                "M-09" to "Upload time at more virus levels and devices",
                 "M-13" to "Do uploads/downloads share the +75% pool with bypasses and cracks?",
             ),
         ),
