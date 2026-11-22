@@ -227,7 +227,7 @@ data class LogParseResult(
 )
 
 /**
- * Log timestamps. The game writes `[M-D H:MM]` in **UTC** with no year (owner-confirmed 2026-11-19).
+ * Log timestamps. The game writes `[M-D H:MM]` in **UTC** with no year (developer-confirmed 2026-11-19).
  * The year comes from an anchor: the log's `Last saved:` footer when present, else the current UTC time.
  * A line whose month is after the anchor's month belongs to the previous year (December lines read in January).
  */
@@ -713,14 +713,30 @@ object BypassScreenParser {
     private val REGEX_ENC = Regex("""(?:Encryptor|ENC)\s*Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
     private val REGEX_USING_BYPASSER = Regex("""Using\s+Bypasser\s+Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
     private val REGEX_APEX_BONUS = Regex("""\(\+(\d+)\)""")
+    private val REGEX_SCAN_ROW = Regex("""^(\S+)\s+FW\s*Lv\.?\s*(\d+)(?:\s+ENC\s*Lv\.?\s*(\d+))?""", RegexOption.IGNORE_CASE)
 
     fun parse(text: String): BypassScreen? {
         val lower = text.lowercase()
         if (!lower.contains("using bypasser") && !lower.contains("// bypass firewall") && !lower.contains("// scan results")) return null
 
-        val ip = CommonParserUtil.extractIp(text)
-        val firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
-        val encryptor = REGEX_ENC.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        // Scan list: one row per target ("1.2.3.4 FW Lv.32 ENC Lv.40 >"), masked rows included. Take the IP and
+        // its levels from the same row, so a masked row above can't lend its FW/ENC to the next real IP.
+        val scanRow = if (lower.contains("// scan results")) {
+            text.lineSequence().mapNotNull { REGEX_SCAN_ROW.find(it.trim()) }
+                .firstOrNull { !CommonParserUtil.isMaskedIp(it.groupValues[1]) && !it.groupValues[1].startsWith("0.0.") }
+        } else null
+        val ip: String?
+        val firewall: Int?
+        val encryptor: Int?
+        if (scanRow != null) {
+            ip = scanRow.groupValues[1]
+            firewall = scanRow.groupValues[2].toIntOrNull()
+            encryptor = scanRow.groupValues[3].toIntOrNull() // ENC shows only on an Apex reboot, not by default
+        } else {
+            ip = CommonParserUtil.extractIp(text)
+            firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
+            encryptor = REGEX_ENC.find(text)?.groupValues?.get(1)?.toIntOrNull()
+        }
         val playerBypasser = REGEX_USING_BYPASSER.find(text)?.groupValues?.get(1)?.toIntOrNull()
         val apexBonus = REGEX_APEX_BONUS.find(text)?.groupValues?.get(1)?.toIntOrNull()
 

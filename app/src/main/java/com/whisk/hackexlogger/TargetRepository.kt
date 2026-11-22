@@ -298,7 +298,7 @@ object TargetRepository {
 
         for (record in recordMap.values.toList()) {
 
-            // Several log-inferred wallets on one target are allowed (owner rule 2026-11-20), so only a
+            // Several log-inferred wallets on one target are allowed (developer rule 2026-11-20), so only a
             // target holding a wallet-screen wallet plus extras is cleaned (keep the proven one).
             if (record.wallets.size > 1 && record.walletFromPage) {
                 val proven = record.wallets.first()
@@ -528,7 +528,7 @@ object TargetRepository {
         val canonicalIp = if ((!incomingIsMasked && baseIsMasked) || (base.isTemporary && !incoming.isTemporary)) incoming.ip else base.ip
         val ignoreMaskedData = (baseIsMasked != incomingIsMasked)
 
-        // Wallets (owner rule 2026-11-20): a wallet-screen wallet is proof and beats log-inferred ones, whose
+        // Wallets (developer rule 2026-11-20): a wallet-screen wallet is proof and beats log-inferred ones, whose
         // thefts are then dropped (logged as a conflict). Log-inferred wallets alone are all kept as candidates.
         var droppedWallets: List<String> = emptyList()
         var finalSource: String?

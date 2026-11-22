@@ -34,7 +34,7 @@ object GoodSpamUtils {
     }
 
     /**
-     * Spam priority order (owner, 2026-11-22). Your own level plays no part in Spam income, and past the 100/hr cap
+     * Spam priority order (developer, 2026-11-22). Your own level plays no part in Spam income, and past the 100/hr cap
      * a higher victim level pays nothing extra, so:
      * 1. targets where your best Spam hits 100/hr first, then the rest by income (unknown level last);
      * 2. then the fastest upload: weaker device, and the lower Spam level a target needs (unknown device last);

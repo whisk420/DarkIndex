@@ -9,7 +9,7 @@ import kotlin.math.sqrt
 /**
  * Game mechanics as pure functions, shared by the Knowledge Base calculators and the rest of the app so the two
  * can never disagree. Each function says where its numbers come from (see CLAUDE.md §2/§4 and
- * docs/knowledge-base-prep.md). "Exact fit" means the formula reproduces every number the guide publishes.
+ * KnowledgeBaseContent). "Exact fit" means the formula reproduces every number the guide publishes.
  */
 object GameFormulas {
 
@@ -32,7 +32,7 @@ object GameFormulas {
      * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
      * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
      *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
-     * Unmeasured (M-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
+     * Unmeasured (Q-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
 
     /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */
@@ -79,7 +79,7 @@ object GameFormulas {
 
     /**
      * Hourly income of one Spam of [spamLevel] uploaded to a victim of [victimLevel], capped at 100 and then decayed.
-     * Fixed at upload: later level changes on either side don't change it (owner). Not monotonic: past the victim's
+     * Fixed at upload: later level changes on either side don't change it (developer). Not monotonic: past the victim's
      * level a higher Spam can earn less (see [spamBestLevel]).
      */
     fun spamIncomePerHour(spamLevel: Int, victimLevel: Int, daysSinceUpload: Double = 0.0, halfDecay: Boolean = false): Int {
@@ -136,8 +136,7 @@ object GameFormulas {
     /**
      * Siphon skim rate in % for a siphon uploaded at [level]. Measured 2026-11-22 (Raw Dump #16, all 122 deployments):
      * Lv1 1%, Lv2 1.25%, Lv5 2%, Lv6 2.25%, Lv13 4%, Lv17 5%, Lv20 5.75%, Lv25 6%. 0.75 + 0.25 × level fits every row
-     * up to Lv20. Lv25 shows 6%, so the rate is capped or flattens above Lv20; Lv21–24 are unmeasured and assumed to
-     * hit the 6% cap at Lv21.
+     * up to Lv20; the line reaches 6% at Lv21 and Lv25 shows 6%, so the rate caps at 6% from Lv21 (developer-accepted).
      */
     fun siphonPercent(level: Int): Double? =
         if (level <= 0) null else minOf(0.75 + 0.25 * level, SIPHON_MAX_PERCENT)
@@ -189,10 +188,10 @@ object GameFormulas {
     fun keygenFee(app: App, fromLevel: Int, toLevel: Int): Int? {
         val ratio = keygenFeeRatio(toLevel - fromLevel) ?: return null
         val price = storePrice(app, toLevel) ?: return null
-        return (price * ratio).roundToInt() // rounding unconfirmed (M-17)
+        return (price * ratio).roundToInt() // rounding unconfirmed (Q-13)
     }
 
-    /** XP per Store crypto for software (GEMINI empirical 0.1717; one owner data point 0.170). Keygen unlocks pay full XP. */
+    /** XP per Store crypto for software (GEMINI empirical 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
     const val SOFTWARE_XP_PER_CRYPTO = 0.1717
 
     // ── Proxy / Trace / hardening ───────────────────────────────────────────────────────────────────────────
@@ -300,6 +299,18 @@ object GameFormulas {
         return rep
     }
 
+    /**
+     * Effective levels a rootkit takes off the victim's Firewall and Encryptor (measured by the developer, 2026-11-22):
+     * Lv 1–2 → 1, Lv 3 → 2, Lv 6+ → 3 (the cap). Lv 4–5 are 2 by elimination (between Lv 3's 2 and Lv 6's
+     * first 3), not yet seen. 0 for no rootkit.
+     */
+    fun rootkitDebuff(rootkitLevel: Int): Int = when {
+        rootkitLevel <= 0 -> 0
+        rootkitLevel <= 2 -> 1
+        rootkitLevel <= 5 -> 2
+        else -> 3
+    }
+
     /** Rep a victim loses when a virus lands: min(500, 25 × virus level). Daily loss cap 500, floor 50% of peak (guide). */
     fun repLossFromVirus(virusLevel: Int): Int = minOf(500, 25 * virusLevel.coerceAtLeast(0))
 
@@ -313,10 +324,10 @@ object GameFormulas {
         else -> (10 - softwareGap) / 5.0
     }
 
-    /** XP to the next level, known points only (guide + owner). Null = not measured yet (M-22). */
+    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-19). */
     val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
-    /** Cold storage cap, known points only (guide). M-18. */
+    /** Cold storage cap, known points only (guide). Q-16. */
     val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */

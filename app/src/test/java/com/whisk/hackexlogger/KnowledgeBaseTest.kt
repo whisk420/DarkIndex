@@ -14,7 +14,7 @@ class KnowledgeBaseTest {
     // ── Formulas vs published numbers ──────────────────────────────────────────────────────────────────────
 
     @Test
-    fun spamIncomeMatchesOwnerMeasurements() {
+    fun spamIncomeMatchesDeveloperMeasurements() {
         // 2026-11-22, fresh uploads read off SPAM EARNINGS: (victim level, Spam level) → Crypto/hr
         val measured = mapOf(
             (43 to 1) to 18, (43 to 2) to 23, (43 to 3) to 27, (43 to 7) to 47, (43 to 11) to 69,
@@ -38,6 +38,14 @@ class KnowledgeBaseTest {
         val seen = mapOf(1 to 1.0, 2 to 1.25, 5 to 2.0, 6 to 2.25, 13 to 4.0, 17 to 5.0, 20 to 5.75, 25 to 6.0)
         seen.forEach { (lvl, pct) -> assertEquals("Lv$lvl", pct, GameFormulas.siphonPercent(lvl)!!, 1e-9) }
         assertEquals(null, GameFormulas.siphonPercent(0))
+    }
+
+    @Test
+    fun rootkitDebuffMatchesMeasuredLevels() {
+        // Developer's in-game readings, 2026-11-22
+        mapOf(1 to 1, 2 to 1, 3 to 2, 6 to 3).forEach { (lvl, debuff) -> assertEquals("Lv$lvl", debuff, GameFormulas.rootkitDebuff(lvl)) }
+        assertEquals(3, GameFormulas.rootkitDebuff(30)) // −3 is the cap
+        assertEquals(0, GameFormulas.rootkitDebuff(0))
     }
 
     @Test
@@ -67,7 +75,7 @@ class KnowledgeBaseTest {
             t.related.forEach { assertTrue("${t.id} → $it", it in ids) }
             for (b in t.blocks) when (b) {
                 is KbBlock.Calc -> { assertTrue("${t.id} calc ${b.calculatorId}", b.calculatorId in calcIds); usedCalcs += b.calculatorId }
-                is KbBlock.Unknowns -> b.items.forEach { assertTrue("${t.id} ${it.first}", Regex("M-\\d\\d").matches(it.first)) }
+                is KbBlock.Unknowns -> b.items.forEach { assertTrue("${t.id} ${it.first}", Regex("Q-\\d\\d").matches(it.first)) }
                 is KbBlock.Table -> b.rows.forEach { assertEquals("${t.id} table width", b.header.size, it.size) }
                 else -> {}
             }

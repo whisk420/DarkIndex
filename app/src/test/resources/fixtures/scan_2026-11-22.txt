@@ -1,0 +1,29 @@
+// SCAN
+Notepad
+Wallet:
+68,115
+Credits:
+1,487
+Locate target devices on the network
+SCAN
+REFRESH SCAN
+// SCAN RESULTS
+12 targets
+241.118.225.244 FW Lv.32 ENC Lv.40 >
+162.139.154.142 FW Lv.34 ENC Lv.32 >
+22.84.232.226 FW Lv.32 ENC Lv.1 >
+xxx.xxx.xxx.xxx FW Lv.39 ENC Lv.32 >
+xxx.xxx.xxx.xxx FW Lv.33 ENC Lv.29 >
+xxx.xxx.xxx.xxx FW Lv.35 ENC Lv.27 >
+226.217.xxx.xxx FW Lv.36 ENC Lv.29 >
+134.249.121.162 FW Lv.35 ENC Lv.32 >
+145.132.98.9 FW Lv.30 ENC Lv.29 >
+xxx.xxx.xxx.xxx FW Lv.36 ENC Lv.47 >
+140.199.238.221 FW Lv.25 ENC Lv.27 >
+148.130.96.85 FW Lv.33 ENC Lv.33 >
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS

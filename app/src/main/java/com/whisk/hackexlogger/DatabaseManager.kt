@@ -116,7 +116,7 @@ object DatabaseManager {
                     val previousOwner = recordMap.values.find { it.ip != ip && it.wallets.contains(update.wallet) }
                     if (previousOwner != null && !previousOwner.isTemporary && !record.isTemporary) {
                         // The wallet already belongs to another real target. A log line can't move it
-                        // (owner rule 2026-11-20: only a wallet-screen scrape may), so drop this line.
+                        // (developer rule 2026-11-20: only a wallet-screen scrape may), so drop this line.
                         TargetRepository.logWalletConflict(ip, previousOwner.ip, update.wallet, "LogWalletOwnedElsewhere")
                         dbDiscard(update, LogDiscardReason.WALLET_CONFLICT)
                         continue
@@ -218,7 +218,7 @@ object DatabaseManager {
     }
 
     /**
-     * The wallet screen is the authority on a target's wallet (owner rule 2026-11-20):
+     * The wallet screen is the authority on a target's wallet (developer rule 2026-11-20):
      * - it **replaces** whatever wallet the target had (from a log or an older wallet screen); thefts recorded
      *   under the replaced wallet are dropped, and the change goes to the conflict log;
      * - if another real target holds this wallet (wrongly inferred from a log, or the wallet moved), it is

@@ -16,7 +16,7 @@ import java.util.Locale
  * 5. Dismiss → chain another run (told where the last run ended) or end.
  *
  * Pure Kotlin (no Android types) so it is JVM-testable. The overlay drives it and listens for changes.
- * State is in memory only: a marathon does not survive a restart (owner, 2026-11-21).
+ * State is in memory only: a marathon does not survive a restart (developer, 2026-11-21).
  */
 object Marathon {
 

@@ -110,7 +110,7 @@ class DatabaseCoverageTest {
     @Test
     fun crewScreenWithNoKnownClanIsDiscarded() {
         // The crew name on screen can't be matched to a clan tag, so without a member whose clan we
-        // already know, nothing is saved (owner decision 2026-11-19).
+        // already know, nothing is saved (developer decision 2026-11-19).
         TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", username = "NoClan")))
 
         DatabaseManager.processCrewScreen(CrewScreen(members = listOf("1.1.1.1", "3.3.3.3")))

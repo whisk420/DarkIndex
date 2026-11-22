@@ -39,7 +39,7 @@ class RealDataRegressionTest {
         val updates = LogScreenParser.parse(TestEnv.fixture("log_2026-11-19.txt").split("\n"))
         fun ipOf(wallet: String, amount: Int) = updates.single { it.wallet == wallet && it.stolenAmount == amount }.ip
 
-        // Owner-confirmed (2026-11-19): the first steal after "Accessed device at 8.83.197.176" is that
+        // Developer-confirmed (2026-11-19): the first steal after "Accessed device at 8.83.197.176" is that
         // target's wallet; the game skipped the next Accessed line, so the second steal stays unattributed.
         assertEquals("8.83.197.176", ipOf("hx77bd...ea69", 797))
         assertEquals("", ipOf("hxe94d...72db", 772))
@@ -82,7 +82,7 @@ class RealDataRegressionTest {
         assertEquals("8.83.197.176", day2.updates.single { it.wallet == "hxe94d...72db" }.ip)
         scrape("log_2026-11-20.txt")
 
-        // Logs aren't proof, so both stay as candidates (owner rule 2026-11-20)
+        // Logs aren't proof, so both stay as candidates (developer rule 2026-11-20)
         assertEquals(listOf("hx77bd...ea69", "hxe94d...72db"), record("8.83.197.176")?.wallets)
 
         // The target's wallet screen settles it: the proven wallet stays, the other one and its thefts go
@@ -166,6 +166,29 @@ class RealDataRegressionTest {
     fun crewScreenWithoutAKnownMemberSavesNothing() {
         scrape("crew_2026-11-19.txt")
         assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
+    fun scanListStoresTheFirstRealRowWithItsOwnLevels() {
+        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(32, record("241.118.225.244")?.firewall)
+        assertEquals(40, record("241.118.225.244")?.encryptor)
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })
+    }
+
+    @Test
+    fun maskedScanRowDoesNotLendItsLevelsToTheNextRealIp() {
+        // Same real screen with a masked row moved to the top
+        val lines = TestEnv.fixture("scan_2026-11-22.txt").split("\n").toMutableList()
+        val masked = lines.indexOf("xxx.xxx.xxx.xxx FW Lv.39 ENC Lv.32 >")
+        lines.add(lines.indexOf("12 targets") + 1, lines.removeAt(masked))
+        val raw = lines.joinToString("\n")
+        ScrapePipeline.run(raw, raw.split("\n"))
+
+        assertEquals(32, record("241.118.225.244")?.firewall)
+        assertEquals(40, record("241.118.225.244")?.encryptor)
+        assertEquals(1, TargetRepository.getAllRecords().size)
     }
 
     // ---- Own screens ----------------------------------------------------------------------------
