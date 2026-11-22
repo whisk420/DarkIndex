@@ -14,7 +14,7 @@ import java.io.File
  *
  * Rewritten 2026-11-20: the old versions of the last five tests re-implemented the production logic
  * inside the test and asserted on their own copy, so they could never fail. They now call the real
- * code (TargetRepository.mergeRecords, DatabaseManager.processUpdates, TargetRepository.runDatabaseMaintenance).
+ * code (RecordMerger.mergeRecords, DatabaseManager.processUpdates, DatabaseMaintenance.runDatabaseMaintenance).
  */
 class UnmaskingTest {
 
@@ -71,8 +71,8 @@ class UnmaskingTest {
 
         // Both argument orders must give the same answer
         for (merged in listOf(
-            TargetRepository.mergeRecords(maskedRecord, unmaskedRecord),
-            TargetRepository.mergeRecords(unmaskedRecord, maskedRecord)
+            RecordMerger.mergeRecords(maskedRecord, unmaskedRecord),
+            RecordMerger.mergeRecords(unmaskedRecord, maskedRecord)
         )) {
             assertEquals("4.226.131.111", merged.ip)
             assertEquals(listOf("hxCleanWallet5678"), merged.wallets)
@@ -96,7 +96,7 @@ class UnmaskingTest {
             downloads = mutableMapOf("Firewall" to SoftwareEntry(8, "installed", null))
         )
 
-        val merged = TargetRepository.mergeRecords(userSpecificTempRecord, unmaskedRecord)
+        val merged = RecordMerger.mergeRecords(userSpecificTempRecord, unmaskedRecord)
 
         // The real IP wins over the placeholder, and the user-specific software is kept
         assertEquals("4.226.131.111", merged.ip)
@@ -190,8 +190,8 @@ class UnmaskingTest {
         val provenPlusExtra = TargetRecord(
             ip = "160.1.1.1",
             wallets = mutableListOf("hxPROV...0001", "hxXTRA...0002"),
-            walletSource = TargetRecord.WALLET_FROM_PAGE
-        ).apply { addTheftEvent("hxXTRA...0002", 1000L, 9) }
+            walletSource = WalletSource.PAGE
+        ).withTheftEvent("hxXTRA...0002", 1000L, 9)
         val maskedSoftwareRecord = TargetRecord(
             ip = "103.249.xxx.xxx",
             downloads = mutableMapOf("Rootkit" to SoftwareEntry(6, "installed", null))
@@ -202,7 +202,7 @@ class UnmaskingTest {
         )
         TargetRepository.saveAllRecords(listOf(multiLogWallets, provenPlusExtra, maskedSoftwareRecord, maskedWalletRecord))
 
-        val result = TargetRepository.runDatabaseMaintenance()
+        val result = DatabaseMaintenance.runDatabaseMaintenance()
 
         assertEquals(1, result.multiWalletRecordsFixed)
         assertEquals(1, result.maskedSoftwareCleared)

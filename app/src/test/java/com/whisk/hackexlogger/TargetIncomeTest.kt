@@ -18,7 +18,7 @@ class TargetIncomeTest {
 
     @Test
     fun testReliableClustersGroupingAnd7DaySplit() {
-        val target = TargetRecord(ip = "1.1.1.1")
+        var target = TargetRecord(ip = "1.1.1.1")
         val wallet = "hx123"
 
         // Cluster 1: Days 1-10, hacked every 30 minutes (Gap <= 1h)
@@ -27,21 +27,20 @@ class TargetIncomeTest {
         val tenDays = 10 * 24 * 60 * 60 * 1000L
         val endTime = t + tenDays
         while (t <= endTime) {
-            target.addTheftEvent(wallet, t, 1000)
+            target = target.withTheftEvent(wallet, t, 1000)
             t += 30 * 60 * 1000L
         }
 
         // Gap of 48 hours is naturally formed here
 
         // Cluster 2: Day 13 (single event)
-        target.addTheftEvent(wallet, createTime(13, 10), 500)
-
+        target = target.withTheftEvent(wallet, createTime(13, 10), 500)
         // Cluster 3: Day 15-16, hacked every 30 minutes
         t = createTime(15, 10)
         val thirtySixHours = 36 * 60 * 60 * 1000L
         val endTwoDays = t + thirtySixHours
         while (t <= endTwoDays) {
-            target.addTheftEvent(wallet, t, 1000)
+            target = target.withTheftEvent(wallet, t, 1000)
             t += 30 * 60 * 1000L
         }
 
@@ -67,19 +66,17 @@ class TargetIncomeTest {
 
     @Test
     fun testEstimatedIncomeAveragesMultipleClusters() {
-        val target = TargetRecord(ip = "1.1.1.1")
+        var target = TargetRecord(ip = "1.1.1.1")
         val wallet = "hx123"
 
         // Cluster 1: 4000 stolen over 1 hour (Rate: 4000/hr)
-        target.addTheftEvent(wallet, createTime(1, 10, 0), 1000) // Initial hack (discarded for rate sum)
-        target.addTheftEvent(wallet, createTime(1, 10, 30), 2000)
-        target.addTheftEvent(wallet, createTime(1, 11, 0), 2000)
-
+        target = target.withTheftEvent(wallet, createTime(1, 10, 0), 1000) // Initial hack (discarded for rate sum)
+        target = target.withTheftEvent(wallet, createTime(1, 10, 30), 2000)
+        target = target.withTheftEvent(wallet, createTime(1, 11, 0), 2000)
         // Cluster 2: 3000 stolen over 1 hour (Rate: 3000/hr)
-        target.addTheftEvent(wallet, createTime(5, 10, 0), 1000) // Initial hack
-        target.addTheftEvent(wallet, createTime(5, 10, 30), 1500)
-        target.addTheftEvent(wallet, createTime(5, 11, 0), 1500)
-
+        target = target.withTheftEvent(wallet, createTime(5, 10, 0), 1000) // Initial hack
+        target = target.withTheftEvent(wallet, createTime(5, 10, 30), 1500)
+        target = target.withTheftEvent(wallet, createTime(5, 11, 0), 1500)
         val income = target.getEstimatedIncome(wallet)
         // Avg of 4000/hr and 3000/hr = 3500/hr
         assertEquals("₵3,500/hr", income)
@@ -87,17 +84,16 @@ class TargetIncomeTest {
 
     @Test
     fun testEstimatedIncomeSingleEventFallback() {
-        val target = TargetRecord(ip = "1.1.1.1")
+        var target = TargetRecord(ip = "1.1.1.1")
         val wallet = "hx123"
 
         // Only one hack
-        target.addTheftEvent(wallet, createTime(1, 10), 50000)
-
+        target = target.withTheftEvent(wallet, createTime(1, 10), 50000)
         val income = target.getEstimatedIncome(wallet)
         assertEquals("₵50.0k", income)
 
         // Another single hack 5 days later (still separate clusters of size 1)
-        target.addTheftEvent(wallet, createTime(6, 10), 20000)
+        target = target.withTheftEvent(wallet, createTime(6, 10), 20000)
         val income2 = target.getEstimatedIncome(wallet)
         // Should show the most recent flat amount
         assertEquals("₵20.0k", income2)

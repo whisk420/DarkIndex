@@ -4,32 +4,52 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Environment
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
-import kotlin.time.Duration.Companion.days
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * The target database: an in-memory list of immutable [TargetRecord]s, saved to `filesDir/targets.json`
+ * ([TargetStore]) on a background queue, with a pretty-printed backup mirrored to `Downloads/DarkIndex/`.
+ *
+ * Merge rules live in [RecordMerger], export/import in [DatabaseBackup], maintenance in [DatabaseMaintenance].
+ */
 object TargetRepository {
     const val PREFS_NAME = "HackExDB"
+    /** Where the database lived up to 2026-11-22. Read once, moved to [TargetStore.FILE_NAME], then removed. */
     const val KEY_TARGETS = "targets"
     /** Set once stored theft times have been converted from phone-local to UTC (2026-11-20 fix). */
     const val KEY_THEFTS_UTC = "thefts_utc_v1"
 
+    /** `HackExDB` prefs: siphon tracking and one-time migration flags. Targets are no longer stored here. */
     lateinit var prefs: SharedPreferences
     lateinit var appContext: Context
     val gson = Gson()
-    val cachedRecords = mutableListOf<TargetRecord>()
-    
+
+    /** The whole database. Replaced (never mutated) on every save, so readers can hold on to it safely. */
+    @Volatile private var records: List<TargetRecord> = emptyList()
+    private val writeLock = Any()
+
     private val _recordsFlow = MutableStateFlow<List<TargetRecord>>(emptyList())
     val recordsFlow: StateFlow<List<TargetRecord>> = _recordsFlow.asStateFlow()
-    
+
     @Volatile var isInitialized = false
+
+    /**
+     * Set when loading found something it couldn't use (unreadable file, skipped records). The data is kept in
+     * the file named here; the UI shows this once.
+     */
+    @Volatile var loadReport: String? = null
 
     fun init(context: Context) {
         if (!isInitialized) {
@@ -41,71 +61,134 @@ object TargetRepository {
         }
     }
 
+    fun contextOrNull(): Context? = if (::appContext.isInitialized) appContext else null
+
+    private fun databaseFile(): File? = contextOrNull()?.let { File(it.filesDir, TargetStore.FILE_NAME) }
+
+    /**
+     * Loads the database, from `targets.json` and/or the legacy prefs string.
+     *
+     * Version compatibility:
+     * - First start after the 2026-11-22 update: the prefs string is copied to `targets.json` (and kept verbatim as
+     *   `targets_from_prefs_<time>.json`), then removed from prefs.
+     * - An older version run after that (a downgrade) writes to prefs again. On the next start of this version both
+     *   are merged (by IP, then the usual username/wallet reconcile), so nothing recorded in between is lost.
+     * - Records that can't be read are kept in a side file instead of being dropped (see [TargetStore]).
+     */
     internal fun loadCacheFromDisk() {
-        try {
-            val json = prefs.getString(KEY_TARGETS, "[]")
-            val loadedArray: Array<TargetRecord>? = gson.fromJson(json, Array<TargetRecord>::class.java)
-            synchronized(cachedRecords) {
-                cachedRecords.clear()
-                if (loadedArray != null) {
-                    for (record in loadedArray) {
-                        sanitizeRecord(record)
-                        cachedRecords.add(record)
-                    }
-                }
-            }
-            if (!prefs.getBoolean(KEY_THEFTS_UTC, false)) {
-                // One-time fix: log times used to be read in the phone's time zone instead of UTC
-                val shifted = synchronized(cachedRecords) { shiftTheftsLocalToUtc(cachedRecords, java.util.TimeZone.getDefault()) }
-                prefs.edit().putBoolean(KEY_THEFTS_UTC, true).apply()
-                if (shifted > 0) schedulePersist()
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("TargetRepository", "Error loading target records cache: ${e.message}", e)
-        }
-    }
+        val file = databaseFile()
+        val dir = file?.parentFile
+        val problems = mutableListOf<String>()
+        var loaded: List<TargetRecord> = emptyList()
+        var needsWrite = false
 
-    fun sanitizeRecord(record: TargetRecord) {
-        val fields = TargetRecord::class.java.declaredFields
-        for (field in fields) {
-            field.isAccessible = true
+        if (file != null && file.exists()) {
             try {
-                if (field.get(record) == null) {
-                    val fieldType = field.type
-                    if (List::class.java.isAssignableFrom(fieldType)) {
-                        field.set(record, mutableListOf<String>())
-                    } else if (Map::class.java.isAssignableFrom(fieldType)) {
-                        field.set(record, mutableMapOf<String, Any>())
-                    }
-                }
-            } catch (_: Exception) {}
-        }
-    }
-
-    fun getAllRecords(): List<TargetRecord> {
-        if (!isInitialized) return emptyList()
-        synchronized(cachedRecords) {
-            return cachedRecords.map { record ->
-                sanitizeRecord(record)
-                record.copy(
-                    wallets = record.wallets.toMutableList(),
-                    downloads = record.downloads.toMutableMap(),
-                    walletThefts = record.walletThefts.mapValues { it.value.toMutableList() }.toMutableMap()
-                )
+                val parsed = TargetStore.read(file)!!
+                loaded = parsed.records
+                TargetStore.keepSkipped(dir!!, parsed.skipped)?.let { problems.add("${parsed.skipped.size} record(s) couldn't be read and were kept in ${it.name}") }
+            } catch (e: Exception) {
+                val aside = File(dir, "targets_unreadable_${TargetStore.stamp()}.json")
+                file.renameTo(aside)
+                problems.add("The database file couldn't be read; it was kept as ${aside.name}")
+                android.util.Log.e("TargetRepository", "Unreadable ${file.name}: ${e.message}", e)
             }
         }
+
+        val legacy = try { prefs.getString(KEY_TARGETS, null) } catch (_: Exception) { null }
+        if (legacy != null) {
+            try {
+                val parsed = TargetStore.parse(legacy)
+                if (dir != null) {
+                    File(dir, "targets_from_prefs_${TargetStore.stamp()}.json").writeText(legacy)
+                    TargetStore.keepSkipped(dir, parsed.skipped)?.let { problems.add("${parsed.skipped.size} record(s) couldn't be read and were kept in ${it.name}") }
+                }
+                loaded = if (loaded.isEmpty()) parsed.records else mergeByIp(loaded, parsed.records)
+                needsWrite = true
+            } catch (e: Exception) {
+                // Leave the prefs string where it is: an older version can still read it, and nothing is lost
+                problems.add("The old database in app settings couldn't be read; it was left in place")
+                android.util.Log.e("TargetRepository", "Unreadable legacy prefs database: ${e.message}", e)
+            }
+        }
+
+        records = loaded
+
+        if (!prefs.getBoolean(KEY_THEFTS_UTC, false)) {
+            // One-time fix: log times used to be read in the phone's time zone instead of UTC
+            val (shifted, count) = DatabaseBackup.shiftTheftsLocalToUtc(records, java.util.TimeZone.getDefault())
+            records = shifted
+            prefs.edit().putBoolean(KEY_THEFTS_UTC, true).apply()
+            if (count > 0) needsWrite = true
+        }
+
+        if (needsWrite && file != null) {
+            try {
+                TargetStore.write(file, records)
+                // Only drop the prefs copy once the file is on disk and reads back complete
+                if (legacy != null && TargetStore.read(file)?.records?.size == records.size) {
+                    prefs.edit().remove(KEY_TARGETS).apply()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TargetRepository", "Couldn't write ${file.name}: ${e.message}", e)
+            }
+        }
+
+        loadReport = problems.takeIf { it.isNotEmpty() }?.joinToString("\n")
     }
+
+    /** [primary]'s records, merged with [other]'s (same IP → [RecordMerger.mergeRecords]), then reconciled. */
+    private fun mergeByIp(primary: List<TargetRecord>, other: List<TargetRecord>): List<TargetRecord> {
+        val map = LinkedHashMap<String, TargetRecord>()
+        primary.forEach { map[it.ip] = it }
+        other.forEach { rec -> map[rec.ip] = map[rec.ip]?.let { RecordMerger.mergeRecords(it, rec) } ?: rec }
+        val merged = map.values.toList()
+        return RecordMerger.reconcile(merged) ?: merged
+    }
+
+    /** The current database. Records are immutable, so this is the live list, not a copy. */
+    fun getAllRecords(): List<TargetRecord> = if (isInitialized) records else emptyList()
 
     fun notifyDataUpdated() {
         _recordsFlow.value = getAllRecords()
-        if (::appContext.isInitialized) {
+        contextOrNull()?.let { context ->
             try {
-                val intent = android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED")
-                    .setPackage(appContext.packageName)
-                appContext.sendBroadcast(intent)
+                context.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED").setPackage(context.packageName))
             } catch (_: Exception) {}
         }
     }
+
+    /**
+     * Replaces the database with [newRecords] in memory immediately and queues the disk write.
+     * Use [commit] instead when the change could create records that share a username or wallet.
+     */
+    fun saveAllRecords(newRecords: List<TargetRecord>) {
+        synchronized(writeLock) { records = newRecords.toList() }
+        schedulePersist()
+        notifyDataUpdated()
+    }
+
+    /** Reconciles [newRecords] (merging records that share a username or wallet), then saves once. */
+    fun commit(newRecords: List<TargetRecord>) {
+        saveAllRecords(RecordMerger.reconcile(newRecords) ?: newRecords)
+    }
+
+    /** Applies [change] to the current list and saves the result (reconciled). Serialised against other updates. */
+    fun update(change: (List<TargetRecord>) -> List<TargetRecord>?) {
+        synchronized(writeLock) {
+            val result = change(getAllRecords()) ?: return
+            commit(result)
+        }
+    }
+
+    /** Merges records that share a username or wallet, saving only if something changed. */
+    fun reconcileDatabase() {
+        synchronized(writeLock) {
+            RecordMerger.reconcile(getAllRecords())?.let { saveAllRecords(it) }
+        }
+    }
+
+    // ---- Ordered background persistence ------------------------------------------------------------
 
     /**
      * Folder for the Downloads auto-backup (`Downloads/DarkIndex/`). Returns null when there is no
@@ -117,43 +200,32 @@ object TargetRepository {
 
     fun getDownloadsBackupFile(): File? {
         val dir = backupDirProvider() ?: return null
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
+        if (!dir.exists()) dir.mkdirs()
         return File(dir, "darkindex_database.json")
     }
 
-    /**
-     * Updates the in-memory database immediately and queues the disk writes (prefs JSON + Downloads mirror).
-     *
-     * Disk writes run on one background thread, in order. Each write persists the **latest** in-memory state,
-     * so when several saves queue up quickly, the extra ones are skipped and nothing older can overwrite
-     * something newer. The stored format is unchanged.
-     */
-    fun saveAllRecords(records: List<TargetRecord>) {
-        synchronized(cachedRecords) {
-            cachedRecords.clear()
-            cachedRecords.addAll(records)
-        }
-        schedulePersist()
-        notifyDataUpdated()
-    }
-
-    // ---- Ordered background persistence ------------------------------------------------------------
-
     /** Where disk writes run. A single background thread in the app; tests swap in a same-thread executor. */
-    @Volatile var persistExecutor: java.util.concurrent.Executor = newPersistExecutor()
+    @Volatile var persistExecutor: Executor = Executors.newSingleThreadExecutor { r -> Thread(r, "DarkIndex-save") }
 
-    private fun newPersistExecutor(): java.util.concurrent.ExecutorService =
-        java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "DarkIndex-save") }
+    /**
+     * How long the Downloads backup waits after a save before it is rewritten. The backup is a full pretty-printed
+     * export, the most expensive write, so a burst of scrapes produces one backup instead of one per scrape.
+     * The database file itself is written right away. Tests set 0 (write the backup straight after each save).
+     */
+    @Volatile var mirrorDelayMs: Long = 30_000L
 
-    private val requestedGeneration = java.util.concurrent.atomic.AtomicLong(0)
+    private val mirrorTimer: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "DarkIndex-backup-timer").apply { isDaemon = true }
+    }
+    private val mirrorPending = AtomicBoolean(false)
+
+    private val requestedGeneration = AtomicLong(0)
     @Volatile private var persistedGeneration = 0L
     private val persistLock = Any()
 
     /** Re-writes the Downloads backup (e.g. after your profile changed). No-op before [init]. */
     fun requestBackupWrite() {
-        if (isInitialized) schedulePersist()
+        if (isInitialized) scheduleMirror()
     }
 
     private fun schedulePersist() {
@@ -166,512 +238,110 @@ object TargetRepository {
             // A newer save already wrote everything this one would have.
             if (generation <= persistedGeneration) return
             val target = requestedGeneration.get()
-            val snapshot = synchronized(cachedRecords) { cachedRecords.toList() }
+            val snapshot = records
             try {
-                if (snapshot.isEmpty()) {
-                    prefs.edit().remove(KEY_TARGETS).apply()
-                } else {
-                    prefs.edit().putString(KEY_TARGETS, gson.toJson(snapshot)).apply()
-                    // Mirror only inside the real app (init() sets appContext). Unit tests that never set a
-                    // context can't write a stray DarkIndex/ folder into the project.
-                    if (::appContext.isInitialized) {
-                        getDownloadsBackupFile()?.writeText(exportDataBundle())
-                    }
-                }
+                databaseFile()?.let { TargetStore.write(it, snapshot) }
             } catch (e: Exception) {
                 android.util.Log.e("TargetRepository", "Saving the database failed: ${e.message}", e)
             }
             persistedGeneration = target
+            // An empty database never overwrites the backup: after a wipe, the last backup is the way back.
+            if (snapshot.isNotEmpty()) scheduleMirror()
         }
     }
 
+    private fun scheduleMirror() {
+        // Only inside the real app (init() sets appContext), so unit tests can't write a stray DarkIndex/ folder
+        if (contextOrNull() == null) return
+        if (!mirrorPending.compareAndSet(false, true)) return
+        val delay = mirrorDelayMs
+        if (delay <= 0) persistExecutor.execute { writeMirrorIfPending() }
+        else mirrorTimer.schedule({ persistExecutor.execute { writeMirrorIfPending() } }, delay, TimeUnit.MILLISECONDS)
+    }
+
+    private fun writeMirrorIfPending() {
+        if (!mirrorPending.getAndSet(false)) return
+        try {
+            val file = getDownloadsBackupFile() ?: return
+            if (records.isEmpty()) return
+            file.bufferedWriter().use { DatabaseBackup.writeDataBundle(it) }
+        } catch (e: Exception) {
+            android.util.Log.e("TargetRepository", "Writing the Downloads backup failed: ${e.message}", e)
+        }
+    }
+
+    /** Writes a pending Downloads backup now instead of waiting for the timer (e.g. when the app goes to the background). */
+    fun flushBackupSoon() {
+        persistExecutor.execute { writeMirrorIfPending() }
+    }
+
     /**
-     * Blocks until every queued disk write has finished (or [timeoutMs] passes). Returns true if all writes
-     * are done. Used before exports and by tests.
+     * Blocks until every queued disk write, including a pending Downloads backup, has finished (or [timeoutMs]
+     * passes). Returns true if all writes are done. Used before exports and by tests.
      */
     fun flushPendingWrites(timeoutMs: Long = 10_000): Boolean {
         val latch = java.util.concurrent.CountDownLatch(1)
-        persistExecutor.execute { latch.countDown() }
-        return latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        persistExecutor.execute { writeMirrorIfPending(); latch.countDown() }
+        return latch.await(timeoutMs, TimeUnit.MILLISECONDS)
     }
 
     fun wipeDatabase() {
-        synchronized(cachedRecords) {
-            cachedRecords.clear()
-        }
         // Through the queue, so an older save still waiting can't bring the data back afterwards.
-        schedulePersist()
-        notifyDataUpdated()
+        saveAllRecords(emptyList())
     }
+
+    /** Test helper: empties memory without touching disk. */
+    internal fun resetForTests() {
+        synchronized(writeLock) { records = emptyList() }
+        loadReport = null
+        mirrorPending.set(false)
+    }
+
+    // ---- Validation queue and single-record edits ----------------------------------------------------
 
     fun getNextTargetForAdvancedTargeting(): TargetRecord? {
         val candidates = getAllRecords().filter { it.needsAdvancedTargeting }
-        val nullChecked = candidates.filter { it.lastValidated == null }
-        if (nullChecked.isNotEmpty()) {
-            return nullChecked.first()
-        }
-        return candidates.minByOrNull { it.lastValidated ?: "" }
-    }
-
-    fun markTargetValidated(ip: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        val record = currentRecords.find { it.ip == ip } ?: return
-        record.lastValidated = getCurrentTimestamp()
-        saveAllRecords(currentRecords)
+        return candidates.firstOrNull { it.lastValidated == null } ?: candidates.minByOrNull { it.lastValidated ?: "" }
     }
 
     fun getNextRecordToValidate(): TargetRecord? {
-        val unmaskedRecords = getAllRecords().filter { !it.isMasked }
-        if (unmaskedRecords.isEmpty()) return null
-        val neverValidated = unmaskedRecords.filter { it.lastValidated == null }
-        if (neverValidated.isNotEmpty()) {
-            return neverValidated.first()
-        }
-        return unmaskedRecords.minByOrNull { it.lastValidated ?: "" }
+        val unmasked = getAllRecords().filter { !it.isMasked }
+        return unmasked.firstOrNull { it.lastValidated == null } ?: unmasked.minByOrNull { it.lastValidated ?: "" }
     }
 
     fun markValidated(ip: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        val record = currentRecords.find { it.ip == ip } ?: return
-        record.lastValidated = getCurrentTimestamp()
-        saveAllRecords(currentRecords)
+        val now = getCurrentTimestamp()
+        update { list ->
+            if (list.none { it.ip == ip }) null
+            else list.map { if (it.ip == ip) it.copy(lastValidated = now) else it }
+        }
     }
 
+    fun markTargetValidated(ip: String) = markValidated(ip)
+
     fun editTargetIp(oldIp: String, newIp: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        val existing = currentRecords.find { it.ip == oldIp } ?: return
-        currentRecords.remove(existing)
-        val collision = currentRecords.find { it.ip == newIp }
-        if (collision != null) {
-            currentRecords.remove(collision)
-            val merged = mergeRecords(collision, existing)
-            merged.ip = newIp
-            currentRecords.add(merged)
-        } else {
-            existing.ip = newIp
-            currentRecords.add(existing)
+        update { list ->
+            val existing = list.find { it.ip == oldIp } ?: return@update null
+            val rest = list.filter { it.ip != oldIp }
+            val collision = rest.find { it.ip == newIp }
+            val moved = if (collision != null) RecordMerger.mergeRecords(collision, existing).copy(ip = newIp) else existing.copy(ip = newIp)
+            rest.filter { it.ip != newIp } + moved
         }
-        saveAllRecords(currentRecords)
-        reconcileDatabase()
     }
 
     fun deleteTarget(ip: String) {
-        val currentRecords = getAllRecords().toMutableList()
-        currentRecords.removeAll { it.ip == ip }
-        saveAllRecords(currentRecords)
+        update { list -> list.filter { it.ip != ip } }
     }
 
     fun clearTargetTheftEvents(ip: String, wallet: String? = null) {
-        val currentRecords = getAllRecords().toMutableList()
-        val record = currentRecords.find { it.ip == ip } ?: return
-        if (wallet != null) {
-            record.clearTheftEvents(wallet)
-        } else {
-            record.walletThefts.clear()
-        }
-        saveAllRecords(currentRecords)
-        if (::appContext.isInitialized) {
-            appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
-        }
-    }
-
-    fun getCurrentTimestamp(): String {
-        return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
-    }
-
-    fun runDatabaseMaintenance(): DatabaseManager.MaintenanceResult {
-        val backupJson = exportDataBundle()
-        var backupPath = "none"
-        if (::appContext.isInitialized) {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val backupFile = File(appContext.filesDir, "maintenance_backup_$timestamp.json")
-            backupFile.writeText(backupJson)
-            backupPath = backupFile.absolutePath
-        }
-
-        val records = getAllRecords().toMutableList()
-        val recordMap = records.associateBy { it.ip }.toMutableMap()
-
-        var multiWalletCount = 0
-        var maskedSoftwareCount = 0
-        var maskedWalletsMigratedCount = 0
-
-        for (record in recordMap.values.toList()) {
-
-            // Several log-inferred wallets on one target are allowed (developer rule 2026-11-20), so only a
-            // target holding a wallet-screen wallet plus extras is cleaned (keep the proven one).
-            if (record.wallets.size > 1 && record.walletFromPage) {
-                val proven = record.wallets.first()
-                val extras = record.wallets.drop(1)
-                record.wallets.retainAll(listOf(proven))
-                extras.forEach { record.walletThefts.remove(it); logWalletConflict(record.ip, proven, it, "MaintenanceDroppedUnproven") }
-                multiWalletCount++
-            }
-            if (record.isMasked) {
-                if (record.downloads.isNotEmpty()) {
-                    record.downloads.clear()
-                    maskedSoftwareCount++
-                }
-
-                if (record.wallets.isNotEmpty()) {
-                    val walletToMigrate = record.wallets.first()
-                    record.wallets.clear()
-                    maskedWalletsMigratedCount++
-
-                    val owner = recordMap.values.find { !it.isMasked && it.wallets.contains(walletToMigrate) }
-                    if (owner == null) {
-                        val placeholderIp = "unknown:wallet_$walletToMigrate"
-                        var placeholder = recordMap[placeholderIp]
-                        if (placeholder == null) {
-                            placeholder = TargetRecord(ip = placeholderIp, wallets = mutableListOf(walletToMigrate))
-                            recordMap[placeholderIp] = placeholder
-                        } else if (!placeholder.wallets.contains(walletToMigrate)) {
-                            placeholder.wallets.add(walletToMigrate)
-                        }
-                        val thefts = record.walletThefts.remove(walletToMigrate)
-                        if (thefts != null) {
-                            placeholder.walletThefts.getOrPut(walletToMigrate) { mutableListOf() }.addAll(thefts)
-                        }
-                    }
-                }
+        update { list ->
+            list.map { r ->
+                if (r.ip != ip) r
+                else if (wallet != null) r.withoutTheftEvents(wallet)
+                else r.copy(walletThefts = emptyMap())
             }
         }
-
-        saveAllRecords(recordMap.values.toList())
-        reconcileDatabase()
-
-        return DatabaseManager.MaintenanceResult(
-            backupFilePath = backupPath,
-            multiWalletRecordsFixed = multiWalletCount,
-            maskedSoftwareCleared = maskedSoftwareCount,
-            maskedWalletsMigrated = maskedWalletsMigratedCount
-        )
     }
 
-    fun purgeOldTheftEvents(): Int {
-        val cutoff = (kotlinx.datetime.Clock.System.now() - 30.days).toEpochMilliseconds()
-        val records = getAllRecords().toMutableList()
-        var purgedCount = 0
-
-        for (record in records) {
-            for (wallet in record.walletThefts.keys.toList()) {
-                val events = record.walletThefts[wallet] ?: continue
-                val oldEvents = events.filter { it.timestampMs < cutoff }
-                if (oldEvents.isEmpty()) continue
-
-                val newEvents = events.filter { it.timestampMs >= cutoff }
-
-                // Safety Shield: Check if purging old events removes ALL multi-event clusters
-                val clustersBefore = record.getReliableClusters(wallet).filter { it.size >= 2 }
-                
-                // create a temporary TargetRecord to test what the clusters WOULD look like
-                val tempRecord = record.copy(walletThefts = record.walletThefts.toMutableMap().apply { put(wallet, newEvents.toMutableList()) })
-                val clustersAfter = tempRecord.getReliableClusters(wallet).filter { it.size >= 2 }
-
-                if (clustersBefore.isNotEmpty() && clustersAfter.isEmpty()) {
-                    // Preserving history because it's the only reliable cluster source!
-                    continue
-                }
-
-                // Safe to purge old events
-                record.walletThefts[wallet] = newEvents.toMutableList()
-                purgedCount += oldEvents.size
-            }
-        }
-
-        if (purgedCount > 0) {
-            saveAllRecords(records)
-        }
-        return purgedCount
-    }
-
-    fun exportDataBundle(): String {
-        val records = getAllRecords()
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        val bundle = ConsoleBundle(
-            format = "target-intelligence-console",
-            version = 1,
-            exportedAt = isoFormat.format(Date()),
-            targets = records.toTypedArray(),
-            ingests = emptyArray(),
-            siphonAlerts = SiphonTracker.getSiphonAlerts().toTypedArray(),
-            knownSiphons = SiphonTracker.getKnownSiphons(),
-            playerProfile = if (PlayerProfileRepository.isReady()) PlayerProfileRepository.getProfile().takeIf { it != PlayerProfile() } else null,
-            theftTimesUtc = true
-        )
-        val exportGson = GsonBuilder().setPrettyPrinting().serializeNulls().create()
-        return exportGson.toJson(bundle)
-    }
-
-    /**
-     * Before 2026-11-20, `[M-D H:MM]` log times (UTC in the game) were read as phone-local time, so every
-     * stored theft is off by the phone's UTC offset at that moment. Moves each one to the correct UTC time.
-     * @return number of theft events moved.
-     */
-    fun shiftTheftsLocalToUtc(records: List<TargetRecord>, zone: java.util.TimeZone): Int {
-        var count = 0
-        for (record in records) {
-            for ((wallet, events) in record.walletThefts) {
-                if (events.isEmpty()) continue
-                record.walletThefts[wallet] = events.map { TheftEvent(it.timestampMs + zone.getOffset(it.timestampMs), it.amount) }
-                    .sortedBy { it.timestampMs }.toMutableList()
-                count += events.size
-            }
-        }
-        return count
-    }
-
-    fun importDataBundle(jsonString: String): ImportResult {
-        val bundle = try {
-            gson.fromJson(jsonString, ConsoleBundle::class.java)
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid JSON format: ${e.message}", e)
-        }
-
-        if (bundle == null || bundle.format != "target-intelligence-console" || bundle.version != 1) {
-            throw IllegalArgumentException("This is not a Target Intelligence Console export.")
-        }
-
-        SiphonTracker.restoreSiphonData(bundle.siphonAlerts?.toList(), bundle.knownSiphons)
-        if (bundle.playerProfile != null && PlayerProfileRepository.isReady()) {
-            PlayerProfileRepository.restoreFromBackup(bundle.playerProfile)
-        }
-
-        val importedTargets = bundle.targets ?: emptyArray()
-        val importedIngests = bundle.ingests ?: emptyArray()
-        // Exports made before the UTC fix carry phone-local theft times
-        if (bundle.theftTimesUtc != true) {
-            importedTargets.forEach { sanitizeRecord(it) }
-            shiftTheftsLocalToUtc(importedTargets.toList(), java.util.TimeZone.getDefault())
-        }
-
-        val currentRecords = getAllRecords().toMutableList()
-        val recordMap = currentRecords.associateBy { it.ip }.toMutableMap()
-
-        for (imported in importedTargets) {
-            try {
-                sanitizeRecord(imported)
-                val ip = imported.ip
-                if (ip.isBlank()) continue
-
-                val existing = recordMap[ip]
-                if (existing != null) {
-                    val merged = mergeRecords(existing, imported)
-                    recordMap[ip] = merged
-                } else {
-                    val previousMatch = recordMap.values.find { candidate ->
-                        (imported.username != null && candidate.username != null && candidate.username.equals(imported.username, ignoreCase = true)) ||
-                        (imported.wallets.isNotEmpty() && candidate.wallets.any { imported.wallets.contains(it) })
-                    }
-                    if (previousMatch != null) {
-                        val merged = mergeRecords(previousMatch, imported)
-                        recordMap.remove(previousMatch.ip)
-                        recordMap[merged.ip] = merged
-                    } else {
-                        recordMap[ip] = imported
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("TargetRepository", "Error merging target record: ${e.message}", e)
-            }
-        }
-
-        // Save the merged targets first: the ingests below read and write through DatabaseManager, and saving
-        // afterwards used to overwrite everything they added (bug B2).
-        saveAllRecords(recordMap.values.toList())
-
-        // Process raw ingests included in the bundle
-        for (ingest in importedIngests) {
-            val raw = ingest.raw
-            if (raw.isNullOrEmpty()) continue
-            try {
-                when (ingest.type) {
-                    "logs" -> {
-                        val lines = raw.lines()
-                        val updates = LogScreenParser.parse(lines)
-                        DatabaseManager.processUpdates(updates)
-                    }
-                    "home" -> {
-                        val homeScreen = HomeScreenParser.parse(raw)
-                        if (homeScreen != null) {
-                            DatabaseManager.processHomeScreen(homeScreen)
-                        }
-                    }
-                    "software" -> {
-                        val softwareScreen = SoftwareScreenParser.parse(raw)
-                        if (softwareScreen != null) {
-                            DatabaseManager.processSoftwareScreen(softwareScreen)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("TargetRepository", "Error processing ingest: ${e.message}", e)
-            }
-        }
-
-        reconcileDatabase()
-
-        if (::appContext.isInitialized) {
-            try {
-                appContext.sendBroadcast(android.content.Intent("com.whisk.hackexlogger.DATA_UPDATED"))
-            } catch (_: Exception) {}
-        }
-
-        return ImportResult(importedTargets.size, importedIngests.size)
-    }
-
-    fun mergeRecords(base: TargetRecord, incoming: TargetRecord): TargetRecord {
-        val baseIsMasked = base.isMasked
-        val incomingIsMasked = incoming.isMasked
-        val canonicalIp = if ((!incomingIsMasked && baseIsMasked) || (base.isTemporary && !incoming.isTemporary)) incoming.ip else base.ip
-        val ignoreMaskedData = (baseIsMasked != incomingIsMasked)
-
-        // Wallets (developer rule 2026-11-20): a wallet-screen wallet is proof and beats log-inferred ones, whose
-        // thefts are then dropped (logged as a conflict). Log-inferred wallets alone are all kept as candidates.
-        var droppedWallets: List<String> = emptyList()
-        var finalSource: String?
-        val finalWallets = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            finalSource = unmasked.walletSource
-            unmasked.wallets.toMutableList()
-        } else {
-            val distinctWallets = (base.wallets + incoming.wallets).distinct()
-            val pageSide = when {
-                base.walletFromPage && base.wallets.isNotEmpty() -> base
-                incoming.walletFromPage && incoming.wallets.isNotEmpty() -> incoming
-                else -> null
-            }
-            if (distinctWallets.size > 1 && pageSide != null) {
-                // A wallet-screen wallet is proof: keep it, drop the log-inferred ones (and their thefts)
-                val keep = pageSide.wallets.first()
-                droppedWallets = distinctWallets.filter { it != keep }
-                logWalletConflict(canonicalIp, keep, droppedWallets.first(), "MergeRecords")
-                finalSource = TargetRecord.WALLET_FROM_PAGE
-                mutableListOf(keep)
-            } else if (distinctWallets.size > 1) {
-                // Only log-inferred wallets: keep them all as candidates
-                finalSource = TargetRecord.WALLET_FROM_LOG
-                distinctWallets.toMutableList()
-            } else {
-                finalSource = when {
-                    distinctWallets.isEmpty() -> null
-                    base.walletFromPage || incoming.walletFromPage -> TargetRecord.WALLET_FROM_PAGE
-                    else -> base.walletSource ?: incoming.walletSource
-                }
-                distinctWallets.toMutableList()
-            }
-        }
-
-        val mergedDownloads = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            unmasked.downloads.toMutableMap()
-        } else {
-            (base.downloads + incoming.downloads).toMutableMap()
-        }
-
-        val mergedThefts = if (ignoreMaskedData) {
-            val unmasked = if (!baseIsMasked) base else incoming
-            unmasked.walletThefts.toMutableMap()
-        } else {
-            (base.walletThefts.keys + incoming.walletThefts.keys).distinct().filter { it !in droppedWallets }.associateWith { wallet ->
-                val listA = base.walletThefts[wallet] ?: emptyList()
-                val listB = incoming.walletThefts[wallet] ?: emptyList()
-                (listA + listB).distinctBy { "${it.timestampMs}_${it.amount}" }.sortedBy { it.timestampMs }.toMutableList()
-            }.toMutableMap()
-        }
-
-        return TargetRecord(
-            ip = canonicalIp,
-            username = incoming.username ?: base.username,
-            clan = incoming.clan ?: base.clan,
-            level = incoming.level ?: base.level,
-            hardware = incoming.hardware ?: base.hardware,
-            firewall = incoming.firewall ?: base.firewall,
-            encryptor = incoming.encryptor ?: base.encryptor,
-            wallets = finalWallets,
-            downloads = mergedDownloads,
-            walletThefts = mergedThefts,
-            lastValidated = incoming.lastValidated ?: base.lastValidated,
-            walletSource = finalSource
-        )
-    }
-
-    /** Observer for wallet conflicts. Null (no-op) unless Raw Dump Mode is recording a scrape. */
-    @Volatile var walletConflictListener: ((ip: String, existingWallet: String, conflictingWallet: String, source: String) -> Unit)? = null
-
-    fun logWalletConflict(ip: String, wallet1: String, wallet2: String, source: String) {
-        walletConflictListener?.invoke(ip, wallet1, wallet2, source)
-        try {
-            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-            val nowStr = isoFormat.format(Date())
-            if (!::appContext.isInitialized) return
-            val exportFile = File(appContext.filesDir, "wallet_conflicts.jsonl")
-            val logLine = """{"timestamp":"$nowStr","ip":"$ip","existing_wallet":"$wallet1","conflicting_wallet":"$wallet2","source":"$source"}"""
-            exportFile.appendText("$logLine\n")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /** True if any two records share a username (ignoring case) or a wallet. O(n). */
-    fun hasSharedUsernameOrWallet(records: List<TargetRecord>): Boolean {
-        val usernames = HashSet<String>()
-        val wallets = HashSet<String>()
-        for (record in records) {
-            val user = record.username
-            if (user != null && !usernames.add(caseInsensitiveKey(user))) return true
-            for (wallet in record.wallets.toSet()) {
-                if (!wallets.add(wallet)) return true
-            }
-        }
-        return false
-    }
-
-    /** Matches String.equals(other, ignoreCase = true): compare each char's upper-then-lower case form. */
-    private fun caseInsensitiveKey(s: String): String {
-        val sb = StringBuilder(s.length)
-        for (c in s) sb.append(Character.toLowerCase(Character.toUpperCase(c)))
-        return sb.toString()
-    }
-
-    fun reconcileDatabase() {
-        val records = getAllRecords().toMutableList()
-        if (records.size < 2) return
-        // Fast path: the full pairwise merge below is O(n²) (~0.25 s on 4,300 records on a desktop, several
-        // times that on a phone) and almost always finds nothing. Only run it when two records share a
-        // username or a wallet. Same rules as below: usernames ignore case, wallets match exactly.
-        if (!hasSharedUsernameOrWallet(records)) return
-
-        var changed = false
-        var i = 0
-        while (i < records.size) {
-            var j = i + 1
-            while (j < records.size) {
-                val recA = records[i]
-                val recB = records[j]
-
-                val sharesUser = recA.username != null && recB.username != null &&
-                               recA.username.equals(recB.username, ignoreCase = true)
-                val sharesWallet = recA.wallets.any { recB.wallets.contains(it) }
-
-                if (sharesUser || sharesWallet) {
-                    val merged = mergeRecords(recA, recB)
-                    records[i] = merged
-                    records.removeAt(j)
-                    changed = true
-                    j--
-                }
-                j++
-            }
-            i++
-        }
-
-        if (changed) {
-            saveAllRecords(records)
-        }
-    }
+    fun getCurrentTimestamp(): String = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
 }

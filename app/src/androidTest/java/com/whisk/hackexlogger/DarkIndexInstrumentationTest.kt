@@ -19,14 +19,13 @@ class DarkIndexInstrumentationTest {
     /**
      * Gson builds TargetRecord by reflection, which behaves differently on ART than on the JVM
      * (no constructor runs, so missing lists come back null). This checks that a stored record with
-     * missing fields loads and is repaired by sanitizeRecord on a real device. Read-only: it never
+     * missing fields loads and is repaired by TargetStore.parse (TargetRecord.normalized) on a real device. Read-only: it never
      * touches the app's saved data.
      */
     @Test
     fun testStoredRecordLoadsOnDevice() {
         val json = """{"ip":"192.168.1.100","username":"TestUser","level":25,"wallets":["hx1234...5678"]}"""
-        val record = TargetRepository.gson.fromJson(json, TargetRecord::class.java)
-        TargetRepository.sanitizeRecord(record)
+        val record = TargetStore.parse("[$json]").records.single()
 
         assertEquals("192.168.1.100", record.ip)
         assertEquals(25, record.level)

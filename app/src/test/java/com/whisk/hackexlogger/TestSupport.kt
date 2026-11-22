@@ -6,7 +6,7 @@ import java.nio.file.Files
 /**
  * A minimal Android [android.content.Context] for JVM tests: a real files dir (a temp folder), a fixed
  * package name, and broadcasts that go nowhere. Lets code that writes to `filesDir`
- * (e.g. `TargetRepository.logWalletConflict`) run for real instead of failing silently.
+ * (e.g. `WalletConflictLog.log`) run for real instead of failing silently.
  */
 class TestContext(private val dir: File) : android.content.ContextWrapper(null) {
     init { dir.mkdirs() }
@@ -28,13 +28,14 @@ object TestEnv {
         val dir = Files.createTempDirectory("darkindex-test").toFile()
         dir.deleteOnExit()
         TargetRepository.prefs = FakeSharedPreferences()
-        synchronized(TargetRepository.cachedRecords) { TargetRepository.cachedRecords.clear() }
+        TargetRepository.resetForTests()
         TargetRepository.isInitialized = true
         TargetRepository.appContext = TestContext(dir)
         TargetRepository.backupDirProvider = { File(dir, "DarkIndex") }
-        TargetRepository.walletConflictListener = null
+        WalletConflictLog.listener = null
         // Run the background disk writes on the calling thread so tests are deterministic
         TargetRepository.persistExecutor = java.util.concurrent.Executor { it.run() }
+        TargetRepository.mirrorDelayMs = 0 // write the Downloads backup straight after each save
         DatabaseManager.activeDiscardSink = null
         PlayerProfileRepository.prefs = FakeSharedPreferences()
         SiphonTracker.currentTimeProvider = { System.currentTimeMillis() }

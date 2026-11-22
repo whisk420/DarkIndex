@@ -202,6 +202,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         showPermissionDialog(force = false)
+        showLoadReport()
+    }
+
+    /** Tells the developer once if loading the database had to set anything aside (nothing is deleted). */
+    private fun showLoadReport() {
+        val report = TargetRepository.loadReport ?: return
+        TargetRepository.loadReport = null
+        AlertDialog.Builder(this)
+            .setTitle("Database loaded with problems")
+            .setMessage("$report\n\nThe files are in the app's private storage; nothing was deleted.")
+            .setPositiveButton("OK", null)
+            .show()
     }
 
     override fun onResume() {
@@ -552,12 +564,10 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     override fun onStop() {
         super.onStop()
+        // Don't leave the Downloads backup waiting on its timer while the app is in the background
+        TargetRepository.flushBackupSoon()
     }
 
     /**

@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 
 /**
  * Game mechanics as pure functions, shared by the Knowledge Base calculators and the rest of the app so the two
- * can never disagree. Each function says where its numbers come from (see CLAUDE.md §2/§4 and
+ * can never disagree. Each function says where its numbers come from (see docs/game.md §1/§3 and
  * KnowledgeBaseContent). "Exact fit" means the formula reproduces every number the guide publishes.
  */
 object GameFormulas {

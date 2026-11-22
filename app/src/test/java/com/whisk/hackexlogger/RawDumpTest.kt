@@ -24,7 +24,7 @@ class RawDumpTest {
     fun setUp() {
         TestEnv.freshRepository()
         TargetRepository.prefs = FakeSharedPreferences()
-        TargetRepository.cachedRecords.clear()
+        TargetRepository.resetForTests()
         TargetRepository.isInitialized = true
         PlayerProfileRepository.prefs = FakeSharedPreferences()
         SiphonTracker.init()
@@ -35,7 +35,7 @@ class RawDumpTest {
     @After
     fun tearDown() {
         DatabaseManager.activeDiscardSink = null
-        TargetRepository.walletConflictListener = null
+        WalletConflictLog.listener = null
         tmpDir.deleteRecursively()
     }
 
@@ -106,7 +106,7 @@ class RawDumpTest {
     @Test
     fun dbStageReportsEmptyIpMaskedSoftwareConflictAndBadTimestamp() {
         // Wallet proven by the wallet screen, so a log line naming another wallet is a conflict
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxAAAA...1111"), walletSource = TargetRecord.WALLET_FROM_PAGE)))
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxAAAA...1111"), walletSource = WalletSource.PAGE)))
         val updates = listOf(
             ParsedUpdate(ip = "", time = "11-19 16:00", raw = "[11-19 16:00] Cracked password on ???"),
             ParsedUpdate(ip = "4.4.4.xxx", time = "11-19 16:01", software = Software("downloaded", 9, "Spam"), isOwnedSoftware = true, raw = "masked-dl"),
@@ -155,7 +155,7 @@ class RawDumpTest {
         assertEquals(listOf("1.2.3.4", "5.6.7.8"), effects.created.sorted()) // 1.2.3.4 from the failed crack
         // Hooks are removed after the session
         assertNull(DatabaseManager.activeDiscardSink)
-        assertNull(TargetRepository.walletConflictListener)
+        assertNull(WalletConflictLog.listener)
     }
 
     @Test

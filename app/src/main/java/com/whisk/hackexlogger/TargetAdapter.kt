@@ -383,7 +383,7 @@ class TargetAdapter(
                     val t20 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 20))
 
                     val netName = playerNetwork ?: "Unknown (scrape your Store)"
-                    val devName = target.hardware!!.substringBefore(" • ").trim()
+                    val devName = target.device ?: "?"
 
                     val capMessage = if (!levelKnown) {
                         "★ This target's level isn't known yet, so the Spam level that hits the 100/hr cap here can't be worked out.\n" +

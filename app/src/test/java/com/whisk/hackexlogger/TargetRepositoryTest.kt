@@ -39,7 +39,7 @@ class TargetRepositoryTest {
 
     @Test
     fun testEditTargetIpCollidesAndMerges() {
-        val targetA = TargetRecord(ip = "10.0.0.1", username = "UserA", wallets = mutableListOf("hx111"))
+        var targetA = TargetRecord(ip = "10.0.0.1", username = "UserA", wallets = mutableListOf("hx111"))
         val targetB = TargetRecord(ip = "10.0.0.2", username = "UserB", wallets = mutableListOf("hx222"))
         TargetRepository.saveAllRecords(listOf(targetA, targetB))
 
@@ -56,9 +56,9 @@ class TargetRepositoryTest {
 
     @Test
     fun testEditTargetIpMergeKeepsTheProvenWallet() {
-        val targetA = TargetRecord(ip = "10.0.0.1", username = "UserA", wallets = mutableListOf("hx111"))
-        val targetB = TargetRecord(ip = "10.0.0.2", username = "UserB", wallets = mutableListOf("hx222"), walletSource = TargetRecord.WALLET_FROM_PAGE)
-        targetA.addTheftEvent("hx111", 1000L, 5)
+        var targetA = TargetRecord(ip = "10.0.0.1", username = "UserA", wallets = mutableListOf("hx111"))
+        val targetB = TargetRecord(ip = "10.0.0.2", username = "UserB", wallets = mutableListOf("hx222"), walletSource = WalletSource.PAGE)
+        targetA = targetA.withTheftEvent("hx111", 1000L, 5)
         TargetRepository.saveAllRecords(listOf(targetA, targetB))
 
         TargetRepository.editTargetIp("10.0.0.2", "10.0.0.1")
@@ -94,7 +94,7 @@ class TargetRepositoryTest {
 
     @Test
     fun testDeleteTargetRemovesRecord() {
-        val target = TargetRecord(ip = "10.0.0.50", username = "ToDelete")
+        var target = TargetRecord(ip = "10.0.0.50", username = "ToDelete")
         TargetRepository.saveAllRecords(listOf(target))
 
         assertEquals(1, TargetRepository.getAllRecords().size)
@@ -106,20 +106,19 @@ class TargetRepositoryTest {
 
     @Test
     fun testRunDatabaseMaintenanceDoesNotPurgeThefts() {
-        val target = TargetRecord(ip = "10.0.0.99", username = "TheftTarget")
+        var target = TargetRecord(ip = "10.0.0.99", username = "TheftTarget")
 
         // Add thefts: 1st hack at t=0, 2nd hack at t=30h (gap > 1h)
         val t0 = 1000000L
         val t1 = t0 + (30 * 3600 * 1000L) // 30 hours later
-        target.addTheftEvent("hxWallet1", t0, 500)
-        target.addTheftEvent("hxWallet1", t1, 1000)
-
+        target = target.withTheftEvent("hxWallet1", t0, 500)
+        target = target.withTheftEvent("hxWallet1", t1, 1000)
         TargetRepository.saveAllRecords(listOf(target))
 
-        TargetRepository.runDatabaseMaintenance()
+        DatabaseMaintenance.runDatabaseMaintenance()
 
         val updatedRecords = TargetRepository.getAllRecords()
-        val updatedTarget = updatedRecords.first { it.ip == "10.0.0.99" }
+        var updatedTarget = updatedRecords.first { it.ip == "10.0.0.99" }
         val thefts = updatedTarget.walletThefts["hxWallet1"]
         assertNotNull(thefts)
         // Verify no theft event was purged by maintenance!
@@ -128,36 +127,35 @@ class TargetRepositoryTest {
 
     @Test
     fun testPurgeOldTheftEventsSafetyShield() {
-        val target = TargetRecord(ip = "10.0.0.100", username = "OldTarget")
+        var target = TargetRecord(ip = "10.0.0.100", username = "OldTarget")
 
         val cutoff = System.currentTimeMillis() - 30 * 24 * 3600000L
         
         // Add old thefts from 40 days ago that form a reliable cluster (>2 events, gaps < 1h)
         val oldTs1 = cutoff - 10 * 24 * 3600000L
         val oldTs2 = oldTs1 + 1800000L // 30 mins later
-        target.addTheftEvent("hxWallet2", oldTs1, 500)
-        target.addTheftEvent("hxWallet2", oldTs2, 1000)
-        
+        target = target.withTheftEvent("hxWallet2", oldTs1, 500)
+        target = target.withTheftEvent("hxWallet2", oldTs2, 1000)
         TargetRepository.saveAllRecords(listOf(target))
         
         // Even though these events are older than 30 days, they form the ONLY reliable cluster for this target.
         // Therefore, purgeOldTheftEvents() should PRESERVE them.
-        val purgedCount = TargetRepository.purgeOldTheftEvents()
+        val purgedCount = DatabaseMaintenance.purgeOldTheftEvents()
         assertEquals(0, purgedCount)
         
         val updatedRecords = TargetRepository.getAllRecords()
-        val updatedTarget = updatedRecords.first { it.ip == "10.0.0.100" }
+        var updatedTarget = updatedRecords.first { it.ip == "10.0.0.100" }
         assertEquals(2, updatedTarget.walletThefts["hxWallet2"]?.size)
         
         // Now add a recent reliable cluster!
         val newTs1 = System.currentTimeMillis() - 2 * 24 * 3600000L
         val newTs2 = newTs1 + 1800000L // 30 mins later
-        updatedTarget.addTheftEvent("hxWallet2", newTs1, 500)
-        updatedTarget.addTheftEvent("hxWallet2", newTs2, 1000)
+        updatedTarget = updatedTarget.withTheftEvent("hxWallet2", newTs1, 500)
+        updatedTarget = updatedTarget.withTheftEvent("hxWallet2", newTs2, 1000)
         TargetRepository.saveAllRecords(listOf(updatedTarget))
         
         // Because there is now a new reliable cluster, the old one can safely be purged!
-        val purgedCount2 = TargetRepository.purgeOldTheftEvents()
+        val purgedCount2 = DatabaseMaintenance.purgeOldTheftEvents()
         assertEquals(2, purgedCount2)
         
         val finalRecords = TargetRepository.getAllRecords()

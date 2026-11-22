@@ -46,7 +46,7 @@ class ConsoleBundleTest {
         val targets = bundle.targets ?: emptyArray()
         assertEquals(1, targets.size)
 
-        val target = targets[0]
+        var target = targets[0]
         assertEquals("10.20.248.84", target.ip)
         assertEquals("Pizaaparty", target.username)
         assertEquals(17, target.level)
@@ -62,13 +62,13 @@ class ConsoleBundleTest {
     @Test(expected = IllegalArgumentException::class)
     fun testImportRejectsWrongVersion() {
         TestEnv.freshRepository()
-        TargetRepository.importDataBundle("""{"format": "target-intelligence-console", "version": 2}""")
+        DatabaseBackup.importDataBundle("""{"format": "target-intelligence-console", "version": 2}""")
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun testImportRejectsMalformedJson() {
         TestEnv.freshRepository()
-        TargetRepository.importDataBundle("{ not json")
+        DatabaseBackup.importDataBundle("{ not json")
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -82,23 +82,23 @@ class ConsoleBundleTest {
 
         // Was tautological (the test threw the exception itself). Now the real importer must reject it.
         TestEnv.freshRepository()
-        TargetRepository.importDataBundle(invalidJson)
+        DatabaseBackup.importDataBundle(invalidJson)
     }
 
     @Test
     fun testExportImportRoundTripPreservesThefts() {
         TestEnv.freshRepository()
 
-        val target = TargetRecord(ip = "1.2.3.4", username = "Thief")
-        target.addTheftEvent("hx999", 1000L, 500)
-        target.addTheftEvent("hx999", 2000L, 1000)
+        var target = TargetRecord(ip = "1.2.3.4", username = "Thief")
+        target = target.withTheftEvent("hx999", 1000L, 500)
+        target = target.withTheftEvent("hx999", 2000L, 1000)
         TargetRepository.saveAllRecords(listOf(target))
 
-        val exportJson = TargetRepository.exportDataBundle()
+        val exportJson = DatabaseBackup.exportDataBundle()
         
         // Clear and re-import
-        TargetRepository.cachedRecords.clear()
-        val importResult = TargetRepository.importDataBundle(exportJson)
+        TargetRepository.resetForTests()
+        val importResult = DatabaseBackup.importDataBundle(exportJson)
         
         assertEquals(1, importResult.targetCount)
         val records = TargetRepository.getAllRecords()

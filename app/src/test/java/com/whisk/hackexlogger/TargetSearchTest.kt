@@ -72,7 +72,7 @@ class TargetSearchTest {
         assertTrue(TargetSearch.parse("nova 3") is TargetSearch.Query.Text)
         assertTrue(TargetSearch.parse("12.34") is TargetSearch.Query.Text)
         assertTrue(TargetSearch.parse("a 5") is TargetSearch.Query.Text)
-        val named = target("9.9.9.9").apply { username = "spammer" }
+        val named = target("9.9.9.9").copy(username = "spammer")
         assertEquals(listOf("9.9.9.9"), TargetSearch.search(listOf(named), "spammer").map { it.ip })
     }
 }
