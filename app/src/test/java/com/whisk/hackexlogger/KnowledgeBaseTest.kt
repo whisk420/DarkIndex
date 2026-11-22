@@ -49,6 +49,40 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun crewServerMatchesRawDump25() {
+        // Crew server screen 2026-11-22: next-level prices shown as "829.8K / 1.1M" etc., upkeep 19,325/day
+        assertEquals(1_120_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.CPU, 4))   // "1.1M"
+        assertEquals(1_120_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.NIC, 4))   // "1.1M"
+        assertEquals(1_920_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.RAM, 4))   // "1.9M"
+        assertEquals(405_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.UPLINK, 3))  // "405K"
+        val upkeep = GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.CPU, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.NIC, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.RAM, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.UPLINK, 2)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.STORAGE, 5)!!
+        assertEquals(19_325L, upkeep) // "Upkeep 19,325/day (805/hr)"
+    }
+
+    @Test
+    fun crewServerLogMatchesRawDump27() {
+        // Every upgrade and surge in a crew's full server log (2026-11-22). Prices shown rounded down ("−1M" = 1.08M).
+        val P = GameFormulas.CrewPart.values().associateBy { it.displayName }
+        val upgrades = listOf("Storage" to 1 to 60_000L, "Storage" to 2 to 240_000L, "Storage" to 3 to 540_000L,
+            "Storage" to 4 to 960_000L, "Storage" to 5 to 1_500_000L, "RAM" to 1 to 120_000L, "RAM" to 2 to 480_000L,
+            "CPU" to 1 to 70_000L, "NIC" to 1 to 70_000L, "Uplink" to 1 to 45_000L, "CPU" to 2 to 280_000L,
+            "NIC" to 2 to 280_000L, "Uplink" to 2 to 180_000L, "CPU" to 3 to 630_000L, "NIC" to 3 to 630_000L)
+        upgrades.forEach { (pl, price) -> assertEquals("$pl", price, GameFormulas.crewPartUpgradePrice(P.getValue(pl.first), pl.second)) }
+        // (part, level at the time, hours) → price
+        val surges = listOf(Triple("CPU", 1, 24) to 16_380L, Triple("Uplink", 1, 24) to 10_530L, Triple("CPU", 2, 24) to 31_500L,
+            Triple("Uplink", 2, 24) to 20_250L, Triple("CPU", 2, 12) to 16_625L, Triple("CPU", 3, 24) to 51_660L, Triple("NIC", 3, 24) to 51_660L)
+        surges.forEach { (s, price) -> assertEquals("$s", price, GameFormulas.crewSurgePrice(P.getValue(s.first), s.second, s.third)) }
+        assertEquals(null, GameFormulas.crewSurgePrice(GameFormulas.CrewPart.STORAGE, 5, 24))
+        // The whole log balances: contributions 8,644,913 − (upgrades + surges + upkeep) = 829,823 ("829.8K" on screen)
+        val upgradeTotal = upgrades.sumOf { it.second } + GameFormulas.crewPartUpgradePrice(P.getValue("RAM"), 3)!!
+        assertEquals(829_823L, 8_644_913L - upgradeTotal - 510_005L - (125_207L + 14_878L))
+    }
+
+    @Test
     fun storePricesMatchVerifiedNumbers() {
         assertEquals(35_596, GameFormulas.storePrice(GameFormulas.App.FIREWALL, 21))
         assertEquals(41_877, GameFormulas.storePrice(GameFormulas.App.BYPASSER, 21))

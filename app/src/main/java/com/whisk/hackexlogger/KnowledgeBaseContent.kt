@@ -11,7 +11,7 @@ import java.util.Locale
 /**
  * Knowledge Base content. Sources: hackex.net/guide (read in full 2026-11-21), developer answers and verified
  * measurements (CLAUDE.md), and exact-fit formulas ([GameFormulas]). Open questions carry the measurement ids
- * (Q-01…) listed in docs/knowledge-base-prep.md. Keep facts in sync with GameFormulas: tables below are generated from it
+ * (Q-xx) listed in docs/knowledge-base-prep.md. Keep facts in sync with GameFormulas: tables below are generated from it
  * where a formula exists.
  */
 object KnowledgeBaseContent {
@@ -29,6 +29,12 @@ object KnowledgeBaseContent {
         KbBlock.Table(header, rows, source, caption)
 
     private fun n(v: Int) = String.format(Locale.US, "%,d", v)
+    /** 45000 → "45K", 1120000 → "1.12M" (exact, trailing zeros dropped). */
+    private fun compact(v: Long): String = when {
+        v >= 1_000_000 -> java.math.BigDecimal(v).divide(java.math.BigDecimal(1_000_000)).stripTrailingZeros().toPlainString() + "M"
+        v >= 1_000 -> java.math.BigDecimal(v).divide(java.math.BigDecimal(1_000)).stripTrailingZeros().toPlainString() + "K"
+        else -> v.toString()
+    }
 
     val topics: List<KbTopic> by lazy {
         listOf(
@@ -108,7 +114,6 @@ object KnowledgeBaseContent {
                 },
                 "Crypto/hr for a fresh upload. The rate is fixed at upload. Note the low-victim columns fall at the bottom."
             ),
-            warn("Still an estimate: Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10). The +4% bonus is measured to within ±0.25%. Q-01."),
             tip("Upload Spam Lv 16 on victims Lv 28 and up: it pays 99/hr and uploads about 13% faster than Lv 17. Lv ${GameFormulas.spamBestCap().first} is the lowest level that reaches the full 100/hr (on victims Lv ${GameFormulas.spamBestCap().second}+), for 1 Crypto/hr more. Your own level doesn't matter."),
             tip("On low victims, don't upload your highest Spam: it earns less and takes longer. A Lv 7 victim pays most with Lv ${GameFormulas.spamBestLevel(7, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(7, 30), 7)}/hr); a Lv 2 victim with Lv ${GameFormulas.spamBestLevel(2, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(2, 30), 2)}/hr). The card's ⏱ Spam chip and the calculator below show the best level for each target."),
             calc(KbCalculators.SPAM),
@@ -139,9 +144,7 @@ object KnowledgeBaseContent {
             h("Fees"),
             p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
             unknowns(
-                "Q-01" to "Income when the Spam is more than 13 levels above the victim",
-                "Q-02" to "Does Scythe's half decay mean the 10% floor arrives at day ~179?",
-                "Q-03" to "Is the fee on collection exactly 0.5% per Spam?",
+                "Q-01" to "Is the fee on collection exactly 0.5% per Spam?",
             ),
         ),
         related = listOf("botnet", "transfers", "virusRules", "siphon")
@@ -207,20 +210,20 @@ object KnowledgeBaseContent {
             ),
             tip("Lv 20 skims about 2.6× what Lv 6 does (5.75% vs 2.25%) but takes much longer to upload. Weigh that against how long the victim is likely to stay infected."),
             h("What gets skimmed"),
-            p("Theft proceeds (Crypto the victim steals from others' hot wallets) and their Spam collection payouts: the guide's Viruses section says these are the only two flows.", GUIDE),
+            p("Theft proceeds: Crypto the victim steals from other players' hot wallets. Spam collections don't seem to be skimmed: no siphon loss shows up when Spam income comes in. Still to be re-checked with a fresh siphon on you.", CONFIRMED),
             bullets(
                 GUIDE,
                 "Never skimmed (lands straight in cold storage): subscription daily Crypto, Black Market Crypto Stash, login-streak Crypto (days 3 and 5), daily mission Crypto, Watch & Earn Crypto, and the victim's own hot → cold transfers.",
                 "Outbound spending (Store, OC packs, proxy activations) doesn't trigger it either.",
             ),
-            warn("The guide's Software section contradicts this, listing incoming transfers, mission and login rewards too. Treat theft + Spam as confirmed and the rest as doubtful (Q-04)."),
+            warn("The guide contradicts itself here: its Viruses section adds Spam collections, its Software section adds incoming transfers, mission and login rewards too. Play suggests theft only (Q-02)."),
             h("Strategy"),
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
             p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately, with all its info: the row and its siphoned total are gone, and the game keeps no history of it. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
             unknowns(
-                "Q-04" to "Exactly which inflows are skimmed",
+                "Q-02" to "Is theft the only flow skimmed? (Spam collections look untouched)",
             ),
         ),
         related = listOf("virusRules", "spam", "antivirus", "darkindex")
@@ -290,6 +293,7 @@ object KnowledgeBaseContent {
                 f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", MEASURED),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
                 f("Concurrency", "+75% per extra process", GUIDE),
+                f("Shared slowdown", "Uploads and downloads slow each other down. Bypasses and cracks don't affect them", CONFIRMED),
                 f("Virus penalty", "−1% speed per virus on your device (max −40%)", GUIDE),
                 f("Harvest Node network", "Uploads −50%", GUIDE),
                 f("Null Route network", "Downloads −40%", GUIDE),
@@ -306,8 +310,7 @@ object KnowledgeBaseContent {
             calc(KbCalculators.UPLOAD),
             tip("Upload the lowest Spam level that caps 100/hr on that victim: it can be hours faster than your max level on a Nova Ultra."),
             unknowns(
-                "Q-05" to "Download time by software level and network",
-                "Q-06" to "Do uploads/downloads share the +75% pool with bypasses and cracks?",
+                "Q-03" to "Download time by software level and network",
             ),
         ),
         related = listOf("hardware", "spam", "processes")
@@ -318,9 +321,9 @@ object KnowledgeBaseContent {
         "Your Bypasser against their Firewall, your Cracker against their Encryptor. Success odds by level gap, what speeds it up, and what invalidates your access.",
         listOf(
             h("Success odds"),
-            p("Not published by the guide. This table comes from earlier empirical logs and is what the target cards use.", EMPIRICAL),
+            p("Not published by the guide. Worked out from our own logged attempts; the target cards use it.", MEASURED),
             table(
-                EMPIRICAL, listOf("Your level − theirs", "Success"),
+                MEASURED, listOf("Your level − theirs", "Success"),
                 listOf(6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4).map { d ->
                     listOf((if (d > 0) "+$d" else "$d") + (if (d == 6) " or more" else if (d == -4) " or less" else ""), "${GameFormulas.hackSuccessChance(d, 0)}%")
                 }
@@ -332,6 +335,7 @@ object KnowledgeBaseContent {
                 f("Apex device (Overreach)", "Your Bypasser and Cracker +3", GUIDE),
                 f("Cipher device (Hardened Core)", "Their FW and ENC +3", GUIDE),
                 f("Bonus in brackets", "\"Using Bypasser Lv.20 (+3)\" on the bypass screen", CONFIRMED),
+                f("Stacking", "Modifiers just add up, in any order: Apex +3 with a Rootkit −3 on them is an effective +6", CONFIRMED),
             ),
             h("Duration"),
             facts(
@@ -352,10 +356,8 @@ object KnowledgeBaseContent {
             h("Rep"),
             p("Successful bypass/crack rep scales with their defence level and the software gap, up to ~105 on hard targets, once per victim per process type per 24 h. Zero rep at a gap of +10 or more.", GUIDE),
             unknowns(
-                "Q-07" to "Verify the success table (about 20 attempts per gap)",
-                "Q-08" to "Base bypass/crack duration by level and gap",
-                "Q-09" to "Order of Rootkit / Apex / Cipher modifiers",
-                "Q-10" to "Hack rep formula",
+                "Q-04" to "Base bypass/crack duration by level and gap",
+                "Q-05" to "Hack rep formula",
             ),
         ),
         related = listOf("rootkit", "consumables", "processes", "reputation")
@@ -378,6 +380,7 @@ object KnowledgeBaseContent {
             facts(
                 f("Statuses", "Pending, Completed, Failed, Invalidated, EMP Killed", GUIDE),
                 f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", GUIDE),
+                f("Two pools", "Network (uploads, downloads) and processor (bypasses, cracks) slow down only their own kind. A bypass doesn't slow an upload", CONFIRMED),
                 f("Overclock", "Skips 90 s each", GUIDE),
                 f("Ads", "Up to 4 per process: −10%, −9%, −8%, −7% (34% total)", GUIDE),
                 f("Running limit", "500 in progress", GUIDE),
@@ -395,7 +398,6 @@ object KnowledgeBaseContent {
                 "Tap a process's target icon to pin it to the Targets filter.",
             ),
             p("Processes are also a scrape source for DarkIndex: it creates bare records for new IPs it sees there.", CONFIRMED),
-            unknowns("Q-06" to "Whether network and hack processes share one pool"),
         ),
         related = listOf("hacking", "transfers", "antivirus")
     )
@@ -426,11 +428,11 @@ object KnowledgeBaseContent {
                 },
                 "Scans share the hack pool with bypasses and cracks"
             ),
-            warn("The guide's text says ~55 min at device Lv 10 and ~48 min at Lv 12, its table says 53 and 45. The table is used here (Q-11)."),
+            warn("The guide's text says ~55 min at device Lv 10 and ~48 min at Lv 12, its table says 53 and 45. The table is used here (Q-06)."),
             calc(KbCalculators.ANTIVIRUS),
             tip("AV level decides removal, device level decides speed. Scan when you're not hacking to avoid the +75% pool penalty."),
             tip("Behind on AV? A −2 AV still removes 18% per virus per scan: repeated scans clear infections over time."),
-            unknowns("Q-11" to "Scan time at device Lv 8, 10, 12"),
+            unknowns("Q-06" to "Scan time at device Lv 8, 10, 12"),
         ),
         related = listOf("virusRules", "hardware", "processes")
     )
@@ -527,7 +529,7 @@ object KnowledgeBaseContent {
             ),
             tip("Keep a Log Lock (12 Credits) running: an attacker who bypassed you can edit your log and scrub a [TRACED] IP."),
             tip("Returning to the same victim many times gives their Trace many rolls. Get in, do everything, get out."),
-            unknowns("Q-12" to "Trace vs Proxy unmask chance by level gap"),
+            unknowns("Q-07" to "Trace vs Proxy unmask chance by level gap"),
         ),
         related = listOf("logs", "scanning", "crews", "reboot")
     )
@@ -551,7 +553,7 @@ object KnowledgeBaseContent {
             table(
                 GUIDE, listOf("Jump", "Fee"),
                 listOf(1, 2, 3, 5, 8, 10, 15, 20, 25).map { j -> listOf("+$j", String.format(Locale.US, "%.1f%%", GameFormulas.keygenFeeRatio(j)!! * 100)) },
-                "Exact interpolation and rounding are unconfirmed (Q-13)"
+                "Exact interpolation and rounding are unconfirmed (Q-08)"
             ),
             tip("A single big jump is far cheaper than stepping: each step pays 15% of its own level's price. Download the highest copy you can find and key it directly."),
             h("Store prices"),
@@ -563,19 +565,18 @@ object KnowledgeBaseContent {
                         listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
                 }
             ),
-            warn("Below about Lv 15 the curve drifts from the guide (guide Keygen Lv 5 = 4,862 and Lv 10 = 11,972; curve 4,568 and 11,938). Q-14."),
+            warn("Below about Lv 15 the curve drifts from the guide (guide Keygen Lv 5 = 4,862 and Lv 10 = 11,972; curve 4,568 and 11,938). Q-09."),
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
-                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", EMPIRICAL, "One confirmed data point: Keygen Lv 26 (41,459) → +7,045 XP"),
-                f("Device upgrades", "0.25 XP per crypto (best ratio)", GUIDE),
-                f("Older hardware / network", "0.20 XP per crypto", EMPIRICAL),
+                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", MEASURED, "e.g. Keygen Lv 26 (41,459) → +7,045 XP"),
+                f("Device upgrades", "0.25 XP per crypto (best ratio)", MEASURED),
+                f("Older hardware / network", "0.20 XP per crypto", MEASURED),
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking. Upgrade what you use."),
             unknowns(
-                "Q-13" to "Exact key fee by jump (Apps page LOCKED rows)",
-                "Q-14" to "Store prices below Lv 15",
-                "Q-15" to "XP per crypto for each purchase type",
+                "Q-08" to "Exact key fee by jump (Apps page LOCKED rows)",
+                "Q-09" to "Store prices below Lv 15",
             ),
         ),
         related = listOf("software", "leveling")
@@ -643,11 +644,15 @@ object KnowledgeBaseContent {
                 f("Monthly cap", "750 Credits, resets on the 1st (UTC)", GUIDE),
                 f("Drains", "Hot wallet first, then cold storage", GUIDE),
             ),
+            facts(
+                f("Per steal", "No minimum or maximum: take any amount, up to the whole hot wallet", CONFIRMED),
+                f("Per day", "There seems to be a daily maximum; the amount is unknown", UNKNOWN),
+            ),
             tip("Stash right after every steal: tap the Wallet: badge at the top of any page, then transfer to cold."),
             tip("Your theft log shows the thief's wallet, not their IP. Match timestamps against \"Device accessed from\" lines to find them."),
             unknowns(
-                "Q-16" to "Cold storage cap at every level",
-                "Q-17" to "Maximum or minimum per steal",
+                "Q-10" to "Cold storage cap at every level",
+                "Q-11" to "The daily steal maximum",
             ),
         ),
         related = listOf("logs", "siphon", "darkindex")
@@ -712,7 +717,7 @@ object KnowledgeBaseContent {
             ),
             p("The list starts with the target count (\"12 targets\") and each row shows the IP and Firewall, e.g. \"1.2.3.4 FW Lv.23 >\"; on an Apex reboot it adds \"ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
-            unknowns("Q-18" to "Exact level window of a scan at your level"),
+            unknowns("Q-12" to "Exact level window of a scan at your level"),
         ),
         related = listOf("leveling", "proxy", "spam")
     )
@@ -762,7 +767,7 @@ object KnowledgeBaseContent {
                 f("Floor", "Never below 50% of your peak", GUIDE),
                 f("AV / Purge", "Restores 90%; 10% scar", GUIDE),
             ),
-            unknowns("Q-10" to "Hack rep formula (rep before/after a bypass and crack with both levels)"),
+            unknowns("Q-05" to "Hack rep formula (rep before/after a bypass and crack with both levels)"),
         ),
         related = listOf("leveling", "hacking", "virusRules")
     )
@@ -773,8 +778,8 @@ object KnowledgeBaseContent {
         listOf(
             h("XP sources"),
             facts(
-                f("Software (Store or Keygen)", "≈0.17 XP per Store crypto", EMPIRICAL),
-                f("Device", "0.25 XP per crypto", GUIDE),
+                f("Software (Store or Keygen)", "≈0.17 XP per Store crypto", MEASURED),
+                f("Device", "0.25 XP per crypto", MEASURED),
                 f("Missions", "100 / 150 / 200 XP", GUIDE),
                 f("Login streak day 1", "100 XP (200 with a subscription)", GUIDE),
             ),
@@ -801,8 +806,7 @@ object KnowledgeBaseContent {
             ),
             tip("Spend on what you use (Bypasser, Cracker, Spam, Keygen, device). Upgrading unused apps for XP only drags your level ahead of your offence."),
             unknowns(
-                "Q-19" to "XP to next for every level",
-                "Q-15" to "XP per crypto by purchase type",
+                "Q-13" to "XP to next for every level",
             ),
         ),
         related = listOf("keygen", "reputation", "scanning")
@@ -849,7 +853,7 @@ object KnowledgeBaseContent {
                 f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", GUIDE),
                 f("Overclocks", "5 × 4 per day = 20", GUIDE),
             ),
-            unknowns("Q-20" to "Mission spawn rates (they don't add to 100%, so probably separate rolls)"),
+            unknowns("Q-14" to "Mission spawn rates (they don't add to 100%, so probably separate rolls)"),
         ),
         related = listOf("leveling", "premium")
     )
@@ -913,25 +917,57 @@ object KnowledgeBaseContent {
             p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", CONFIRMED),
             h("Crew server"),
             table(
-                GUIDE, listOf("Part", "Per level", "Max (Lv 5)", "Upkeep/day at Lv 1…5"),
+                CONFIRMED, listOf("Part", "Per level", "Max (Lv 5)"),
                 listOf(
-                    listOf("CPU", "+3% bypass & crack speed", "+15%", "350 / 1,750 / 4,900 / 10,500 / 19,250"),
-                    listOf("NIC", "+3% download & upload speed", "+15%", "350 / 1,750 / 4,900 / 10,500 / 19,250"),
-                    listOf("RAM", "+1 Spam slot", "+5", "600 / 3,000 / 8,400 / 18,000 / 33,000"),
-                    listOf("Uplink", "+1 scan target", "15 targets", "225 / 1,125 / 3,150 / 6,750 / 12,375"),
-                    listOf("Storage", "+2 member slots", "+10 (40)", "none"),
-                )
+                    listOf("CPU", "+3% bypass & crack speed", "+15%"),
+                    listOf("NIC", "+3% download & upload speed", "+15%"),
+                    listOf("RAM", "+1 botnet slot", "+5"),
+                    listOf("Uplink", "+1 scan target (10 → 15) and reaches higher levels", "15 targets"),
+                    listOf("Storage", "+2 member slots, no upkeep", "+10 (40)"),
+                ),
+                "Seen on a Lv 16 server: CPU, NIC, RAM at L3 (+9%, +9%, +3 slots), Uplink L2 (12 targets), Storage L5 (40 members)."
+            ),
+            h("Upgrade price and upkeep"),
+            table(
+                MEASURED, listOf("Part", "Price to Lv 1 / 2 / 3 / 4 / 5", "Upkeep/day at Lv 1 / 2 / 3 / 4 / 5"),
+                GameFormulas.CrewPart.values().map { part ->
+                    listOf(
+                        part.displayName,
+                        (1..5).joinToString(" / ") { compact(GameFormulas.crewPartUpgradePrice(part, it)!!) },
+                        if (part.hasUpkeep) (1..5).joinToString(" / ") { n(GameFormulas.crewPartUpkeep(part, it)!!.toInt()) } else "none"
+                    )
+                },
+                "Price to reach level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K, Storage 60K). Upkeep = 0.5% of everything spent on the part per day. Checked against a crew's full server log: every upgrade matches, and the log balances to the treasury."
+            ),
+            facts(
+                f("Upkeep billing", "Charged about once a day for the hours since the last charge, so single charges vary", MEASURED),
+                f("Price display", "Rounded down to one decimal: RAM Lv 3 (1.08M) shows as \"1M\"", MEASURED),
+            ),
+            h("Surges"),
+            table(
+                MEASURED, listOf("Part at", "6 h", "12 h", "24 h"),
+                listOf(GameFormulas.CrewPart.CPU, GameFormulas.CrewPart.UPLINK).flatMap { part ->
+                    (1..5).map { lvl ->
+                        listOf("${if (part == GameFormulas.CrewPart.CPU) "CPU/NIC" else part.displayName} L$lvl") +
+                            listOf(6, 12, 24).map { n(GameFormulas.crewSurgePrice(part, lvl, it)!!.toInt()) }
+                    }
+                },
+                "Price = the next two levels' price × hours ÷ 1,200, minus 5% for 12 h or 10% for 24 h. Matches all 19 surges in the log; 6 h is full price (confirmed)."
+            ),
+            facts(
+                f("Extending", "Costs the same as starting a new surge", MEASURED),
+                f("Ending early", "Allowed; no refund appears in the log", MEASURED),
             ),
             bullets(
                 GUIDE,
                 "Server level = sum of the 5 parts (max 25).",
-                "Upkeep is 0.5% of a powered part's value per day. Leaders can switch parts off.",
-                "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000), after 24 h in the crew.",
+                "Leaders can switch parts off; an unpowered part costs no upkeep.",
+                "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000). Members top up to exactly 50,000 a day (confirmed in the log).",
+                "New members wait 24 h (\"24H TENURE GATE\") before they get buffs (confirmed in the log).",
                 "Treasury at 0: server offline, buffs pause, RAM Spam pauses; Storage keeps working and levels are never lost.",
                 "Surge: CPU, NIC or Uplink +2 levels for 6/12/24 h (up to +21% or 17 targets), paid up front.",
                 "Every contribution, upgrade and upkeep day shows in the Server Log.",
             ),
-            unknowns("Q-21" to "Part and surge prices"),
         ),
         related = listOf("rootkit", "botnet", "scanning")
     )

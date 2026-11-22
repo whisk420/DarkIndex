@@ -32,7 +32,7 @@ object GameFormulas {
      * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
      * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
      *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
-     * Unmeasured (Q-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
+     * Unmeasured: Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
 
     /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */
@@ -188,7 +188,7 @@ object GameFormulas {
     fun keygenFee(app: App, fromLevel: Int, toLevel: Int): Int? {
         val ratio = keygenFeeRatio(toLevel - fromLevel) ?: return null
         val price = storePrice(app, toLevel) ?: return null
-        return (price * ratio).roundToInt() // rounding unconfirmed (Q-13)
+        return (price * ratio).roundToInt() // rounding unconfirmed (Q-08)
     }
 
     /** XP per Store crypto for software (GEMINI empirical 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
@@ -324,12 +324,50 @@ object GameFormulas {
         else -> (10 - softwareGap) / 5.0
     }
 
-    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-19). */
+    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-13). */
     val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
-    /** Cold storage cap, known points only (guide). Q-16. */
+    /** Cold storage cap, known points only (guide). Q-10. */
     val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */
     const val CRYPTO_PER_CREDIT = 250
+
+    // ── Crew server ─────────────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Crew-server parts, all measured from a crew's complete server log (Raw Dumps #25 and #27; the log's
+     * contributions minus its spending equal the treasury balance to the crypto):
+     * - Upgrading a part to level k costs `base × k²` (every upgrade in the log, L1–L5).
+     * - Upkeep is 0.5% of everything spent on the part per day (the guide's table; 19,325/day on screen). It is
+     *   charged about once a day for the time since the last charge. Storage has no upkeep.
+     * - Surge (+2 levels): see [crewSurgePrice].
+     */
+    enum class CrewPart(val displayName: String, val base: Int, val hasUpkeep: Boolean = true, val surgeable: Boolean = true) {
+        CPU("CPU", 70_000), NIC("NIC", 70_000), RAM("RAM", 120_000, surgeable = false), UPLINK("Uplink", 45_000),
+        STORAGE("Storage", 60_000, hasUpkeep = false, surgeable = false)
+    }
+
+    /** Price to upgrade [part] from level − 1 to [level] (1–5). */
+    fun crewPartUpgradePrice(part: CrewPart, level: Int): Long? =
+        if (level in 1..5) part.base.toLong() * level * level else null
+
+    /** Daily upkeep of [part] at [level] while powered: 0.5% of the total spent on it. 0 at level 0. */
+    fun crewPartUpkeep(part: CrewPart, level: Int): Long? {
+        if (level !in 0..5) return null
+        if (!part.hasUpkeep) return 0
+        return part.base.toLong() * level * (level + 1) * (2 * level + 1) / 6 / 200
+    }
+
+    /**
+     * Price of a surge (+2 levels) on [part] at [level] for [hours] (6/12/24): the next two levels' price
+     * × hours/1200, with 5% off for 12 h and 10% off for 24 h. Matches all 19 surges in the log (L1–L3, 12 h and 24 h;
+     * extending costs the same as starting). 6 h is full price (developer-confirmed). Null if the part can't surge.
+     */
+    fun crewSurgePrice(part: CrewPart, level: Int, hours: Int): Long? {
+        if (!part.surgeable || level !in 0..5) return null
+        val discount = when (hours) { 6 -> 0.0; 12 -> 0.05; 24 -> 0.10; else -> return null }
+        val nextTwo = part.base.toLong() * ((level + 1) * (level + 1) + (level + 2) * (level + 2))
+        return Math.round(nextTwo * hours / 1200.0 * (1 - discount))
+    }
 }

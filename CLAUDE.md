@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 192 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 195 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -72,7 +72,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (§5.7). Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-02) |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
@@ -88,7 +88,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - **Upload defence (developer-confirmed, rigorous):** Raider, Raider II and Raider III upload identically, which gives the 10 defence tiers 0–9 used in code. The guide does not document upload defence.
 - **Network** affects your downloads and uploads.
   - Order: `DSL 1.0, Cable 1.5, Cable+ 2.25, 4G LTE 3.5, 5G 5, 5G+ 7, Fiber 9.5, Fiber+ 12, 10G Fiber 15, 10G Fiber+ 18, Quantum Link 21` (multipliers).
-- Upload time ≈ `base(target device) / your network boost`. Concurrent processes do get slower (guide: +75% per extra process; whether that's bandwidth sharing or overhead is unknown). The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
+- Upload time ≈ `base(target device) / your network boost`. Concurrent processes do get slower (guide: +75% per extra process). **Two separate pools** (developer, 2026-11-22): network (uploads + downloads slow each other) and processor (bypasses + cracks slow each other); a bypass does not slow an upload. The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
 - **Virus performance penalty:** each active virus *on a device* cuts that device's performance by 1%, capped at 40%. The guide says this applies to the infected player.
 - Stored as `TargetRecord.hardware = "<Device> • <Network>"`.
 
@@ -110,6 +110,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - GEMINI.md's names `Dark Routing, Backchannel, Fast Deploy, Deep Link` are wrong (they look like perk names). All names now live in `HardwareCatalog` (§5.10).
 
 ### Economy & progression
+- **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-11).
 - **Gas fee:** victims lose 100%, the thief receives 90% (guide). The "Stole N" log shows **what the victim lost** (developer). That's fine because income is only compared across targets.
 - **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+).
 - **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
@@ -134,9 +135,9 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
-**Keygen XP (GEMINI empirical):** software XP is ≈ 0.1717 XP per full Store crypto, awarded in full on Keygen unlocks. Device upgrades give 0.25 XP/crypto, older hardware/network 0.20.
+**Keygen XP (measured, developer logs; badged MEASURED in the KB):** software XP is ≈ 0.1717 XP per full Store crypto, awarded in full on Keygen unlocks. Device upgrades give 0.25 XP/crypto, older hardware/network 0.20.
 
-**Hack (bypass/crack) success — empirical, in code (`TargetRecord.calculateSuccessProbability`):**
+**Hack (bypass/crack) success — measured from the developer's logged attempts, in code (`TargetRecord.calculateSuccessProbability`):** modifiers (Apex +3, Rootkit −N, Cipher +3) just add up, order doesn't matter.
 `delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
 
 **Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, §5.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
@@ -191,7 +192,7 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§5.11) |
 | `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
 | `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges: MEASURED, CALCULATED, GUIDE, CONFIRMED, EMPIRICAL, UNKNOWN; developer renamed OWNER→CONFIRMED and EXACT FIT→CALCULATED 2026-11-22), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
-| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-21) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
+| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-14; answered ones are deleted) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
 ### 5.1 Classifier (first match wins, case-insensitive substring)
@@ -234,6 +235,8 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 **Process:** `// PROCESSES`, `109 active tasks`, then blocks `Password Crack `/`Lv.8`/`DONE|INVALIDATED`/`<ip>`; downloads are `Download `/`Lv.6`/`DONE`/`DL:`/`Rootkit`/`<ip>`.
 
 **Crew:** `// <Crew Name> Members`, then `<ip>` / `LEADER|OFFICER|MEMBER` pairs.
+
+**Own crew page (Raw Dump #25, fixture `crew_server_2026-11-22.txt`):** role, `LEAVE`, crew name, `#TAG`, `SERVER ONLINE`, `37 / 40 members`, buffs, `CREW TREASURY` (`Upkeep 19,325/day (805/hr) · runway 42d 22h`), top contributors, `CREW SERVER` `LV 16 / 25`, then per part: name, `ON`, `L3`, effect, `<fund> / <next price>` (e.g. `829.8K / 1.1M`), next level + effect; `SERVER LOG` lines (`X contributed +N`, `Daily upkeep −N`). Classified CREW, saves nothing (no roster). **Crew server maths (measured from the crew's complete server log, Raw Dump #27, which balances to the treasury to the crypto):** price to reach part level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K, Storage 60K); upkeep/day = 0.5% of the total spent (Storage none), billed about daily for the hours since the last charge; surge (+2 levels, CPU/NIC/Uplink only) = base × ((L+1)² + (L+2)²) × hours/1200 × (1 − 0/5/10% for 6/12/24 h; 6 h no discount, developer-confirmed); extending = same price; ending early = no refund. Prices on screen are rounded **down** to one decimal (RAM L3 1.08M shows "1M"). Server log line formats: `X contributed +N`, `X upgraded <Part> to L<n> −<price>`, `X started a <Part> Surge (24h) −N`, `X extended the <Part> Surge by 24h −N`, `X ended the <Part> Surge early (16h left)`, `X powered on <Part> · toggled 2×`, `Daily upkeep −N`, `X joined the crew` + `24H TENURE GATE`, `X is now getting crew buffs`, `X was removed from the crew`, `✓ BUFFS LIVE`; each followed by `<n>m|h|d ago`. Daily contributions top up to exactly 50,000. `GameFormulas.crewPartUpgradePrice/crewPartUpkeep/crewSurgePrice`.
 
 **Log lines** (`[M-D H:MM] …`, newest first). The parser handles:
 - `Accessed device at <ip>` (own log)
@@ -336,7 +339,7 @@ The last two could feed the player profile automatically (TODO: profile from own
   - Rejected along the way: a straight line; the guide's player-level gap; the guide's curve × any scale (fails Lv2 victim Lv3 vs Lv7 victim Lv13); a ×0.50 floor (Lv20 on Lv7 = 30 = ×0.35); "income never falls" (developer's assumption, disproved by the developer's own uploads: Lv13 38 > Lv20 30 on a Lv7 victim).
   - **Over-levelled Spam earns less.** `GameFormulas.spamBestLevel(victim, max)` = lowest level with the highest rate. Lv17 is the cheapest cap, on any victim Lv27+. Peak on low victims: Lv2 → Lv10 (26/hr), Lv7 → Lv12 (38), Lv10 → Lv13 (47).
   - **Income is locked at upload** (developer): later level changes on either side don't change it, so SPAM EARNINGS rows can't be joined with current DB levels. Gap data must come from fresh uploads.
-  - Unmeasured (Q-01): Spam more than 13 levels above the victim (×0.10 floor assumed).
+  - Unmeasured: Spam more than 13 levels above the victim (×0.10 floor assumed; developer: not worth measuring).
   - `GoodSpamUtils`: `recommendedSpamLevel` = cap level, else the best-earning level (search up to max(30, installed)); `spamUploadLevel` = the best-earning level up to min(recommended, installed). `calculateSpamPayoutInfo(targetLevel, installedSpam)` takes no player level.
 - **Current hardware:** `PlayerProfile.currentDevice/currentNetwork` (shown item if MAX TIER, else `decrementHardwareName(next)`); `nextDevice/nextNetwork` are null once maxed. Always use `PlayerProfileRepository.getCurrentNetwork()/getCurrentDevice()` for maths (they fall back to decrement(next) for old profiles).
 - **Spam upload level:** `GoodSpamUtils.calculateSpamPayoutInfo` → `recommendedSpamLevel` = **minimum** level reaching 100/hr, searched up to max(30, installed) (`isCapReachable`), `levelMultiplier` exposed. `spamUploadLevel(info, installed)` = min(recommended, installed) (recommended when installed is unknown). The target card chip shows `⏱ Spam Lv.X ~time`; Good Spam's `calculateScore(…, playerNetwork, playerLevel, installedSpam)` uses that level's upload time (falls back to Lv20 when player info is unknown).
@@ -377,7 +380,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (192 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (195 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -396,7 +399,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | TargetRepositoryTest | Validate doesn't wipe, IP-edit merge keeps the existing wallet + logs the conflict, delete, maintenance keeps thefts, purge shield, Downloads mirror goes only to the backup folder |
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
-| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level; KB content integrity (ids, related links, calculator ids, Q-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level, crew server prices, upkeep and surges (Raw Dumps #25, #27, incl. the treasury balance); KB content integrity (ids, related links, calculator ids, Q-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
 | **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
 | ScreenClassifierTest, GoodSpamTest (firewall filter, Spam priority order), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |
@@ -436,7 +439,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B3 | Fixed | Downloads auto-backup broke after a reinstall forced by CI's throwaway signing key; one permanent key now |
 | B4 | Fixed | Wipe Database had no confirmation |
 | B5 | Fixed | Log-only screens fell to UNKNOWN; classifier now matches log headers and lines |
-| B6 | Mitigated | Spam payout re-fitted to 17 in-game uploads (2026-11-22, §5.7): the gap is victim − Spam level, not your level; over-levelled Spam earns less; Lv17 caps on victims Lv27+. Only Spam 13+ above the victim still estimated (Q-01) |
+| B6 | Mitigated | Spam payout re-fitted to 17 in-game uploads (2026-11-22, §5.7): the gap is victim − Spam level, not your level; over-levelled Spam earns less; Lv17 caps on victims Lv27+. Only Spam 13+ above the victim still estimated (not worth measuring) |
 | B7 | Mitigated | Unknown hardware still gets tier 3 / 1.0×, but is marked " ?" and logged |
 | B8 | Fixed | Merges orphaned thefts of the dropped wallet; replaced by the wallet-authority rule |
 | B9 | Fixed | Search is hidden while Recon or Good Spam is on |
