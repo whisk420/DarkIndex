@@ -168,6 +168,29 @@ class RealDataRegressionTest {
         assertTrue(TargetRepository.getAllRecords().isEmpty())
     }
 
+    @Test
+    fun scanListStoresTheFirstRealRowWithItsOwnLevels() {
+        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(32, record("241.118.225.244")?.firewall)
+        assertEquals(40, record("241.118.225.244")?.encryptor)
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })
+    }
+
+    @Test
+    fun maskedScanRowDoesNotLendItsLevelsToTheNextRealIp() {
+        // Same real screen with a masked row moved to the top
+        val lines = TestEnv.fixture("scan_2026-11-22.txt").split("\n").toMutableList()
+        val masked = lines.indexOf("xxx.xxx.xxx.xxx FW Lv.39 ENC Lv.32 >")
+        lines.add(lines.indexOf("12 targets") + 1, lines.removeAt(masked))
+        val raw = lines.joinToString("\n")
+        ScrapePipeline.run(raw, raw.split("\n"))
+
+        assertEquals(32, record("241.118.225.244")?.firewall)
+        assertEquals(40, record("241.118.225.244")?.encryptor)
+        assertEquals(1, TargetRepository.getAllRecords().size)
+    }
+
     // ---- Own screens ----------------------------------------------------------------------------
 
     @Test

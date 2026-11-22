@@ -80,13 +80,13 @@ object KnowledgeBaseContent {
         listOf(
             h("The basics"),
             facts(
-                f("Cap", "100 Crypto/hr per victim", GUIDE),
-                f("Accrues", "Continuously, collect any time", GUIDE),
+                f("Cap", "100 Crypto/hr per victim", CONFIRMED),
+                f("Accrues", "Continuously, collect any time", CONFIRMED),
                 f("Upload level", "You choose any level up to your installed Spam; lower uploads faster", CONFIRMED),
-                f("Locked level", "A deployment earns at the level it was uploaded forever; uninstall and re-upload to upgrade", GUIDE),
+                f("Locked level", "A deployment earns at the level it was uploaded forever; uninstall and re-upload to upgrade", CONFIRMED),
                 f("Locked income", "The rate is fixed at upload from the Spam level and both players' levels then; levelling up later never changes it", CONFIRMED),
-                f("Slots", "Limited by your botnet (2 free, up to 64) plus crew-server RAM", GUIDE),
-                f("Rep for the upload", "Flat 5, once per victim per virus type per 24 h", GUIDE),
+                f("Slots", "Limited by your botnet (2 free, up to 64) plus crew-server RAM", CONFIRMED),
+                f("Rep for the upload", "Flat 5, once per victim per virus type per 24 h", CONFIRMED),
             ),
             h("Earnings by level"),
             p(
@@ -109,13 +109,13 @@ object KnowledgeBaseContent {
                 "Crypto/hr for a fresh upload. The rate is fixed at upload. Note the low-victim columns fall at the bottom."
             ),
             warn("Still an estimate: Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10). The +4% bonus is measured to within ±0.25%. M-01."),
-            tip("Upload the cheapest Spam level that reaches 100/hr. Spam Lv ${GameFormulas.spamBestCap().first} caps on any victim Lv ${GameFormulas.spamBestCap().second} or higher, whatever your own level; Lv 16 tops out at 99."),
+            tip("Upload Spam Lv 16 on victims Lv 28 and up: it pays 99/hr and uploads about 13% faster than Lv 17. Lv ${GameFormulas.spamBestCap().first} is the lowest level that reaches the full 100/hr (on victims Lv ${GameFormulas.spamBestCap().second}+), for 1 Crypto/hr more. Your own level doesn't matter."),
             tip("On low victims, don't upload your highest Spam: it earns less and takes longer. A Lv 7 victim pays most with Lv ${GameFormulas.spamBestLevel(7, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(7, 30), 7)}/hr); a Lv 2 victim with Lv ${GameFormulas.spamBestLevel(2, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(2, 30), 2)}/hr). The card's ⏱ Spam chip and the calculator below show the best level for each target."),
             calc(KbCalculators.SPAM),
             h("Decay"),
-            p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Calculated: rate = 100% − (day − 21) × 90/79.", CALCULATED),
+            p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Rate = 100% − (day − 21) × 90/79.", GUIDE),
             table(
-                CALCULATED, listOf("Day", "Income %"),
+                GUIDE, listOf("Day", "Income %"),
                 listOf(1, 21, 30, 40, 50, 60, 70, 80, 90, 100, 150).map { d ->
                     listOf(d.toString(), "${(GameFormulas.spamDecayFactor(d.toDouble()) * 100).toInt()}%")
                 },
@@ -137,7 +137,7 @@ object KnowledgeBaseContent {
             ),
             tip("Every few Spam levels, sweep your biggest earners and swap deployments that are 3+ levels below your current Spam."),
             h("Fees"),
-            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", CALCULATED),
+            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
             unknowns(
                 "M-01" to "Income between 0 and ±10 levels, and below −10",
                 "M-02" to "Does Scythe's half decay mean the 10% floor arrives at day ~179?",
@@ -162,7 +162,7 @@ object KnowledgeBaseContent {
             p("The Store shows your tier as e.g. \"Botnet - Nexus / 64 slots / MAX TIER\".", CONFIRMED),
             h("The scaling fee"),
             facts(
-                f("Fee rate", "0.5% × (active Spam − 2), max 30%", CALCULATED, "Calculated from the guide's table"),
+                f("Fee rate", "0.5% × (active Spam − 2), max 30%", GUIDE),
                 f("Counted by", "Active Spam, not tier size: empty slots cost nothing", GUIDE),
                 f("When", "Deducted on collection", GUIDE),
                 f("Hacker Pass", "−25% fee", GUIDE),
@@ -253,9 +253,9 @@ object KnowledgeBaseContent {
         "Slots, levels, rep damage and the performance penalty that apply to Spam, Siphon and Rootkit alike.",
         listOf(
             facts(
-                f("Slots per victim", "2 per attacker (any 2 of the 3 types). Many attackers can infect one victim", GUIDE),
+                f("Slots per victim", "2 per attacker (any 2 of the 3 types). Many attackers can infect one victim", CONFIRMED),
                 f("Upload level", "Any level up to your installed one", CONFIRMED),
-                f("Upgrading", "Locked at upload level; uninstall and re-upload", GUIDE),
+                f("Upgrading", "Locked at upload level; uninstall and re-upload", CONFIRMED),
                 f("UPLOAD VIRUS x / 2 slots", "Your viruses on that victim; 0 after their AV wiped yours", CONFIRMED),
             ),
             h("Damage to the victim"),
@@ -702,12 +702,13 @@ object KnowledgeBaseContent {
                 f("Stealth", "Proxy 20+ players with Stealth on never appear in random scans", GUIDE),
                 f("Direct lookup", "Anyone whose IP you have can be found directly", GUIDE),
                 f("Ghost device", "Last octet hidden in scanners even without a Proxy", GUIDE),
-                f("Null Route network", "Scan results reveal the target's Encryptor level", GUIDE),
+                f("Null Route network", "Scan results reveal the target's Encryptor level", CONFIRMED),
+                f("Proxied players", "Still listed, with their IP masked (fully or partly) as their Proxy dictates", CONFIRMED),
                 f("Crew-server Uplink", "+1 target per level (15 at Lv 5, 17 with a surge) and reaches a little higher", GUIDE),
                 f("Uplink in practice", "A crew Uplink giving +2 shows 12 targets per scan", CONFIRMED),
                 f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
-            p("Scan results look like \"1.2.3.4 FW Lv.23 ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
+            p("The list starts with \"12 targets\" and each row looks like \"1.2.3.4 FW Lv.23 ENC Lv.24 >\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
             unknowns("M-20" to "Exact level window of a scan at your level"),
         ),

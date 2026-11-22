@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 189 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 191 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -225,7 +225,9 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 
 **Store:** `// STORE`, `Notepad`, `Wallet:`/`<crypto>`, `Credits: <n>`, `UPGRADES/CREDITS/MARKET`; `// NEXT DEVICE`, `Apex VII`, `LVL 7`, specs, price; `// NEXT NETWORK`, `Null Route X`, `LVL 10`. **When maxed, the header drops NEXT** (`// NETWORK`), shows the item you own, and has `MAX TIER` instead of a price (dump #6: `Null Route XI` / `LVL 11` / `MAX TIER`). Software rows have view ids `sw-<n>`; `// BOTNET`, `Botnet - Nexus`, `64 slots`, `MAX TIER`; `// SOFTWARE`, then `<App>` `LVL <next>` description, price, `UPGRADE`. Keygen's description contains the STORE signature.
 
-**Bypass/scan:** `// SCAN RESULTS`, `1.2.3.4 FW Lv.23 ENC Lv.24 >`, `// BYPASS FIREWALL`, `Firewall Lv.23`, `Encryptor Lv.24`, `Using Bypasser Lv.20`, `(+3)`, `Use Backdoor x<n>`.
+**Scan (Raw Dump #24, fixture `scan_2026-11-22.txt`):** `// SCAN`, Notepad, `Wallet:`/`<crypto>`, `Credits:`/`<n>`, `SCAN`, `REFRESH SCAN`, `// SCAN RESULTS`, `12 targets` (10 default + crew Uplink +2), then one row per target `1.2.3.4 FW Lv.23 ENC Lv.24 >`; rows can be masked (`xxx.xxx.xxx.xxx`, `226.217.xxx.xxx`); ENC shows because of the Null Route/Apex perk; ends with the bottom nav. `BypassScreenParser` stores only the first unmasked row, with that row's own FW/ENC (fixed 2026-11-22: it used to take the first FW/ENC on screen, even from a masked row). Scraping every row is a to-do.
+
+**Bypass:** `// BYPASS FIREWALL`, `Firewall Lv.23`, `Encryptor Lv.24`, `Using Bypasser Lv.20`, `(+3)`, `Use Backdoor x<n>`.
 
 **Siphon:** `SIPHON EARNINGS`, `DEPLOYED 55`, rows `<ip> LV.10 5% 1,000 siphoned 1h ago`. Only about 6 rows are visible at once.
 
@@ -375,7 +377,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (189 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (191 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Owner rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -386,7 +388,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 
 | Class | What it covers |
 |---|---|
-| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, Processes, Siphons (masked row skipped), the 6 known log discards |
+| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: scan list (first real row keeps its own FW/ENC past a masked row), double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, Processes, Siphons (masked row skipped), the 6 known log discards |
 | **DatabaseCoverageTest** (new) | Processes (create/keep/invalidated/downloads only if higher/no 0.0.0.0), Crew (known clan spreads, unknown → nothing saved), Bypass (target defences + stored bypasser), Import (merge by IP/username, siphon state, raw ingests) |
 | **WalletAuthorityTest**, **SaveQueueAndBackupTest**, **HardwareCatalogTest**, **ScreenFixesTest**, **LogTimeTest** (new) | Wallet-page authority rules; save queue order + profile in backups; every hardware name; masked IPs, nav bar, Spam Earnings, entities, failed crack; UTC log times + migration |
 | HackExParserTest | Real logcat fixtures for every parser, the 3-min cap, the blank-line barrier |
