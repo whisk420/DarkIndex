@@ -21,6 +21,7 @@ object GameFormulas {
      * Spam income model, fitted 2026-11-22 to 16 fresh uploads (rate read off SPAM EARNINGS; victim Lv / Spam Lv → /hr):
      *   victim Lv43: 1→18, 2→23, 3→27, 7→47, 11→69      victim Lv33: 7→47, 13→81, 20→100
      *   victim Lv28: 1→18, 2→23, 6→42                   victim Lv7:  13→38, 20→30
+     *   victim Lv19: 10→58
      *   victim Lv2:  1→13, 3→18, 7→24, 11→26
      * - Only VICTIM level − SPAM level matters; the player's own level plays no part (Lv7 pays 47 on both Lv43 and
      *   Lv33 victims; the guide implies the player's level).
@@ -29,8 +30,9 @@ object GameFormulas {
      *   over-levelled Spam earns LESS (Lv13 38 > Lv20 30 on that victim). Fitted slope 4.9–5.1%.
      * - The guide's Spam curve (8.85 + 2.89L + 0.0415L²) has the wrong shape: no scaling of it fits all 16.
      * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
-     * Unmeasured (M-01): the bonus ramp between +1 and +10 (one point: +1 → 13), and Spam more than 13 levels above
-     * the victim (the app assumes the −5% line stops at ×0.10).
+     * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
+     *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
+     * Unmeasured (M-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
 
     /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */
@@ -43,8 +45,8 @@ object GameFormulas {
     /** Full bonus over an equal-level victim (fit: 1.465–1.485; the guide says "up to 50%"). */
     const val SPAM_MAX_BONUS = 1.475
 
-    /** Bonus per level the victim is above the Spam (guide's +4.1%; one measured point, fits 1–4%+). */
-    const val SPAM_BONUS_PER_LEVEL = 0.041
+    /** Bonus per level the victim is above the Spam (measured: fits 3.65–4.15%). */
+    const val SPAM_BONUS_PER_LEVEL = 0.04
 
     /** Penalty per level the Spam is above the victim (measured, 4.9–5.1%). */
     const val SPAM_PENALTY_PER_LEVEL = 0.05
@@ -56,7 +58,7 @@ object GameFormulas {
     fun spamBaseIncome(spamLevel: Int): Double = spamMaxIncome(spamLevel) / SPAM_MAX_BONUS
 
     /**
-     * Income multiplier for [levelGap] = **victim level − Spam level**: +4.1% per level the victim is above the Spam
+     * Income multiplier for [levelGap] = **victim level − Spam level**: +4% per level the victim is above the Spam
      * (max [SPAM_MAX_BONUS]), −5% per level the Spam is above the victim (min [SPAM_MIN_MULTIPLIER]).
      */
     fun spamLevelGapMultiplier(levelGap: Int): Double = when {

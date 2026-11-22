@@ -20,7 +20,7 @@ class KnowledgeBaseTest {
             (43 to 1) to 18, (43 to 2) to 23, (43 to 3) to 27, (43 to 7) to 47, (43 to 11) to 69,
             (33 to 7) to 47, (33 to 13) to 81, (33 to 20) to 100,
             (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42,
-            (7 to 13) to 38, (7 to 20) to 30,
+            (7 to 13) to 38, (7 to 20) to 30, (19 to 10) to 58,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
         )
         measured.forEach { (key, v) ->
