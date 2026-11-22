@@ -613,6 +613,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        TargetRepository.flushBackupSoon()
         settingsPrefs?.unregisterOnSharedPreferenceChangeListener(settingsListener)
         unregisterReceiver(saveReceiver)
         hideCloseTarget()

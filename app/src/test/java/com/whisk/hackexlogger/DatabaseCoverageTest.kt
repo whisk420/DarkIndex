@@ -10,8 +10,7 @@ import org.junit.Test
 
 /**
  * DatabaseManager write paths that had no tests: Processes, Crew, Bypass and Import.
- * Masked-IP behaviour on the Process and Crew screens is a known open bug (see TODO.md) and is
- * deliberately not pinned here.
+ * Masked IPs on the Process and Crew screens are covered by ScreenFixesTest.
  */
 class DatabaseCoverageTest {
 
@@ -161,7 +160,7 @@ class DatabaseCoverageTest {
             ]}
         """.trimIndent()
 
-        val result = TargetRepository.importDataBundle(bundle)
+        val result = DatabaseBackup.importDataBundle(bundle)
 
         assertEquals(3, result.targetCount)
         assertEquals(12, record("1.1.1.1")?.level)            // same IP: incoming value wins
@@ -179,7 +178,7 @@ class DatabaseCoverageTest {
              "ingests":[{"type":"home","raw":"> Zulu _\nLVL\n20\n// SYSTEM INFO\nIP\n5.5.5.5\nDEVICE\nBolt\nNETWORK\nDSL\nFIREWALL\nLv.7\nENCRYPTOR\nLv.8"}]}
         """.trimIndent()
 
-        TargetRepository.importDataBundle(bundle)
+        DatabaseBackup.importDataBundle(bundle)
 
         assertEquals("Zulu", record("5.5.5.5")?.username)
     }
@@ -191,7 +190,7 @@ class DatabaseCoverageTest {
              "siphonAlerts":["7.7.7.7"],"knownSiphons":{"8.8.8.8":500}}
         """.trimIndent()
 
-        TargetRepository.importDataBundle(bundle)
+        DatabaseBackup.importDataBundle(bundle)
 
         assertEquals(listOf("7.7.7.7"), SiphonTracker.getSiphonAlerts())
         assertEquals(500, SiphonTracker.getKnownSiphons()["8.8.8.8"])

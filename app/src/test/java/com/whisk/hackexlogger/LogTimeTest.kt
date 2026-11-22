@@ -78,7 +78,7 @@ class LogTimeTest {
         val denver = TimeZone.getTimeZone("America/Denver")
         // "[11-20 4:00]" stored by the old code on a Denver phone = 04:00 MST = 11:00 UTC
         val oldStored = utc(2026, 11, 20, 11, 0)
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1").apply { addTheftEvent("hxW", oldStored, 10901) }))
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1").withTheftEvent("hxW", oldStored, 10901)))
 
         val previous = TimeZone.getDefault()
         try {
@@ -94,8 +94,8 @@ class LogTimeTest {
         }
 
         // The same log line read now lands on the same event (no duplicate)
-        val record = TargetRepository.getAllRecords().single()
-        record.addTheftEvent("hxW", LogTime.toEpochMs("11-20 4:00", utc(2026, 11, 20, 12, 0))!!, 10901)
+        var record = TargetRepository.getAllRecords().single()
+        record = record.withTheftEvent("hxW", LogTime.toEpochMs("11-20 4:00", utc(2026, 11, 20, 12, 0))!!, 10901)
         assertEquals(1, record.walletThefts.getValue("hxW").size)
     }
 
@@ -107,13 +107,13 @@ class LogTimeTest {
             val oldStored = utc(2026, 11, 20, 11, 0)
             val oldBundle = """{"format":"target-intelligence-console","version":1,"targets":[
                 {"ip":"1.1.1.1","walletThefts":{"hxW":[{"timestampMs":$oldStored,"amount":5}]}}]}"""
-            TargetRepository.importDataBundle(oldBundle)
+            DatabaseBackup.importDataBundle(oldBundle)
             assertEquals(utc(2026, 11, 20, 4, 0), TargetRepository.getAllRecords().single().walletThefts.getValue("hxW").single().timestampMs)
 
             // Round trip through a new export: unchanged
-            val export = TargetRepository.exportDataBundle()
+            val export = DatabaseBackup.exportDataBundle()
             TestEnv.freshRepository()
-            TargetRepository.importDataBundle(export)
+            DatabaseBackup.importDataBundle(export)
             assertEquals(utc(2026, 11, 20, 4, 0), TargetRepository.getAllRecords().single().walletThefts.getValue("hxW").single().timestampMs)
         } finally {
             TimeZone.setDefault(previous)

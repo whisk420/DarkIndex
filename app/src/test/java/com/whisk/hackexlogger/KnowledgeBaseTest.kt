@@ -7,7 +7,7 @@ import org.junit.Test
 
 /**
  * [GameFormulas] against every number hackex.net/guide publishes (read 2026-11-21) and the verified Store prices
- * in CLAUDE.md §4, plus integrity checks on the Knowledge Base content and calculators.
+ * in docs/game.md §3, plus integrity checks on the Knowledge Base content and calculators.
  */
 class KnowledgeBaseTest {
 

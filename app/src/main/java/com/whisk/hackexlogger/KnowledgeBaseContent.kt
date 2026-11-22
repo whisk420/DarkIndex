@@ -10,7 +10,7 @@ import java.util.Locale
 
 /**
  * Knowledge Base content. Sources: hackex.net/guide (read in full 2026-11-21), developer answers and verified
- * measurements (CLAUDE.md), and exact-fit formulas ([GameFormulas]). Open questions carry the measurement ids
+ * measurements (docs/game.md), and exact-fit formulas ([GameFormulas]). Open questions carry the measurement ids
  * (Q-xx) listed in docs/knowledge-base-prep.md. Keep facts in sync with GameFormulas: tables below are generated from it
  * where a formula exists.
  */

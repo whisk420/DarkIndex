@@ -60,7 +60,7 @@ class RecordMergingTest {
 
         TargetRepository.saveAllRecords(listOf(tempRecord, realRecord))
 
-        val merged = TargetRepository.mergeRecords(tempRecord, realRecord)
+        val merged = RecordMerger.mergeRecords(tempRecord, realRecord)
 
         // CRITICAL CHECK: Real IP 192.168.1.100 must prevail over unknown:UserX!
         assertEquals("192.168.1.100", merged.ip)

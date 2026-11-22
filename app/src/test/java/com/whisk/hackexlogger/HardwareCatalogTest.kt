@@ -33,7 +33,7 @@ class HardwareCatalogTest {
 
     @Test
     fun unknownNamesAreNull() {
-        assertNull(HardwareCatalog.parse("Dark Routing VIII")) // perk-like name from GEMINI.md, not hardware
+        assertNull(HardwareCatalog.parse("Dark Routing VIII")) // perk-like name, not hardware
         assertNull(HardwareCatalog.parse("Quantum Supercomputer"))
         assertNull(HardwareCatalog.parse(""))
         assertNull(HardwareCatalog.parse(null))

@@ -1,5 +1,6 @@
 package com.whisk.hackexlogger
 
+import com.google.gson.annotations.SerializedName
 import java.util.Locale
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -27,31 +28,46 @@ data class TheftEvent(
 )
 
 /**
- * Data model representing an in-game target entity collected within HackExLogger.
+ * Where a target's wallet came from. Stored as the same strings as before the enum existed
+ * (`"wallet_page"`, `"log"`), so databases and exports read and write identically across versions.
+ * An unrecognised value loads as null, which is treated like a log wallet.
+ */
+enum class WalletSource {
+    /** The target's own wallet screen: proof. Only a wallet-screen scrape may replace or move it. */
+    @SerializedName("wallet_page") PAGE,
+    /** Inferred from your log: highly probable, and a target may hold several. */
+    @SerializedName("log") LOG
+}
+
+/**
+ * One target in the database. **Immutable**: change a record with `copy(...)` or the `with…` helpers, then save
+ * the new list. That is what lets [TargetRepository.getAllRecords] hand out the cached list without copying it.
  *
- * Stores target information extracted from game screens and logs, such as virtual IP addresses,
- * player usernames, clan affiliations, hardware setups, defense levels, and associated crypto wallets.
+ * The JSON layout (field names and value formats) is the storage and export format; keep it unchanged.
+ * Gson can leave collections null for old or hand-edited JSON, so records from disk or imports go through
+ * [normalized] first.
  */
 data class TargetRecord(
-    var ip: String,
-    var username: String? = null,
-    var clan: String? = null,
-    var level: Int? = null,
-    var hardware: String? = null,
-    var firewall: Int? = null,
-    var encryptor: Int? = null,
-    var wallets: MutableList<String> = mutableListOf(),
-    var downloads: MutableMap<String, SoftwareEntry> = mutableMapOf(),
-    var walletThefts: MutableMap<String, MutableList<TheftEvent>> = mutableMapOf(),
-    var lastValidated: String? = null,
-    /**
-     * Where the wallet came from: [WALLET_FROM_PAGE] (the target's wallet screen, the authority) or
-     * [WALLET_FROM_LOG] (inferred from your log). Null for records saved before 2026-11-20 (treated like a log).
-     * Only a wallet-screen scrape may replace or move a wallet that's already known.
-     */
-    var walletSource: String? = null
+    val ip: String,
+    val username: String? = null,
+    val clan: String? = null,
+    val level: Int? = null,
+    /** `"<Device> • <Network>"` (either part may be missing). Use [device] / [network] to read it. */
+    val hardware: String? = null,
+    val firewall: Int? = null,
+    val encryptor: Int? = null,
+    val wallets: List<String> = emptyList(),
+    val downloads: Map<String, SoftwareEntry> = emptyMap(),
+    val walletThefts: Map<String, List<TheftEvent>> = emptyMap(),
+    /** Local time `yyyy-MM-dd HH:mm` (sorts as text). Kept as a string so older versions can read it. */
+    val lastValidated: String? = null,
+    /** Null for records saved before 2026-11-20 (treated like a log wallet). */
+    val walletSource: WalletSource? = null
 ) {
-    val walletFromPage: Boolean get() = walletSource == WALLET_FROM_PAGE
+    val walletFromPage: Boolean get() = walletSource == WalletSource.PAGE
+
+    /** The device part of [hardware], e.g. `Nova II` (same split as [HardwareCatalog.device]). */
+    val device: String? get() = hardware?.substringBefore("•")?.trim()?.takeIf { it.isNotEmpty() }
 
     /**
      * True if the target IP address contains masked components (e.g., "192.168.xxx.12" or "[UNKNOWN]").
@@ -79,16 +95,42 @@ data class TargetRecord(
             return lacksWallet || lacksBypasser || lacksFirewall || lacksEncryptor
         }
 
-    fun addTheftEvent(wallet: String, timestampMs: Long, amount: Int) {
-        val list = walletThefts.getOrPut(wallet) { mutableListOf() }
-        if (list.none { it.timestampMs == timestampMs && it.amount == amount }) {
-            list.add(TheftEvent(timestampMs, amount))
-            list.sortBy { it.timestampMs }
-        }
+    /** Adds a theft (ignored if the same time + amount is already stored); the list stays sorted by time. */
+    fun withTheftEvent(wallet: String, timestampMs: Long, amount: Int): TargetRecord {
+        val list = walletThefts[wallet] ?: emptyList()
+        if (list.any { it.timestampMs == timestampMs && it.amount == amount }) return this
+        return copy(walletThefts = walletThefts + (wallet to (list + TheftEvent(timestampMs, amount)).sortedBy { it.timestampMs }))
     }
 
-    fun clearTheftEvents(wallet: String) {
-        walletThefts.remove(wallet)
+    /** Adds [events] to [wallet]'s thefts, skipping duplicates (same time + amount). */
+    fun withTheftEvents(wallet: String, events: List<TheftEvent>): TargetRecord =
+        events.fold(this) { record, e -> record.withTheftEvent(wallet, e.timestampMs, e.amount) }
+
+    fun withoutTheftEvents(wallet: String): TargetRecord =
+        if (wallet in walletThefts) copy(walletThefts = walletThefts - wallet) else this
+
+    fun withDownload(name: String, entry: SoftwareEntry): TargetRecord = copy(downloads = downloads + (name to entry))
+
+    /**
+     * The same record with every collection non-null. Gson bypasses Kotlin's defaults, so a record read from JSON
+     * that lacks `wallets`, `downloads` or `walletThefts` (old data, hand-edited files) would otherwise hold nulls.
+     * Returns null when the record has no usable `ip` (it can't be keyed).
+     */
+    @Suppress("SENSELESS_COMPARISON", "USELESS_ELVIS")
+    fun normalized(): TargetRecord? {
+        if (ip == null || ip.isBlank()) return null
+        val w = wallets ?: emptyList()
+        val d = downloads ?: emptyMap()
+        val t = walletThefts ?: emptyMap()
+        val cleanW = if (w.any { it == null }) w.filterNotNull() else w
+        val cleanD = if (d.values.any { it == null || it.status == null }) {
+            d.filterValues { it != null }.mapValues { (_, e) -> if (e.status == null) e.copy(status = "Unknown") else e }
+        } else d
+        val cleanT = if (t.values.any { it == null || it.any { e -> e == null } }) {
+            t.filterValues { it != null }.mapValues { (_, list) -> list.filterNotNull() }
+        } else t
+        return if (w === wallets && cleanW === w && d === downloads && cleanD === d && t === walletThefts && cleanT === t) this
+        else copy(wallets = cleanW, downloads = cleanD, walletThefts = cleanT)
     }
 
     fun getReliableClusters(wallet: String): List<List<TheftEvent>> {
@@ -181,9 +223,6 @@ data class TargetRecord(
     }
 
     companion object {
-        const val WALLET_FROM_PAGE = "wallet_page"
-        const val WALLET_FROM_LOG = "log"
-
         /**
          * Calculates the hack success probability percentage (5% to 95%) based on level delta.
          * Delta = PlayerOffenseLevel - TargetDefenseLevel

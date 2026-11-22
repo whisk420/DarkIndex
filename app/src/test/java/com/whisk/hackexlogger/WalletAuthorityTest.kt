@@ -32,7 +32,7 @@ class WalletAuthorityTest {
         DatabaseManager.processUpdates(listOf(steal("1.1.1.1", "hxLOG1", 100)))
         val target = record("1.1.1.1")!!
         assertEquals(listOf("hxLOG1"), target.wallets)
-        assertEquals(TargetRecord.WALLET_FROM_LOG, target.walletSource)
+        assertEquals(WalletSource.LOG, target.walletSource)
     }
 
     @Test
@@ -80,7 +80,7 @@ class WalletAuthorityTest {
 
     @Test
     fun logCannotMoveAWalletFromAnotherTarget() {
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxW"), walletSource = TargetRecord.WALLET_FROM_LOG)))
+        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxW"), walletSource = WalletSource.LOG)))
 
         DatabaseManager.processUpdates(listOf(steal("2.2.2.2", "hxW", 70)))
 
@@ -91,8 +91,8 @@ class WalletAuthorityTest {
 
     @Test
     fun walletScreenTakesTheWalletFromAnotherTargetWithItsThefts() {
-        val wrong = TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxW"), walletSource = TargetRecord.WALLET_FROM_LOG)
-            .apply { addTheftEvent("hxW", 1000L, 40) }
+        val wrong = TargetRecord(ip = "1.1.1.1", wallets = mutableListOf("hxW"), walletSource = WalletSource.LOG)
+            .withTheftEvent("hxW", 1000L, 40)
         TargetRepository.saveAllRecords(listOf(wrong, TargetRecord(ip = "2.2.2.2", username = "Bob")))
 
         DatabaseManager.processWalletScreen(WalletScreen(username = "Bob", wallet = "hxW"))

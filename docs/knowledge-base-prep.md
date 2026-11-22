@@ -13,7 +13,7 @@ Every fact in the Knowledge Base has a badge saying where it came from:
 | **CONFIRMED** | You've confirmed it from playing |
 | **CALCULATED** | Our own maths, built from measured or guide numbers |
 | **GUIDE** | Says so on hackex.net/guide, not checked yet |
-| **EMPIRICAL** | Old numbers from GEMINI.md, not checked yet (none left) |
+| **EMPIRICAL** | Old unverified numbers, not checked yet (none left) |
 | **UNKNOWN** | Nobody knows yet. Has a question number below |
 
 We're going through the topics in the app's order. When you confirm something, its badge changes to CONFIRMED

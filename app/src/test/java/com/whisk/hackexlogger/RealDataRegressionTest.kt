@@ -86,7 +86,7 @@ class RealDataRegressionTest {
         assertEquals(listOf("hx77bd...ea69", "hxe94d...72db"), record("8.83.197.176")?.wallets)
 
         // The target's wallet screen settles it: the proven wallet stays, the other one and its thefts go
-        TargetRepository.saveAllRecords(TargetRepository.getAllRecords().map { if (it.ip == "8.83.197.176") it.apply { username = "victim883" } else it })
+        TargetRepository.saveAllRecords(TargetRepository.getAllRecords().map { if (it.ip == "8.83.197.176") it.copy(username = "victim883") else it })
         DatabaseManager.processWalletScreen(WalletScreen(username = "victim883", wallet = "hx77bd...ea69"))
 
         val target = record("8.83.197.176")!!

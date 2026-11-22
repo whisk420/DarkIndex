@@ -197,7 +197,7 @@ class DumpSession(val dump: RawDump) {
         siphonAlertsBefore = safe { SiphonTracker.getSiphonAlerts().toSet() } ?: emptySet()
         knownSiphonsBefore = safe { SiphonTracker.getKnownSiphons().size } ?: 0
         DatabaseManager.activeDiscardSink = discardSink
-        TargetRepository.walletConflictListener = conflictListener
+        WalletConflictLog.listener = conflictListener
     }
 
     /** A parser recognised the screen; [interpretation] is what it extracted (serialized as-is). */
@@ -212,7 +212,7 @@ class DumpSession(val dump: RawDump) {
 
     fun end() {
         if (DatabaseManager.activeDiscardSink === discardSink) DatabaseManager.activeDiscardSink = null
-        if (TargetRepository.walletConflictListener === conflictListener) TargetRepository.walletConflictListener = null
+        if (WalletConflictLog.listener === conflictListener) WalletConflictLog.listener = null
 
         // --- Log statistics & discarded lines (parser stage first, then db stage) ---
         if (logResults.isNotEmpty()) {
