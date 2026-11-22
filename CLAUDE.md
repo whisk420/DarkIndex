@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 212 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 213 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -72,7 +72,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim. Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | 1% at Lv1. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%; Lv25 shows 6%, Lv21–24 unseen; measured, Raw Dump #16). Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
 | Rootkit | virus, debuff | 1400 | Victim's defences up to −3 effective levels for you and your crew. Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
@@ -141,6 +141,8 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but the real game pays 1.69× that** (measured 2026-11-22, §5.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
 
+**Siphon % (measured 2026-11-22, Raw Dump #16, all 122 deployments):** `0.75 + 0.25 × L` fits Lv1/2/5/6/13/17/20; Lv25 = 6% (not 7%), so `GameFormulas.siphonPercent` caps at 6% from Lv21 (Lv21–24 unmeasured, M-04).
+
 **AV removal (guide, not in code):** AV−virus ≥+5 → 95, +4 → 90, +3 → 80, +2 → 70, +1 → 60, 0 → 50, −1 → 20, then −2% per level to a 5% floor at −9.
 
 **Upload base seconds** (`NetworkSpeedUtils`, from GEMINI benchmark: Lv20 virus vs a 15× network, ×15 to normalise to DSL):
@@ -187,7 +189,7 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `ConsoleBundle.kt` | Export schema `{format:"target-intelligence-console", version:1, exportedAt, targets, ingests[{type,raw,importedAt,id}], siphonAlerts, knownSiphons}` |
 | `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§5.11) |
 | `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
-| `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
+| `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges: MEASURED, CALCULATED, GUIDE, CONFIRMED, EMPIRICAL, UNKNOWN; owner renamed OWNER→CONFIRMED and EXACT FIT→CALCULATED 2026-11-22), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
 | `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (owner choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry M-ids from `docs/knowledge-base-prep.md` §4 |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
@@ -369,7 +371,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (212 JVM + 2 instrumented; audited and rewritten 2026-11-20)
+## 6. Test suite (213 JVM + 2 instrumented; audited and rewritten 2026-11-20)
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
 5 in `UnmaskingTest` (re-implemented the logic inside the test), `ConsoleBundleTest.testImportInvalidFormat`
 (threw the exception itself), the instrumented `testTargetRecordModelOnDevice` (only read back constructor

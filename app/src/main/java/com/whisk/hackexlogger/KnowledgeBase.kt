@@ -11,9 +11,9 @@ import kotlin.math.roundToInt
 /** Where a fact comes from. Shown as a coloured badge next to it. */
 enum class KbSource(val badge: String, val colorHex: String, val meaning: String) {
     MEASURED("MEASURED", "#10b981", "Measured in-game or verified to the crypto against real numbers"),
-    FORMULA("EXACT FIT", "#38bdf8", "A formula that reproduces every number the guide publishes"),
+    CALCULATED("CALCULATED", "#38bdf8", "Calculated from a formula that reproduces every published or measured number"),
     GUIDE("GUIDE", "#a78bfa", "Stated by hackex.net/guide, not yet checked in-game"),
-    OWNER("OWNER", "#f59e0b", "Confirmed by the DarkIndex owner from play"),
+    CONFIRMED("CONFIRMED", "#f59e0b", "Confirmed in-game from play"),
     EMPIRICAL("EMPIRICAL", "#fb923c", "Older empirical data, not re-verified"),
     UNKNOWN("UNKNOWN", "#ef4444", "Not known yet: on the measurement list");
 }

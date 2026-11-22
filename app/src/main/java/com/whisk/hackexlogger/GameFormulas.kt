@@ -95,6 +95,20 @@ object GameFormulas {
         BotnetTier("Nexus", 64, 180_000, null),
     )
 
+    // ── Siphon ──────────────────────────────────────────────────────────────────────────────────────────────
+
+    /** Highest siphon rate seen: a Lv25 siphon shows 6%, not the line's 7% (Raw Dump #16). */
+    const val SIPHON_MAX_PERCENT = 6.0
+
+    /**
+     * Siphon skim rate in % for a siphon uploaded at [level]. Measured 2026-11-22 (Raw Dump #16, all 122 deployments):
+     * Lv1 1%, Lv2 1.25%, Lv5 2%, Lv6 2.25%, Lv13 4%, Lv17 5%, Lv20 5.75%, Lv25 6%. 0.75 + 0.25 × level fits every row
+     * up to Lv20. Lv25 shows 6%, so the rate is capped or flattens above Lv20; Lv21–24 are unmeasured and assumed to
+     * hit the 6% cap at Lv21.
+     */
+    fun siphonPercent(level: Int): Double? =
+        if (level <= 0) null else minOf(0.75 + 0.25 * level, SIPHON_MAX_PERCENT)
+
     // ── Store prices & Keygen ───────────────────────────────────────────────────────────────────────────────
 
     /** Guide base prices; defensive apps get ×0.85 (verified for Firewall, Encryptor, Proxy, Trace). */

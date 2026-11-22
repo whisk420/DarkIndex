@@ -1,10 +1,10 @@
 package com.whisk.hackexlogger
 
 import com.whisk.hackexlogger.KbSource.EMPIRICAL
-import com.whisk.hackexlogger.KbSource.FORMULA
+import com.whisk.hackexlogger.KbSource.CALCULATED
 import com.whisk.hackexlogger.KbSource.GUIDE
 import com.whisk.hackexlogger.KbSource.MEASURED
-import com.whisk.hackexlogger.KbSource.OWNER
+import com.whisk.hackexlogger.KbSource.CONFIRMED
 import com.whisk.hackexlogger.KbSource.UNKNOWN
 import java.util.Locale
 
@@ -87,7 +87,7 @@ object KnowledgeBaseContent {
             facts(
                 f("Cap", "100 Crypto/hr per victim", GUIDE),
                 f("Accrues", "Continuously, collect any time", GUIDE),
-                f("Upload level", "You choose any level up to your installed Spam; lower uploads faster", OWNER),
+                f("Upload level", "You choose any level up to your installed Spam; lower uploads faster", CONFIRMED),
                 f("Locked level", "A deployment earns at the level it was uploaded forever; uninstall and re-upload to upgrade", GUIDE),
                 f("Slots", "Limited by your botnet (2 free, up to 64) plus crew-server RAM", GUIDE),
                 f("Rep for the upload", "Flat 5, once per victim per virus type per 24 h", GUIDE),
@@ -99,10 +99,10 @@ object KnowledgeBaseContent {
             ),
             p(
                 "Model: base = 1.69 × (8.85 + 2.89·L + 0.0415·L²), ×(1 + 4.1% per level the victim is above you, max +50%) or ×(1 − 5% per level below), rounded, capped at 100. It reproduces all five measurements exactly.",
-                FORMULA
+                CALCULATED
             ),
             table(
-                FORMULA, listOf("Spam Lv", "−10", "−5", "Equal", "+5", "+10"),
+                CALCULATED, listOf("Spam Lv", "−10", "−5", "Equal", "+5", "+10"),
                 listOf(1, 3, 5, 7, 9, 11, 13, 15, 17, 20).map { lvl ->
                     listOf("Lv $lvl") + listOf(-10, -5, 0, 5, 10).map { GameFormulas.spamIncomePerHour(lvl, it).toString() }
                 },
@@ -113,9 +113,9 @@ object KnowledgeBaseContent {
             tip("A victim 10 below you pays half (guide). With matchmaking showing ±10 levels, always prefer the higher-level half of a scan."),
             calc(KbCalculators.SPAM),
             h("Decay"),
-            p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Exact fit: rate = 100% − (day − 21) × 90/79.", FORMULA),
+            p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Calculated: rate = 100% − (day − 21) × 90/79.", CALCULATED),
             table(
-                FORMULA, listOf("Day", "Income %"),
+                CALCULATED, listOf("Day", "Income %"),
                 listOf(1, 21, 30, 40, 50, 60, 70, 80, 90, 100, 150).map { d ->
                     listOf(d.toString(), "${(GameFormulas.spamDecayFactor(d.toDouble()) * 100).toInt()}%")
                 },
@@ -137,7 +137,7 @@ object KnowledgeBaseContent {
             ),
             tip("Every few Spam levels, sweep your biggest earners and swap deployments that are 3+ levels below your current Spam."),
             h("Fees"),
-            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", FORMULA),
+            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", CALCULATED),
             unknowns(
                 "M-01" to "Income between 0 and ±10 levels, and below −10",
                 "M-02" to "Does Scythe's half decay mean the 10% floor arrives at day ~179?",
@@ -159,17 +159,17 @@ object KnowledgeBaseContent {
                         String.format(Locale.US, "%.1f%%", GameFormulas.spamFeeRate(t.slots) * 100))
                 }
             ),
-            p("The Store shows your tier as e.g. \"Botnet - Nexus / 64 slots / MAX TIER\".", OWNER),
+            p("The Store shows your tier as e.g. \"Botnet - Nexus / 64 slots / MAX TIER\".", CONFIRMED),
             h("The scaling fee"),
             facts(
-                f("Fee rate", "0.5% × (active Spam − 2), max 30%", FORMULA, "Exact fit of the guide's table"),
+                f("Fee rate", "0.5% × (active Spam − 2), max 30%", CALCULATED, "Calculated from the guide's table"),
                 f("Counted by", "Active Spam, not tier size: empty slots cost nothing", GUIDE),
                 f("When", "Deducted on collection", GUIDE),
                 f("Hacker Pass", "−25% fee", GUIDE),
                 f("Elite Pass", "−50% fee", GUIDE),
             ),
             table(
-                FORMULA, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
+                CALCULATED, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
                 GameFormulas.BOTNET_TIERS.map { t ->
                     val gross = t.slots * GameFormulas.SPAM_CAP_PER_HOUR
                     val fee = Math.round(gross * GameFormulas.spamFeeRate(t.slots)).toInt()
@@ -187,17 +187,26 @@ object KnowledgeBaseContent {
 
     private fun siphon() = KbTopic(
         "siphon", "🩸", "Siphon virus",
-        "Skims a percentage of Crypto flowing into a victim's hot wallet. 1% at Lv 1, never decays, no slot limit, combined cap 30% per victim.",
+        "Skims a percentage of Crypto flowing into a victim's hot wallet: 1% at Lv 1, +0.25% per level, about 6% at most. Never decays, no slot limit, combined cap 30% per victim.",
         listOf(
             facts(
-                f("Rate at Lv 1", "1% of each incoming amount", GUIDE),
-                f("Rate per level", "Unknown beyond Lv 1", UNKNOWN, "Your SIPHON EARNINGS page shows LV and % per row"),
+                f("Rate at Lv 1", "1% of each incoming amount", MEASURED),
+                f("Rate per level", "0.75% + 0.25% × level up to Lv 20 (5.75%)", MEASURED, "All 122 rows of a SIPHON EARNINGS dump, Lv 1–20"),
+                f("Top rate", "6% (a Lv 25 siphon shows 6%, not 7%)", MEASURED, "Lv 21–24 not seen yet"),
                 f("Combined cap", "30% per victim, across all attackers", GUIDE),
                 f("Decay", "None: full rate until AV removes it", GUIDE),
                 f("Slot limit", "None (it still takes one of your 2 virus slots on that victim)", GUIDE),
                 f("Scythe device", "2× drain (Siphon Surge)", GUIDE),
                 f("Wallet Shield", "Does not stop siphons", GUIDE),
             ),
+            table(
+                MEASURED, listOf("Siphon Lv", "Skim %"),
+                listOf(1, 2, 5, 6, 10, 13, 15, 17, 20, 25).map { lvl ->
+                    listOf("Lv $lvl", String.format(Locale.US, "%.2f%%", GameFormulas.siphonPercent(lvl)!!).replace(".00%", "%"))
+                },
+                "Measured at Lv 1, 2, 5, 6, 13, 17, 20 and 25; Lv 10 and 15 from the line."
+            ),
+            tip("Lv 20 skims about 2.6× what Lv 6 does (5.75% vs 2.25%) but takes much longer to upload. Weigh that against how long the victim is likely to stay infected."),
             h("What gets skimmed"),
             p("Theft proceeds (Crypto the victim steals from others' hot wallets) and their Spam collection payouts: the guide's Viruses section says these are the only two flows.", GUIDE),
             bullets(
@@ -210,9 +219,9 @@ object KnowledgeBaseContent {
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
-            p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", OWNER),
+            p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
             unknowns(
-                "M-04" to "Siphon % per level (one dump of SIPHON EARNINGS with mixed levels answers it)",
+                "M-04" to "Siphon % between Lv 21 and 24: capped at 6% from Lv 21, or a slower climb to Lv 25?",
                 "M-05" to "Exactly which inflows are skimmed",
                 "M-06" to "What history remains after a victim's AV removes it",
             ),
@@ -245,9 +254,9 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Slots per victim", "2 per attacker (any 2 of the 3 types). Many attackers can infect one victim", GUIDE),
-                f("Upload level", "Any level up to your installed one", OWNER),
+                f("Upload level", "Any level up to your installed one", CONFIRMED),
                 f("Upgrading", "Locked at upload level; uninstall and re-upload", GUIDE),
-                f("UPLOAD VIRUS x / 2 slots", "Your viruses on that victim; 0 after their AV wiped yours", OWNER),
+                f("UPLOAD VIRUS x / 2 slots", "Your viruses on that victim; 0 after their AV wiped yours", CONFIRMED),
             ),
             h("Damage to the victim"),
             table(
@@ -263,7 +272,7 @@ object KnowledgeBaseContent {
             ),
             h("Performance penalty"),
             p("Each active virus on a device cuts that device's performance by 1%, capped at 40% (60% speed). It slows bypasses, cracks, downloads, uploads and its own AV scans.", GUIDE),
-            p("Viruses on you slow you. The only way to see what's on you is to run Antivirus: it lists what it removed.", OWNER),
+            p("Viruses on you slow you. The only way to see what's on you is to run Antivirus: it lists what it removed.", CONFIRMED),
         ),
         related = listOf("spam", "siphon", "rootkit", "antivirus")
     )
@@ -275,7 +284,7 @@ object KnowledgeBaseContent {
             h("What sets the time"),
             facts(
                 f("Your network", "Divides download and upload time by its boost", GUIDE),
-                f("Upload: victim device", "Slower on better devices; 10 tiers, Raider I–III all tier 0", OWNER),
+                f("Upload: victim device", "Slower on better devices; 10 tiers, Raider I–III all tier 0", CONFIRMED),
                 f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", EMPIRICAL),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
                 f("Concurrency", "+75% per extra process", GUIDE),
@@ -321,7 +330,7 @@ object KnowledgeBaseContent {
                 f("Rootkit (yours or crew's)", "Their FW/ENC −1 to −3", GUIDE),
                 f("Apex device (Overreach)", "Your Bypasser and Cracker +3", GUIDE),
                 f("Cipher device (Hardened Core)", "Their FW and ENC +3", GUIDE),
-                f("Bonus in brackets", "\"Using Bypasser Lv.20 (+3)\" on the bypass screen", OWNER),
+                f("Bonus in brackets", "\"Using Bypasser Lv.20 (+3)\" on the bypass screen", CONFIRMED),
             ),
             h("Duration"),
             facts(
@@ -384,7 +393,7 @@ object KnowledgeBaseContent {
                 "Completed bypass/crack cards show your Spam / Siphon / Rootkit levels on that victim (– if none). The \"My viruses\" filter lists victims missing a type.",
                 "Tap a process's target icon to pin it to the Targets filter.",
             ),
-            p("Processes are also a scrape source for DarkIndex: it creates bare records for new IPs it sees there.", OWNER),
+            p("Processes are also a scrape source for DarkIndex: it creates bare records for new IPs it sees there.", CONFIRMED),
             unknowns("M-13" to "Whether network and hack processes share one pool"),
         ),
         related = listOf("hacking", "transfers", "antivirus")
@@ -454,7 +463,7 @@ object KnowledgeBaseContent {
                 "Backdoor still triggers the offensive Trace roll at bypass.",
                 "Vector device: 50% chance to keep a consumable when you use it.",
             ),
-            p("Game log: \"Backdoor blocked by <ip>'s firewall\" appears when hardening wins.", OWNER),
+            p("Game log: \"Backdoor blocked by <ip>'s firewall\" appears when hardening wins.", CONFIRMED),
             tip("Backdoors are 40 Credits and lose to hardening at high levels: against a Lv 30 firewall, 84% of them are wasted. Save them for low-firewall targets."),
         ),
         related = listOf("hacking", "proxy", "premium")
@@ -472,11 +481,11 @@ object KnowledgeBaseContent {
                     listOf(range, if (lvl >= 20) "All + Stealth toggle" else "${GameFormulas.proxyMaskedOctets(lvl)} octet(s)", GameFormulas.proxyMaskExample(lvl))
                 }
             ),
-            p("Logs can show partial masks (123.45.xxx.xxx), full masks, or [UNKNOWN] for a Ghost-loadout attacker. A victim's Trace can append [TRACED] with the real IP.", OWNER),
+            p("Logs can show partial masks (123.45.xxx.xxx), full masks, or [UNKNOWN] for a Ghost-loadout attacker. A victim's Trace can append [TRACED] with the real IP.", CONFIRMED),
             h("Activation cost"),
-            p("Paid up front in Crypto for 2, 6, 12 or 24 hours. Exact fit of the guide's table: ceil(10 × √level × hours × (1 − discount)).", FORMULA),
+            p("Paid up front in Crypto for 2, 6, 12 or 24 hours. Calculated from the guide's table: ceil(10 × √level × hours × (1 − discount)).", CALCULATED),
             table(
-                FORMULA, listOf("Level", "2 h", "6 h (−5%)", "12 h (−10%)", "24 h (−15%)"),
+                CALCULATED, listOf("Level", "2 h", "6 h (−5%)", "12 h (−10%)", "24 h (−15%)"),
                 listOf(1, 5, 10, 15, 19, 20, 25, 30).map { lvl ->
                     listOf("Lv $lvl") + GameFormulas.PROXY_DURATIONS.map { n(GameFormulas.proxyActivationCost(lvl, it.first)!!) }
                 }
@@ -546,7 +555,7 @@ object KnowledgeBaseContent {
             h("Store prices"),
             p("Price = Keygen curve × base/600, × 0.85 for defensive apps. Offensive prices round to the nearest crypto, defensive ones round up. Keygen curve = (−L³ + 147L² + 6814L − 10212) / 6. Verified to the crypto on 5 real prices (L19–25).", MEASURED),
             table(
-                FORMULA, listOf("App", "Base", "Lv 15", "Lv 20", "Lv 25", "Lv 30"),
+                CALCULATED, listOf("App", "Base", "Lv 15", "Lv 20", "Lv 25", "Lv 30"),
                 GameFormulas.App.values().map { app ->
                     listOf(app.displayName, n(app.basePrice) + if (app.defensive) " ×0.85" else "") +
                         listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
@@ -556,7 +565,7 @@ object KnowledgeBaseContent {
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
-                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", EMPIRICAL, "One owner data point: Keygen Lv 26 (41,459) → +7,045 XP"),
+                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", EMPIRICAL, "One confirmed data point: Keygen Lv 26 (41,459) → +7,045 XP"),
                 f("Device upgrades", "0.25 XP per crypto (best ratio)", GUIDE),
                 f("Older hardware / network", "0.20 XP per crypto", EMPIRICAL),
             ),
@@ -597,7 +606,7 @@ object KnowledgeBaseContent {
             ),
             h("Reading the Apps page"),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "Your Apps page shows installed levels, (+N) bonuses, and LOCKED copies waiting for a key.",
                 "A victim's Apps page shows each app's LVL and a badge comparing it to your installed level (=, +2, −6, DEVICE-BOUND).",
                 "The Store shows the NEXT level of each app: subtract 1 for what you have.",
@@ -614,7 +623,7 @@ object KnowledgeBaseContent {
                 f("Hot wallet", "Spending balance; stealable by anyone who cracked you", GUIDE),
                 f("Cold storage", "Can't be stolen or siphoned; capped by level", GUIDE),
                 f("Gas fee", "Victim loses 100%, thief receives 90%", GUIDE),
-                f("\"Stole N\" in your log", "What the victim lost (before gas)", OWNER),
+                f("\"Stole N\" in your log", "What the victim lost (before gas)", CONFIRMED),
                 f("Address", "hx + 30 hex characters; logs show hx1a2b...9f0e", GUIDE),
                 f("New address", "50 Credits; old transactions keep the old one", GUIDE),
                 f("Wallet Shield", "Blocks manual theft 24 h, 48 h cooldown; siphons still earn", GUIDE),
@@ -647,16 +656,16 @@ object KnowledgeBaseContent {
         "Your device log and every victim's log hold the last 100 lines, timestamped in UTC. Anyone who bypassed a device can edit its log.",
         listOf(
             facts(
-                f("Length", "Last 100 lines, including non-entry text such as graffiti or messages", OWNER),
-                f("Time zone", "UTC+0, format [M-D H:MM]", OWNER),
+                f("Length", "Last 100 lines, including non-entry text such as graffiti or messages", CONFIRMED),
+                f("Time zone", "UTC+0, format [M-D H:MM]", CONFIRMED),
                 f("Order", "Newest first, but not strictly chronological", MEASURED),
                 f("Footer", "\"Last saved: YYYY-MM-DD HH:MM:SS\" in UTC, which dates the lines", MEASURED),
-                f("Timestamp", "Set when the device is accessed, so a session's actions can share one time", OWNER),
+                f("Timestamp", "Set when the device is accessed, so a session's actions can share one time", CONFIRMED),
                 f("Editing", "Anyone who bypassed you can edit your log; Log Lock blocks it for 8 h", GUIDE),
             ),
             h("Lines and what they mean"),
             table(
-                OWNER, listOf("Line", "Where", "Meaning"),
+                CONFIRMED, listOf("Line", "Where", "Meaning"),
                 listOf(
                     listOf("Accessed device at <ip>", "Your log", "You entered a target"),
                     listOf("Device accessed from <ip>", "Victim log", "Someone entered; may be masked, [UNKNOWN] or [TRACED]"),
@@ -673,7 +682,7 @@ object KnowledgeBaseContent {
                 )
             ),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "The game sometimes skips an \"Accessed\" line: two steals can follow one access, and only the first belongs to that IP.",
                 "Masked lines (xxx) come from the other player's Proxy; [UNKNOWN] is a Ghost-loadout player.",
                 "Victim logs are editable, so treat odd lines with suspicion.",
@@ -689,15 +698,15 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Results", "Up to 10 targets near your level; range widens as needed", GUIDE),
-                f("Typical window", "About ±10 levels", OWNER),
+                f("Typical window", "About ±10 levels", CONFIRMED),
                 f("Stealth", "Proxy 20+ players with Stealth on never appear in random scans", GUIDE),
                 f("Direct lookup", "Anyone whose IP you have can be found directly", GUIDE),
                 f("Ghost device", "Last octet hidden in scanners even without a Proxy", GUIDE),
                 f("Null Route network", "Scan results reveal the target's Encryptor level", GUIDE),
                 f("Crew-server Uplink", "+1 target per level (15 at Lv 5, 17 with a surge) and reaches a little higher", GUIDE),
-                f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", OWNER),
+                f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
-            p("Scan results look like \"1.2.3.4 FW Lv.23 ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", OWNER),
+            p("Scan results look like \"1.2.3.4 FW Lv.23 ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours: better Spam income and full rep."),
             unknowns("M-20" to "Exact level window of a scan at your level"),
         ),
@@ -711,8 +720,8 @@ object KnowledgeBaseContent {
             h("Score"),
             facts(
                 f("Formula", "floor(Level × Rep^0.75)", MEASURED, "Verified on 6 profiles and 2 own-Home scrapes"),
-                f("Doubling level", "Doubles score", FORMULA),
-                f("Doubling rep", "×1.68 score", FORMULA),
+                f("Doubling level", "Doubles score", CALCULATED),
+                f("Doubling rep", "×1.68 score", CALCULATED),
                 f("Leaderboards", "Rank score growth in the period: current month, previous month, rolling 3 months", GUIDE),
                 f("Lifetime", "Every reboot folds score into a lifetime total (Reboot leaderboard)", GUIDE),
             ),
@@ -769,7 +778,7 @@ object KnowledgeBaseContent {
             table(
                 GUIDE, listOf("Level", "XP to next"),
                 GameFormulas.XP_TO_NEXT_KNOWN.entries.map { listOf("Lv ${it.key}", n(it.value)) },
-                "Cumulative: Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940 (guide). Lv 35/38/44 from the owner."
+                "Cumulative: Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940 (guide). Lv 35/38/44 confirmed in-game."
             ),
             h("Level-up rewards"),
             facts(
@@ -851,7 +860,7 @@ object KnowledgeBaseContent {
                 HardwareCatalog.STANDARD_DEVICES.mapIndexed { i, d ->
                     listOf("${i + 1}", d, "${GameFormulas.DEVICE_SPEED[i]}×", if (i == 0) "free" else n(GameFormulas.DEVICE_PRICES[i]), "tier ${HardwareCatalog.uploadDefenceTier(d)}")
                 },
-                "Speed divides bypass, crack and AV time. Upload-defence tiers are owner-measured: Raider I–III upload identically."
+                "Speed divides bypass, crack and AV time. Upload-defence tiers are confirmed in-game: Raider I–III upload identically."
             ),
             h("Networks"),
             table(
@@ -896,7 +905,7 @@ object KnowledgeBaseContent {
                 "Trace doesn't re-roll in crew views.",
                 "Message Encryptor protects on the viewing device: if the hacked member lacks it, the whole chat is readable.",
             ),
-            p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", OWNER),
+            p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", CONFIRMED),
             h("Crew server"),
             table(
                 GUIDE, listOf("Part", "Per level", "Max (Lv 5)", "Upkeep/day at Lv 1…5"),
@@ -980,34 +989,34 @@ object KnowledgeBaseContent {
         listOf(
             h("Scraping"),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "Tap 📸 on any game screen: DarkIndex reads its text (offline, nothing leaves your phone) and saves what it recognises.",
                 "Target Home: level, FW, ENC, device, network, clan. Software: downloads. Wallet: proves the wallet address. Logs: steals, wallets, software. Bypass: FW/ENC. Processes: new IPs. Crew: clan tags. Your Home and Store: your own profile.",
                 "Masked IPs and your own 0.0.0.0 are never stored as targets.",
             ),
             h("Wallets"),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "A target's Wallet screen is proof: it replaces every other wallet on that target.",
                 "Wallets from logs are only suggestions; a target may hold several until you scrape its wallet page.",
                 "Every wallet change is logged to wallet_conflicts.jsonl.",
             ),
             h("Income estimate"),
-            p("Your own Stole lines are grouped into sessions split at gaps over 1 hour. Each session's rate (all steals except the first, divided by hours) is averaged and shown as ₵/hr.", OWNER),
+            p("Your own Stole lines are grouped into sessions split at gaps over 1 hour. Each session's rate (all steals except the first, divided by hours) is averaged and shown as ₵/hr.", CONFIRMED),
             h("Good Spam & Recon"),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "Good Spam ranks targets by level × 10 − upload minutes × 0.5 − firewall, using the cheapest Spam that caps 100/hr (measured model).",
                 "Recon walks you through targets that are missing a wallet or core software.",
                 "Validate re-checks the oldest targets first.",
             ),
             h("Siphon Alerts & Raw Dumps"),
             bullets(
-                OWNER,
+                CONFIRMED,
                 "Scroll your whole SIPHON EARNINGS page: any known siphon that's gone triggers an alert.",
                 "Raw Dump Mode (Settings → Debug) records each scrape for troubleshooting; tap a dump to copy it.",
             ),
-            p("Backups: every save also writes Downloads/DarkIndex/darkindex_database.json.", OWNER),
+            p("Backups: every save also writes Downloads/DarkIndex/darkindex_database.json.", CONFIRMED),
         ),
         related = listOf("logs", "spam", "siphon")
     )

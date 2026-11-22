@@ -38,6 +38,14 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun siphonPercentMatchesRawDump16() {
+        // Every level seen on the 2026-11-22 SIPHON EARNINGS page (122 deployments)
+        val seen = mapOf(1 to 1.0, 2 to 1.25, 5 to 2.0, 6 to 2.25, 13 to 4.0, 17 to 5.0, 20 to 5.75, 25 to 6.0)
+        seen.forEach { (lvl, pct) -> assertEquals("Lv$lvl", pct, GameFormulas.siphonPercent(lvl)!!, 1e-9) }
+        assertEquals(null, GameFormulas.siphonPercent(0))
+    }
+
+    @Test
     fun spamBonusCapsAtFiftyPercentAndPenaltyHasAFloor() {
         assertEquals(1.5, GameFormulas.spamLevelGapMultiplier(30), 1e-9)
         assertEquals(0.10, GameFormulas.spamLevelGapMultiplier(-40), 1e-9)
