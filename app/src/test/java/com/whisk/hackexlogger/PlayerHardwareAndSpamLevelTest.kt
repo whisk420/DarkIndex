@@ -155,16 +155,6 @@ CREWS 3"""
     }
 
     @Test
-    fun minimumSpamLevelThatCapsIsRecommended() {
-        // Victim Lv45: Lv17 is the cheapest Spam that hits 100/hr (Lv16 tops out at 99)
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 45, currentSpamLevel = 20)
-        assertTrue(info.isCapReachable)
-        assertEquals(17, info.recommendedSpamLevel)
-        assertEquals(17, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20))
-        assertTrue(info.isCapReachedAtCurrent)
-    }
-
-    @Test
     fun capNeedingMoreThanInstalledUsesInstalledLevel() {
         // Victim Lv35: the cap needs Lv17, but you only have Lv12 → upload Lv12 (75/hr)
         val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, currentSpamLevel = 12)
@@ -188,27 +178,4 @@ CREWS 3"""
         assertEquals(12, GoodSpamUtils.spamUploadLevel(low, installedSpamLevel = 12))
     }
 
-    @Test
-    fun goodSpamScoreUsesCheapestCappingLevelUploadTime() {
-        val net = "Null Route XI"
-        val lv20Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Nova • Fiber", net, 20)
-        val lv17Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Nova • Fiber", net, 17)
-        assertTrue(lv17Secs < lv20Secs)
-
-        val withSpam = GoodSpamUtils.calculateScore(45, 10, "Nova • Fiber", net, installedSpamLevel = 20)
-        assertEquals(45 * 10.0 - (lv17Secs / 60.0) * 0.5 - 10, withSpam, 0.001) // victim Lv45: Lv17 caps
-
-        // Unknown target level → the Lv20 time
-        val unknown = GoodSpamUtils.calculateScore(null, 10, "Nova • Fiber", net, installedSpamLevel = 20)
-        assertEquals(-(lv20Secs / 60.0) * 0.5 - 10, unknown, 0.001)
-    }
-
-    @Test
-    fun cheapTargetOutranksSameLevelTargetNeedingFullSpam() {
-        val net = "Null Route XI"
-        // Same hardware & firewall; A (Lv30) caps with Lv17, B (Lv24) needs Lv20 → A ranks higher
-        val a = GoodSpamUtils.calculateScore(30, 10, "Nova III • Fiber", net, installedSpamLevel = 20)
-        val b = GoodSpamUtils.calculateScore(24, 10, "Nova III • Fiber", net, installedSpamLevel = 20)
-        assertTrue(a > b)
-    }
 }

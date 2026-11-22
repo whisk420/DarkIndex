@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 213 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 182 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -32,7 +32,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 ### Running tests without the Android SDK (cloud sandboxes)
 Google Maven and services.gradle.org may be blocked. The pure-logic code can still be compiled and tested with the Kotlin compiler bundled in a local Gradle install (`/opt/gradle/lib/kotlin-compiler-embeddable-*.jar` + gson, junit, hamcrest, coroutines from the same folder):
 - Write tiny stubs for `android.content.{Context,ContextWrapper,SharedPreferences,Intent}`, `android.os.Environment` (return null), `android.util.Log`, `kotlinx.datetime.{Instant,Clock}` and `androidx.recyclerview.widget.DiffUtil.ItemCallback`.
-- Compile `TargetRecord, ConsoleBundle, ScreenParsers, GoodSpamUtils, NetworkSpeedUtils, PlayerProfileRepository, TargetRepository, DatabaseManager, SiphonTracker`, plus lines 19–49 of `TargetAdapter.kt` (`ListItem`/`ListItemDiffCallback`), plus all of `src/test`.
+- Compile `TargetRecord, ConsoleBundle, ScreenParsers, GoodSpamUtils, NetworkSpeedUtils, PlayerProfileRepository, TargetRepository, DatabaseManager, SiphonTracker, HardwareCatalog, GameFormulas, KnowledgeBase, KnowledgeBaseContent, Marathon, RawDump, ScrapePipeline`, plus all of `src/test`. Write the `android.content`/`android.os` stubs in **Java** (Kotlin stubs clash with property syntax like `context.filesDir`).
 - Run with `org.junit.runner.JUnitCore`, with `app/src/test/resources` on the runtime classpath (fixtures). Reproduces the full suite.
 
 ---
@@ -373,7 +373,9 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (213 JVM + 2 instrumented; audited and rewritten 2026-11-20)
+## 6. Test suite (182 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+**Owner rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
+
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
 5 in `UnmaskingTest` (re-implemented the logic inside the test), `ConsoleBundleTest.testImportInvalidFormat`
 (threw the exception itself), the instrumented `testTargetRecordModelOnDevice` (only read back constructor
@@ -390,8 +392,8 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | TargetRepositoryTest | Validate doesn't wipe, IP-edit merge keeps the existing wallet + logs the conflict, delete, maintenance keeps thefts, purge shield, Downloads mirror goes only to the backup folder |
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
-| **KnowledgeBaseTest** (new 2026-11-21) | `GameFormulas` against every guide number (Spam 17 cells, decay, fee + botnet example, proxy 20 cells, AV, hardening) and the verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; search |
-| ScreenClassifierTest, GoodSpamTest, PlayerIntelligenceTest, SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, TargetAdapterTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests, FakeSharedPreferencesTest | As named. GoodSpamTest and KnowledgeBaseTest pin the measured Spam model (all 11 uploads, never-falls rule, Lv17 cap) |
+| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ never-falls, Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| ScreenClassifierTest, GoodSpamTest (firewall filter), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |
 
 Test infrastructure (`TestSupport.kt`):
