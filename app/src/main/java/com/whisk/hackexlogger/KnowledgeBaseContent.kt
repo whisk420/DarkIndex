@@ -29,6 +29,12 @@ object KnowledgeBaseContent {
         KbBlock.Table(header, rows, source, caption)
 
     private fun n(v: Int) = String.format(Locale.US, "%,d", v)
+    /** 45000 → "45K", 1120000 → "1.12M" (exact, trailing zeros dropped). */
+    private fun compact(v: Long): String = when {
+        v >= 1_000_000 -> java.math.BigDecimal(v).divide(java.math.BigDecimal(1_000_000)).stripTrailingZeros().toPlainString() + "M"
+        v >= 1_000 -> java.math.BigDecimal(v).divide(java.math.BigDecimal(1_000)).stripTrailingZeros().toPlainString() + "K"
+        else -> v.toString()
+    }
 
     val topics: List<KbTopic> by lazy {
         listOf(
@@ -911,25 +917,38 @@ object KnowledgeBaseContent {
             p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", CONFIRMED),
             h("Crew server"),
             table(
-                GUIDE, listOf("Part", "Per level", "Max (Lv 5)", "Upkeep/day at Lv 1…5"),
+                CONFIRMED, listOf("Part", "Per level", "Max (Lv 5)"),
                 listOf(
-                    listOf("CPU", "+3% bypass & crack speed", "+15%", "350 / 1,750 / 4,900 / 10,500 / 19,250"),
-                    listOf("NIC", "+3% download & upload speed", "+15%", "350 / 1,750 / 4,900 / 10,500 / 19,250"),
-                    listOf("RAM", "+1 Spam slot", "+5", "600 / 3,000 / 8,400 / 18,000 / 33,000"),
-                    listOf("Uplink", "+1 scan target", "15 targets", "225 / 1,125 / 3,150 / 6,750 / 12,375"),
-                    listOf("Storage", "+2 member slots", "+10 (40)", "none"),
-                )
+                    listOf("CPU", "+3% bypass & crack speed", "+15%"),
+                    listOf("NIC", "+3% download & upload speed", "+15%"),
+                    listOf("RAM", "+1 botnet slot", "+5"),
+                    listOf("Uplink", "+1 scan target (10 → 15) and reaches higher levels", "15 targets"),
+                    listOf("Storage", "+2 member slots, no upkeep", "+10 (40)"),
+                ),
+                "Seen on a Lv 16 server: CPU, NIC, RAM at L3 (+9%, +9%, +3 slots), Uplink L2 (12 targets), Storage L5 (40 members)."
+            ),
+            h("Upgrade price and upkeep"),
+            table(
+                MEASURED, listOf("Part", "Price to Lv 1 / 2 / 3 / 4 / 5", "Upkeep/day at Lv 1 / 2 / 3 / 4 / 5"),
+                GameFormulas.CrewPart.values().filter { it.base != null }.map { part ->
+                    listOf(
+                        part.displayName,
+                        (1..5).joinToString(" / ") { compact(GameFormulas.crewPartUpgradePrice(part, it)!!) },
+                        (1..5).joinToString(" / ") { n(GameFormulas.crewPartUpkeep(part, it)!!.toInt()) }
+                    )
+                },
+                "Price to reach level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K). Upkeep = 0.5% of everything spent on the part, which matches the guide's table. Measured on the server screen: CPU/NIC L4 1.1M, RAM L4 1.9M, Uplink L3 405K, total upkeep 19,325/day."
             ),
             bullets(
                 GUIDE,
                 "Server level = sum of the 5 parts (max 25).",
-                "Upkeep is 0.5% of a powered part's value per day. Leaders can switch parts off.",
+                "Leaders can switch parts off; an unpowered part costs no upkeep.",
                 "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000), after 24 h in the crew.",
                 "Treasury at 0: server offline, buffs pause, RAM Spam pauses; Storage keeps working and levels are never lost.",
                 "Surge: CPU, NIC or Uplink +2 levels for 6/12/24 h (up to +21% or 17 targets), paid up front.",
                 "Every contribution, upgrade and upkeep day shows in the Server Log.",
             ),
-            unknowns("Q-21" to "Part and surge prices"),
+            unknowns("Q-21" to "Storage part prices and surge prices"),
         ),
         related = listOf("rootkit", "botnet", "scanning")
     )

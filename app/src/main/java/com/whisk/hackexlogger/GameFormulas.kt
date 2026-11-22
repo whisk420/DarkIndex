@@ -332,4 +332,27 @@ object GameFormulas {
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */
     const val CRYPTO_PER_CREDIT = 250
+
+    // ── Crew server ─────────────────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Crew-server parts. Upgrading a part to level k costs `base × k²` (measured on the crew server screen,
+     * Raw Dump #25: CPU and NIC L4 1.1M, RAM L4 1.9M, Uplink L3 405K). Upkeep is 0.5% of everything spent on the
+     * part (guide), which reproduces the guide's whole upkeep table and the screen's 19,325/day for
+     * CPU 3 + NIC 3 + RAM 3 + Uplink 2. Storage has no upkeep, so its price can't be derived (null).
+     */
+    enum class CrewPart(val displayName: String, val base: Int?) {
+        CPU("CPU", 70_000), NIC("NIC", 70_000), RAM("RAM", 120_000), UPLINK("Uplink", 45_000), STORAGE("Storage", null)
+    }
+
+    /** Price to upgrade [part] from level − 1 to [level] (1–5). */
+    fun crewPartUpgradePrice(part: CrewPart, level: Int): Long? =
+        part.base?.takeIf { level in 1..5 }?.let { it.toLong() * level * level }
+
+    /** Daily upkeep of [part] at [level] while powered: 0.5% of the total spent on it. 0 at level 0. */
+    fun crewPartUpkeep(part: CrewPart, level: Int): Long? {
+        val base = part.base ?: return 0
+        if (level !in 0..5) return null
+        return base.toLong() * level * (level + 1) * (2 * level + 1) / 6 / 200
+    }
 }

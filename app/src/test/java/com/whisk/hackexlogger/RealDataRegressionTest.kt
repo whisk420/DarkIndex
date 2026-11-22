@@ -163,6 +163,14 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun ownCrewServerPageSavesNothing() {
+        // Raw Dump #25: own crew page (treasury, server parts, server log); no roster, so nothing to store
+        val result = scrape("crew_server_2026-11-22.txt")
+        assertEquals(ScreenType.CREW, result.detectedType)
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
     fun crewScreenWithoutAKnownMemberSavesNothing() {
         scrape("crew_2026-11-19.txt")
         assertTrue(TargetRepository.getAllRecords().isEmpty())

@@ -37,6 +37,7 @@ are deleted; the others keep their numbers.
 - Uploads & downloads: the upload model is measured; uploads and downloads slow each other, not hacks
 - Antivirus: the scan report lists every virus, removed or not
 - Scanning: 10 targets by default (12 with our +2 Uplink); Encryptor only shows on an Apex reboot
+- Crews: server part effects, upgrade prices and upkeep measured
 
 **Not started**
 - Bypass & crack
@@ -117,8 +118,9 @@ times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen i
   rolls separately. *To measure:* tally mission difficulties for a couple of weeks.
 
 ### Crews
-- **Q-21 Crew server prices.** Part upgrade and surge prices aren't published.
-  *To measure:* dump the crew server screen.
+- **Q-21 Storage and surge prices.** CPU, NIC, RAM and Uplink prices are worked out (base × level²). Storage has
+  no upkeep, so its price can't be derived, and surge prices aren't known.
+  *To measure:* the price shown when Storage or a surge is offered.
 
 ---
 

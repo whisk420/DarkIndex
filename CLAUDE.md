@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 192 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 194 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -236,6 +236,8 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 
 **Crew:** `// <Crew Name> Members`, then `<ip>` / `LEADER|OFFICER|MEMBER` pairs.
 
+**Own crew page (Raw Dump #25, fixture `crew_server_2026-11-22.txt`):** role, `LEAVE`, crew name, `#TAG`, `SERVER ONLINE`, `37 / 40 members`, buffs, `CREW TREASURY` (`Upkeep 19,325/day (805/hr) · runway 42d 22h`), top contributors, `CREW SERVER` `LV 16 / 25`, then per part: name, `ON`, `L3`, effect, `<fund> / <next price>` (e.g. `829.8K / 1.1M`), next level + effect; `SERVER LOG` lines (`X contributed +N`, `Daily upkeep −N`). Classified CREW, saves nothing (no roster). **Crew server maths (measured):** price to reach part level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K; Storage unknown, no upkeep); upkeep/day = 0.5% of the total spent (reproduces the guide table and 19,325/day). `GameFormulas.crewPartUpgradePrice/crewPartUpkeep`.
+
 **Log lines** (`[M-D H:MM] …`, newest first). The parser handles:
 - `Accessed device at <ip>` (own log)
 - `Device accessed from <ip|masked|[UNKNOWN]>[ [TRACED]]` (victim log)
@@ -378,7 +380,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (192 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (194 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -397,7 +399,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | TargetRepositoryTest | Validate doesn't wipe, IP-edit merge keeps the existing wallet + logs the conflict, delete, maintenance keeps thefts, purge shield, Downloads mirror goes only to the backup folder |
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
-| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level; KB content integrity (ids, related links, calculator ids, Q-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level, crew server prices + upkeep (Raw Dump #25); KB content integrity (ids, related links, calculator ids, Q-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
 | **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
 | ScreenClassifierTest, GoodSpamTest (firewall filter, Spam priority order), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |

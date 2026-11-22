@@ -49,6 +49,22 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun crewServerMatchesRawDump25() {
+        // Crew server screen 2026-11-22: next-level prices shown as "829.8K / 1.1M" etc., upkeep 19,325/day
+        assertEquals(1_120_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.CPU, 4))   // "1.1M"
+        assertEquals(1_120_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.NIC, 4))   // "1.1M"
+        assertEquals(1_920_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.RAM, 4))   // "1.9M"
+        assertEquals(405_000L, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.UPLINK, 3))  // "405K"
+        val upkeep = GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.CPU, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.NIC, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.RAM, 3)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.UPLINK, 2)!! +
+            GameFormulas.crewPartUpkeep(GameFormulas.CrewPart.STORAGE, 5)!!
+        assertEquals(19_325L, upkeep) // "Upkeep 19,325/day (805/hr)"
+        assertEquals(null, GameFormulas.crewPartUpgradePrice(GameFormulas.CrewPart.STORAGE, 1))
+    }
+
+    @Test
     fun storePricesMatchVerifiedNumbers() {
         assertEquals(35_596, GameFormulas.storePrice(GameFormulas.App.FIREWALL, 21))
         assertEquals(41_877, GameFormulas.storePrice(GameFormulas.App.BYPASSER, 21))
