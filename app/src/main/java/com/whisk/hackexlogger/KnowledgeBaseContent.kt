@@ -11,7 +11,7 @@ import java.util.Locale
 /**
  * Knowledge Base content. Sources: hackex.net/guide (read in full 2026-11-21), developer answers and verified
  * measurements (CLAUDE.md), and exact-fit formulas ([GameFormulas]). Open questions carry the measurement ids
- * (Q-01…) listed in docs/knowledge-base-prep.md. Keep facts in sync with GameFormulas: tables below are generated from it
+ * (Q-xx) listed in docs/knowledge-base-prep.md. Keep facts in sync with GameFormulas: tables below are generated from it
  * where a formula exists.
  */
 object KnowledgeBaseContent {
@@ -108,7 +108,6 @@ object KnowledgeBaseContent {
                 },
                 "Crypto/hr for a fresh upload. The rate is fixed at upload. Note the low-victim columns fall at the bottom."
             ),
-            warn("Still an estimate: Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10). The +4% bonus is measured to within ±0.25%. Q-01."),
             tip("Upload Spam Lv 16 on victims Lv 28 and up: it pays 99/hr and uploads about 13% faster than Lv 17. Lv ${GameFormulas.spamBestCap().first} is the lowest level that reaches the full 100/hr (on victims Lv ${GameFormulas.spamBestCap().second}+), for 1 Crypto/hr more. Your own level doesn't matter."),
             tip("On low victims, don't upload your highest Spam: it earns less and takes longer. A Lv 7 victim pays most with Lv ${GameFormulas.spamBestLevel(7, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(7, 30), 7)}/hr); a Lv 2 victim with Lv ${GameFormulas.spamBestLevel(2, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(2, 30), 2)}/hr). The card's ⏱ Spam chip and the calculator below show the best level for each target."),
             calc(KbCalculators.SPAM),
@@ -139,8 +138,6 @@ object KnowledgeBaseContent {
             h("Fees"),
             p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
             unknowns(
-                "Q-01" to "Income when the Spam is more than 13 levels above the victim",
-                "Q-02" to "Does Scythe's half decay mean the 10% floor arrives at day ~179?",
                 "Q-03" to "Is the fee on collection exactly 0.5% per Spam?",
             ),
         ),
@@ -207,20 +204,20 @@ object KnowledgeBaseContent {
             ),
             tip("Lv 20 skims about 2.6× what Lv 6 does (5.75% vs 2.25%) but takes much longer to upload. Weigh that against how long the victim is likely to stay infected."),
             h("What gets skimmed"),
-            p("Theft proceeds (Crypto the victim steals from others' hot wallets) and their Spam collection payouts: the guide's Viruses section says these are the only two flows.", GUIDE),
+            p("Theft proceeds: Crypto the victim steals from other players' hot wallets. Spam collections don't seem to be skimmed: no siphon loss shows up when Spam income comes in. Still to be re-checked with a fresh siphon on you.", CONFIRMED),
             bullets(
                 GUIDE,
                 "Never skimmed (lands straight in cold storage): subscription daily Crypto, Black Market Crypto Stash, login-streak Crypto (days 3 and 5), daily mission Crypto, Watch & Earn Crypto, and the victim's own hot → cold transfers.",
                 "Outbound spending (Store, OC packs, proxy activations) doesn't trigger it either.",
             ),
-            warn("The guide's Software section contradicts this, listing incoming transfers, mission and login rewards too. Treat theft + Spam as confirmed and the rest as doubtful (Q-04)."),
+            warn("The guide contradicts itself here: its Viruses section adds Spam collections, its Software section adds incoming transfers, mission and login rewards too. Play suggests theft only (Q-04)."),
             h("Strategy"),
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
             p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately, with all its info: the row and its siphoned total are gone, and the game keeps no history of it. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
             unknowns(
-                "Q-04" to "Exactly which inflows are skimmed",
+                "Q-04" to "Is theft the only flow skimmed? (Spam collections look untouched)",
             ),
         ),
         related = listOf("virusRules", "spam", "antivirus", "darkindex")

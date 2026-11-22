@@ -72,7 +72,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (§5.7). Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-04) |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
@@ -191,7 +191,7 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§5.11) |
 | `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
 | `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges: MEASURED, CALCULATED, GUIDE, CONFIRMED, EMPIRICAL, UNKNOWN; developer renamed OWNER→CONFIRMED and EXACT FIT→CALCULATED 2026-11-22), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
-| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-21) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
+| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-03…Q-21; Q-01, Q-02 dropped) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
 ### 5.1 Classifier (first match wins, case-insensitive substring)
@@ -336,7 +336,7 @@ The last two could feed the player profile automatically (TODO: profile from own
   - Rejected along the way: a straight line; the guide's player-level gap; the guide's curve × any scale (fails Lv2 victim Lv3 vs Lv7 victim Lv13); a ×0.50 floor (Lv20 on Lv7 = 30 = ×0.35); "income never falls" (developer's assumption, disproved by the developer's own uploads: Lv13 38 > Lv20 30 on a Lv7 victim).
   - **Over-levelled Spam earns less.** `GameFormulas.spamBestLevel(victim, max)` = lowest level with the highest rate. Lv17 is the cheapest cap, on any victim Lv27+. Peak on low victims: Lv2 → Lv10 (26/hr), Lv7 → Lv12 (38), Lv10 → Lv13 (47).
   - **Income is locked at upload** (developer): later level changes on either side don't change it, so SPAM EARNINGS rows can't be joined with current DB levels. Gap data must come from fresh uploads.
-  - Unmeasured (Q-01): Spam more than 13 levels above the victim (×0.10 floor assumed).
+  - Unmeasured: Spam more than 13 levels above the victim (×0.10 floor assumed; developer: not worth measuring).
   - `GoodSpamUtils`: `recommendedSpamLevel` = cap level, else the best-earning level (search up to max(30, installed)); `spamUploadLevel` = the best-earning level up to min(recommended, installed). `calculateSpamPayoutInfo(targetLevel, installedSpam)` takes no player level.
 - **Current hardware:** `PlayerProfile.currentDevice/currentNetwork` (shown item if MAX TIER, else `decrementHardwareName(next)`); `nextDevice/nextNetwork` are null once maxed. Always use `PlayerProfileRepository.getCurrentNetwork()/getCurrentDevice()` for maths (they fall back to decrement(next) for old profiles).
 - **Spam upload level:** `GoodSpamUtils.calculateSpamPayoutInfo` → `recommendedSpamLevel` = **minimum** level reaching 100/hr, searched up to max(30, installed) (`isCapReachable`), `levelMultiplier` exposed. `spamUploadLevel(info, installed)` = min(recommended, installed) (recommended when installed is unknown). The target card chip shows `⏱ Spam Lv.X ~time`; Good Spam's `calculateScore(…, playerNetwork, playerLevel, installedSpam)` uses that level's upload time (falls back to Lv20 when player info is unknown).
@@ -436,7 +436,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B3 | Fixed | Downloads auto-backup broke after a reinstall forced by CI's throwaway signing key; one permanent key now |
 | B4 | Fixed | Wipe Database had no confirmation |
 | B5 | Fixed | Log-only screens fell to UNKNOWN; classifier now matches log headers and lines |
-| B6 | Mitigated | Spam payout re-fitted to 17 in-game uploads (2026-11-22, §5.7): the gap is victim − Spam level, not your level; over-levelled Spam earns less; Lv17 caps on victims Lv27+. Only Spam 13+ above the victim still estimated (Q-01) |
+| B6 | Mitigated | Spam payout re-fitted to 17 in-game uploads (2026-11-22, §5.7): the gap is victim − Spam level, not your level; over-levelled Spam earns less; Lv17 caps on victims Lv27+. Only Spam 13+ above the victim still estimated (not worth measuring) |
 | B7 | Mitigated | Unknown hardware still gets tier 3 / 1.0×, but is marked " ?" and logged |
 | B8 | Fixed | Merges orphaned thefts of the dropped wallet; replaced by the wallet-authority rule |
 | B9 | Fixed | Search is hidden while Recon or Good Spam is on |

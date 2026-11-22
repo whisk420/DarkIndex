@@ -32,7 +32,7 @@ object GameFormulas {
      * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
      * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
      *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
-     * Unmeasured (Q-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
+     * Unmeasured: Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
 
     /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */

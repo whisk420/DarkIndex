@@ -18,7 +18,8 @@ Every fact in the Knowledge Base has a badge saying where it came from:
 
 We're going through the topics in the app's order. When you confirm something, its badge changes to CONFIRMED
 (or MEASURED if you have numbers). When something turns out wrong, it gets fixed or removed. Open questions
-show at the bottom of each topic page with the numbers used here (Q-01, Q-02 …).
+show at the bottom of each topic page with the numbers used here (Q-03, Q-04 …). Answered or dropped questions
+are deleted; the others keep their numbers.
 
 ---
 
@@ -63,18 +64,14 @@ Numbered in the order the topics appear in the app. ⭐ marks the ones that feed
 times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen is always the best evidence.
 
 ### Spam
-- **Q-01 ⭐ Very over-levelled Spam.** How much does a Spam earn when it's more than 13 levels above the victim?
-  The app guesses it bottoms out at 10% of the normal rate.
-  *To measure:* upload a high Spam on a very low victim and read its rate on SPAM EARNINGS.
-- **Q-02 Spam decay on a Scythe reboot.** The guide says Scythe halves decay. Does the 10% floor then arrive
-  around day 179 instead of day 100?
 - **Q-03 Spam fee.** Is the fee taken on collection really 0.5% per active Spam beyond 2?
   *To measure:* compare a collection amount with the earnings shown before collecting.
 
 ### Siphon
-- **Q-04 What gets skimmed.** The guide contradicts itself. One section says only theft and Spam collections,
-  another adds incoming transfers, mission and login rewards.
-  *To measure:* needs a friendly victim (a crewmate) whose income you can see.
+- **Q-04 What gets skimmed.** Probably theft only: you've never seen a siphon loss when Spam income comes in, and
+  the other rewards go straight to cold storage. The guide contradicts itself (one section adds Spam
+  collections, another adds transfers, mission and login rewards).
+  *To check:* next time you're siphoned, compare your transaction history around a Spam collection and a steal.
 
 ### Uploads & downloads
 - **Q-05 ⭐ Download times.** How long a download takes by software level and network.
