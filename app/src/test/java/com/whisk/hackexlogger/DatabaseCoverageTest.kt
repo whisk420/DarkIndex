@@ -10,8 +10,7 @@ import org.junit.Test
 
 /**
  * DatabaseManager write paths that had no tests: Processes, Crew, Bypass and Import.
- * Masked-IP behaviour on the Process and Crew screens is a known open bug (see TODO.md) and is
- * deliberately not pinned here.
+ * Masked IPs on the Process and Crew screens are covered by ScreenFixesTest.
  */
 class DatabaseCoverageTest {
 
