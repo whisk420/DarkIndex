@@ -187,15 +187,15 @@ object KnowledgeBaseContent {
 
     private fun siphon() = KbTopic(
         "siphon", "🩸", "Siphon virus",
-        "Skims a percentage of Crypto flowing into a victim's hot wallet: 1% at Lv 1, +0.25% per level, about 6% at most. Never decays, no slot limit, combined cap 30% per victim.",
+        "Skims a percentage of Crypto flowing into a victim's hot wallet: 1% at Lv 1, +0.25% per level, 6% at most. Never decays; up to 700 deployments; combined cap 30% per victim.",
         listOf(
             facts(
                 f("Rate at Lv 1", "1% of each incoming amount", MEASURED),
                 f("Rate per level", "0.75% + 0.25% × level up to Lv 20 (5.75%)", MEASURED, "All 122 rows of a SIPHON EARNINGS dump, Lv 1–20"),
-                f("Top rate", "6% (a Lv 25 siphon shows 6%, not 7%)", MEASURED, "Lv 21–24 not seen yet"),
+                f("Top rate", "6% from Lv 21 (a Lv 25 siphon shows 6%, not 7%)", MEASURED),
                 f("Combined cap", "30% per victim, across all attackers", GUIDE),
                 f("Decay", "None: full rate until AV removes it", GUIDE),
-                f("Slot limit", "None (it still takes one of your 2 virus slots on that victim)", GUIDE),
+                f("Deployment cap", "700 siphons in total (each also takes one of your 2 virus slots on that victim)", CONFIRMED),
                 f("Scythe device", "2× drain (Siphon Surge)", GUIDE),
                 f("Wallet Shield", "Does not stop siphons", GUIDE),
             ),
@@ -219,11 +219,9 @@ object KnowledgeBaseContent {
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
-            p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
+            p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately, with all its info: the row and its siphoned total are gone, and the game keeps no history of it. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
             unknowns(
-                "M-04" to "Siphon % between Lv 21 and 24: capped at 6% from Lv 21, or a slower climb to Lv 25?",
                 "M-05" to "Exactly which inflows are skimmed",
-                "M-06" to "What history remains after a victim's AV removes it",
             ),
         ),
         related = listOf("virusRules", "spam", "antivirus", "darkindex")

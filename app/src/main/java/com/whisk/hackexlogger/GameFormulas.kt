@@ -136,8 +136,7 @@ object GameFormulas {
     /**
      * Siphon skim rate in % for a siphon uploaded at [level]. Measured 2026-11-22 (Raw Dump #16, all 122 deployments):
      * Lv1 1%, Lv2 1.25%, Lv5 2%, Lv6 2.25%, Lv13 4%, Lv17 5%, Lv20 5.75%, Lv25 6%. 0.75 + 0.25 × level fits every row
-     * up to Lv20. Lv25 shows 6%, so the rate is capped or flattens above Lv20; Lv21–24 are unmeasured and assumed to
-     * hit the 6% cap at Lv21.
+     * up to Lv20; the line reaches 6% at Lv21 and Lv25 shows 6%, so the rate caps at 6% from Lv21 (owner-accepted).
      */
     fun siphonPercent(level: Int): Double? =
         if (level <= 0) null else minOf(0.75 + 0.25 * level, SIPHON_MAX_PERCENT)

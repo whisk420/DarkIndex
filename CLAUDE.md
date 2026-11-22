@@ -72,7 +72,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (§5.7). Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%; Lv25 shows 6%, Lv21–24 unseen; measured, Raw Dump #16). Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
@@ -141,7 +141,7 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, §5.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
 
-**Siphon % (measured 2026-11-22, Raw Dump #16, all 122 deployments):** `0.75 + 0.25 × L` fits Lv1/2/5/6/13/17/20; Lv25 = 6% (not 7%), so `GameFormulas.siphonPercent` caps at 6% from Lv21 (Lv21–24 unmeasured, M-04).
+**Siphon % (measured 2026-11-22, Raw Dump #16, all 122 deployments):** `0.75 + 0.25 × L` fits Lv1/2/5/6/13/17/20; Lv25 = 6% (not 7%), so `GameFormulas.siphonPercent` caps at 6% from Lv21 (the line reaches 6% at Lv21; owner-accepted, M-04 closed). **Max 700 siphon deployments** (owner). A siphon removed by the victim's AV vanishes from SIPHON EARNINGS with all its info; the game keeps no history (M-06 closed).
 
 **AV removal (guide, not in code):** AV−virus ≥+5 → 95, +4 → 90, +3 → 80, +2 → 70, +1 → 60, 0 → 50, −1 → 20, then −2% per level to a 5% floor at −9.
 

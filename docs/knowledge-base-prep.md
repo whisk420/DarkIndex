@@ -112,7 +112,7 @@ Order below is the proposed index order. Each topic lists what we already know a
   collection, mission and login rewards"; the Viruses section says "only theft and spam collection"; other
   sections say mission/login/ad/stash/subscription Crypto go straight to cold storage and are immune. → **M-05**.
 - AV wipe removes the row from SIPHON EARNINGS immediately [O].
-- Gaps: M-04, M-05, M-06.
+- Gaps: M-05. (M-04, M-06 closed 2026-11-22; owner: max 700 siphon deployments.)
 
 ### 3.4 Rootkit virus
 - Debuffs victim FW + ENC by up to 3 effective levels for you and your whole crew; only the highest rootkit
@@ -288,7 +288,7 @@ Ordered by value. "Capture" says what to send; a 📼 Raw Dump of the screen is 
 - **M-08 Download durations.** Software + level, your network, duration.
 - **M-17 Keygen fees.** Apps page `LOCKED LVL N available <price>` rows: your installed level, locked level, price.
   Dumps of your own Apps page whenever something is waiting to be unlocked.
-- **M-04 Siphon % per level.** SIPHON EARNINGS rows show `LV.x  y%`. One dump with mixed levels answers it.
+- ~~**M-04 Siphon % per level.**~~ Done 2026-11-22: 0.75 + 0.25 × L, 6% from Lv21. SIPHON EARNINGS rows show `LV.x  y%`. One dump with mixed levels answers it.
 - ~~**M-07 Rootkit debuff per level.**~~ Done 2026-11-22 (Lv1–2 −1, Lv3–5 −2, Lv6+ −3). The UPLOAD VIRUS card's stat line for your rootkit at a few levels.
 
 ### Medium priority (fills KB tables)
@@ -308,7 +308,7 @@ Ordered by value. "Capture" says what to send; a 📼 Raw Dump of the screen is 
 ### Low priority / one-off checks
 - **M-05 Siphon flows.** Does a victim's mission/login/transfer income show up in your siphoned totals? (Hard to test
   without a friendly victim; crew mate test.)
-- **M-06 Siphon list after victim AV** (already [O]; just confirm the removed row's history).
+- ~~**M-06 Siphon list after victim AV**~~ Done 2026-11-22: the row vanishes with all its info, no history kept. (already [O]; just confirm the removed row's history).
 - **M-19 Steal limits.** Can you take 100% of a hot wallet in one transfer? Minimum transfer?
 - **M-20 Scan window.** Your level vs the min/max target levels in a few `Scan Random` results (dump the scan screen).
 - **M-24 Mission spawn rates.** Just tally difficulties over a couple of weeks.
