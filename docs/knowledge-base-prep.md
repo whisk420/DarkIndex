@@ -72,9 +72,10 @@ measurements arrive.
 Order below is the proposed index order. Each topic lists what we already know and what's missing.
 
 ### 3.1 Getting started & the core loop
-- Start: Raider (1×), DSL (1×), 3,000 Crypto, 50 OC, 100 Credits, FW / Bypasser / Cracker / Encryptor Lv1 [G].
+- Start: Raider (1×), DSL (1×), 3,000 Crypto, 50 OC, 100 Credits, FW / Bypasser / Cracker / Encryptor Lv1 [G][O] (owner-confirmed 2026-11-22).
 - Loop: Scan → Bypass → Crack → steal / download / upload → stash to cold storage [G][O].
-- XP never comes from hacking, only from spending, missions, streaks [G][O]. Rep comes from hacking [G].
+- XP never comes from hacking, only from spending, missions, streaks [G][O]. Rep comes from hacking [G][O]. "Where progress comes from" owner-confirmed 2026-11-22.
+- The guide's "First purchases" tips were dropped (2026-11-22, owner: they don't fit; joining a crew isn't a purchase). The crew and rootkit advice lives in those topics.
 - Guide tip: upload a Rootkit **before** cracking (debuffs the encryptor) [G].
 
 ### 3.2 Spam virus & Spam economy  ⚠ highest value topic
@@ -208,7 +209,7 @@ Order below is the proposed index order. Each topic lists what we already know a
 - All known line formats (CLAUDE §5.2) with meaning; what each tells you. The app's own parsing explained.
 
 ### 3.15 Scanning & matchmaking
-- "Scan Random" returns up to 10 targets near your level, widening as needed [G]; ~±10 levels [O].
+- "Scan Random" returns 10 targets by default near your level, widening as needed [G][O]; ~±10 levels [O]. With the owner's crew Uplink (+2) a scan shows 12 [O, 2026-11-22].
 - Crew-server Uplink: +1 target per level (15 at Lv5, 17 with surge) and reaches a little higher [G].
 - Exact level window, Stealth exclusion, direct-IP lookup [G]. → **M-20**.
 - Apex network shows target ENC on scan [G].

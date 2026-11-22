@@ -46,17 +46,17 @@ object KnowledgeBaseContent {
         listOf(
             h("What you start with"),
             facts(
-                f("Device", "Raider (1.0×)", GUIDE),
-                f("Network", "DSL (1.0×)", GUIDE),
-                f("Wallet", "3,000 Crypto", GUIDE),
-                f("Overclocks", "50", GUIDE),
-                f("Credits", "100", GUIDE),
-                f("Software", "Firewall, Bypasser, Password Cracker, Password Encryptor at Lv 1", GUIDE),
+                f("Device", "Raider (1.0×)", CONFIRMED),
+                f("Network", "DSL (1.0×)", CONFIRMED),
+                f("Wallet", "3,000 Crypto", CONFIRMED),
+                f("Overclocks", "50", CONFIRMED),
+                f("Credits", "100", CONFIRMED),
+                f("Software", "Firewall, Bypasser, Password Cracker, Password Encryptor at Lv 1", CONFIRMED),
             ),
             h("The loop"),
             bullets(
                 GUIDE,
-                "1. Scan: \"Scan Random\" lists up to 10 targets near your level (see Scanning).",
+                "1. Scan: \"Scan Random\" lists up to 10 targets near your level, more with a crew-server Uplink (see Scanning).",
                 "2. Bypass the Firewall with your Bypasser (a timed process, or an instant Backdoor).",
                 "3. Crack the Password Encryptor with your Password Cracker (or an instant Exploit Kit). This unlocks the hot wallet.",
                 "4. Pay out: steal hot-wallet Crypto, download software to unlock with Keygen, and/or upload viruses (Spam, Siphon, Rootkit).",
@@ -65,16 +65,11 @@ object KnowledgeBaseContent {
             p("A bypass alone already lets you open the device, download software and upload viruses. The crack is only needed for the wallet.", GUIDE),
             h("Where progress comes from"),
             facts(
-                f("XP", "Only from spending (upgrades, Keygen unlocks), missions and login streaks. Never from hacking itself", GUIDE),
-                f("Reputation", "From hacking, defending and Trace detections; lost to viruses", GUIDE),
-                f("Crypto", "Theft, Spam, Siphon, missions, streaks, ads", GUIDE),
+                f("XP", "Only from spending (upgrades, Keygen unlocks), missions and login streaks. Never from hacking itself", CONFIRMED),
+                f("Reputation", "From hacking, defending and Trace detections; lost to viruses", CONFIRMED),
+                f("Crypto", "Theft, Spam, Siphon, missions, streaks, ads", CONFIRMED),
                 f("Leaderboard score", "floor(Level × Rep^0.75)", MEASURED, "Verified on 6 profiles"),
             ),
-            h("First purchases"),
-            tip("Keygen first: it turns software you download from victims into upgrades at 15–50% of the Store price, with full XP."),
-            tip("Spam or Siphon early: the 2 free botnet slots start earning while you sleep."),
-            tip("Upload a Rootkit before cracking: it weakens the victim's Encryptor by up to 3 levels for you and your crew."),
-            tip("Join a crew as soon as you're active: crewmates' rootkits help you too."),
         ),
         related = listOf("hacking", "keygen", "spam", "wallet")
     )
@@ -699,16 +694,17 @@ object KnowledgeBaseContent {
 
     private fun scanning() = KbTopic(
         "scanning", "📡", "Scanning & matchmaking",
-        "Scan Random fills up to 10 targets close to your level, widening the range until the list is full. Stealth players don't appear.",
+        "Scan Random fills 10 targets (more with a crew Uplink) close to your level, widening the range until the list is full. Stealth players don't appear.",
         listOf(
             facts(
-                f("Results", "Up to 10 targets near your level; range widens as needed", GUIDE),
+                f("Results", "10 targets per scan by default; range widens as needed", CONFIRMED),
                 f("Typical window", "About ±10 levels", CONFIRMED),
                 f("Stealth", "Proxy 20+ players with Stealth on never appear in random scans", GUIDE),
                 f("Direct lookup", "Anyone whose IP you have can be found directly", GUIDE),
                 f("Ghost device", "Last octet hidden in scanners even without a Proxy", GUIDE),
                 f("Null Route network", "Scan results reveal the target's Encryptor level", GUIDE),
                 f("Crew-server Uplink", "+1 target per level (15 at Lv 5, 17 with a surge) and reaches a little higher", GUIDE),
+                f("Uplink in practice", "A crew Uplink giving +2 shows 12 targets per scan", CONFIRMED),
                 f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
             p("Scan results look like \"1.2.3.4 FW Lv.23 ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
@@ -910,6 +906,7 @@ object KnowledgeBaseContent {
                 "Trace doesn't re-roll in crew views.",
                 "Message Encryptor protects on the viewing device: if the hacked member lacks it, the whole chat is readable.",
             ),
+            tip("Join a crew as soon as you're active: crewmates' rootkits help you too, and the crew server buffs everyone."),
             p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", CONFIRMED),
             h("Crew server"),
             table(
