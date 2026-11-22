@@ -1019,7 +1019,7 @@ object KnowledgeBaseContent {
             h("Good Spam & Recon"),
             bullets(
                 CONFIRMED,
-                "Good Spam ranks targets by level × 10 − upload minutes × 0.5 − firewall, using the cheapest Spam that caps 100/hr (measured model).",
+                "Good Spam ranks targets where your best Spam hits 100/hr first, then the rest by income; within that, the fastest upload (weakest device, lowest Spam level needed), then the lowest Firewall. Your own level plays no part.",
                 "Recon walks you through targets that are missing a wallet or core software.",
                 "Validate re-checks the oldest targets first.",
             ),

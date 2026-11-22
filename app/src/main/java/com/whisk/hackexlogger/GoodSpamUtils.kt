@@ -1,6 +1,5 @@
 package com.whisk.hackexlogger
 
-import kotlin.math.roundToInt
 
 object GoodSpamUtils {
     /**
@@ -13,30 +12,42 @@ object GoodSpamUtils {
         return HardwareCatalog.uploadDefenceTier(hardware) ?: 3
     }
 
-    /**
-     * Calculates the Good Spam priority score for a target.
-     * Formula: (Level * 10.0) - (UploadMinutes * 0.5) - (Firewall * 1.0)
-     *
-     * UploadMinutes is the upload time of the **cheapest Spam level that hits the 100/hr cap** on this target
-     * (see [spamUploadLevel]), on the player's **current** network. Lower Spam levels upload faster, so a target
-     * that caps with a Lv.5 Spam is much cheaper to farm than one that needs Lv.20.
-     * With the target's level unknown, this falls back to the Lv.20 time.
-     */
-    fun calculateScore(
-        level: Int?,
-        firewall: Int?,
-        hardware: String?,
-        playerNetwork: String? = null,
-        installedSpamLevel: Int = 0
-    ): Double {
-        val lvl = (level ?: 0).toDouble()
-        val fw = (firewall ?: 0).toDouble()
+    /** What Spam priority (Good Spam) ranks a target on: see [rankForSpam]. */
+    data class SpamPriority(
+        val record: TargetRecord,
+        /** Fresh-upload Crypto/hr of the best Spam you can upload here; null when the target's level is unknown. */
+        val income: Int?,
+        /** Upload time of that Spam level on your current network; null when the target's device is unknown. */
+        val uploadSeconds: Int?,
+    )
+
+    fun spamPriority(record: TargetRecord, playerNetwork: String?, installedSpamLevel: Int): SpamPriority {
+        val level = record.level
         val uploadLevel = if (level == null) 20
             else spamUploadLevel(calculateSpamPayoutInfo(level, installedSpamLevel), installedSpamLevel)
-        val uploadSecs = NetworkSpeedUtils.getUploadSecondsForLevel(hardware, playerNetwork, uploadLevel)
-        val uploadMins = uploadSecs / 60.0
-        return (lvl * 10.0) - (uploadMins * 0.5) - fw
+        val deviceKnown = record.hardware != null && HardwareCatalog.uploadDefenceTier(record.hardware!!) != null
+        return SpamPriority(
+            record = record,
+            income = level?.let { spamIncome(uploadLevel, it) },
+            uploadSeconds = if (deviceKnown) NetworkSpeedUtils.getUploadSecondsForLevel(record.hardware, playerNetwork, uploadLevel) else null,
+        )
     }
+
+    /**
+     * Spam priority order (owner, 2026-11-22). Your own level plays no part in Spam income, and past the 100/hr cap
+     * a higher victim level pays nothing extra, so:
+     * 1. targets where your best Spam hits 100/hr first, then the rest by income (unknown level last);
+     * 2. then the fastest upload: weaker device, and the lower Spam level a target needs (unknown device last);
+     * 3. then the lowest Firewall.
+     */
+    fun rankForSpam(records: List<TargetRecord>, playerNetwork: String?, installedSpamLevel: Int): List<TargetRecord> =
+        records.map { spamPriority(it, playerNetwork, installedSpamLevel) }
+            .sortedWith(
+                compareByDescending<SpamPriority> { it.income ?: -1 }
+                    .thenBy { it.uploadSeconds ?: Int.MAX_VALUE }
+                    .thenBy { it.record.firewall ?: 0 }
+            )
+            .map { it.record }
 
     /**
      * The Spam level worth uploading to a target: the minimum level that hits the 100/hr cap, never more than you
