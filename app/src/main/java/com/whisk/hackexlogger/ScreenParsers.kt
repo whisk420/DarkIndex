@@ -227,7 +227,7 @@ data class LogParseResult(
 )
 
 /**
- * Log timestamps. The game writes `[M-D H:MM]` in **UTC** with no year (owner-confirmed 2026-11-19).
+ * Log timestamps. The game writes `[M-D H:MM]` in **UTC** with no year (developer-confirmed 2026-11-19).
  * The year comes from an anchor: the log's `Last saved:` footer when present, else the current UTC time.
  * A line whose month is after the anchor's month belongs to the previous year (December lines read in January).
  */

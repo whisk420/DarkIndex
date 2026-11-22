@@ -9,7 +9,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Owner rule (2026-11-20): the target's wallet screen is proof of its wallet. Log-inferred wallets are only
+ * Developer rule (2026-11-20): the target's wallet screen is proof of its wallet. Log-inferred wallets are only
  * "highly probable", so a target can hold several; they never replace or move a wallet. Only a wallet-screen
  * scrape can replace a wallet (even a previous wallet-screen one, since wallets can rarely change).
  */

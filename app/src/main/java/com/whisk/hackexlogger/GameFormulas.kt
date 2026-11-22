@@ -79,7 +79,7 @@ object GameFormulas {
 
     /**
      * Hourly income of one Spam of [spamLevel] uploaded to a victim of [victimLevel], capped at 100 and then decayed.
-     * Fixed at upload: later level changes on either side don't change it (owner). Not monotonic: past the victim's
+     * Fixed at upload: later level changes on either side don't change it (developer). Not monotonic: past the victim's
      * level a higher Spam can earn less (see [spamBestLevel]).
      */
     fun spamIncomePerHour(spamLevel: Int, victimLevel: Int, daysSinceUpload: Double = 0.0, halfDecay: Boolean = false): Int {
@@ -136,7 +136,7 @@ object GameFormulas {
     /**
      * Siphon skim rate in % for a siphon uploaded at [level]. Measured 2026-11-22 (Raw Dump #16, all 122 deployments):
      * Lv1 1%, Lv2 1.25%, Lv5 2%, Lv6 2.25%, Lv13 4%, Lv17 5%, Lv20 5.75%, Lv25 6%. 0.75 + 0.25 × level fits every row
-     * up to Lv20; the line reaches 6% at Lv21 and Lv25 shows 6%, so the rate caps at 6% from Lv21 (owner-accepted).
+     * up to Lv20; the line reaches 6% at Lv21 and Lv25 shows 6%, so the rate caps at 6% from Lv21 (developer-accepted).
      */
     fun siphonPercent(level: Int): Double? =
         if (level <= 0) null else minOf(0.75 + 0.25 * level, SIPHON_MAX_PERCENT)
@@ -191,7 +191,7 @@ object GameFormulas {
         return (price * ratio).roundToInt() // rounding unconfirmed (Q-13)
     }
 
-    /** XP per Store crypto for software (GEMINI empirical 0.1717; one owner data point 0.170). Keygen unlocks pay full XP. */
+    /** XP per Store crypto for software (GEMINI empirical 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
     const val SOFTWARE_XP_PER_CRYPTO = 0.1717
 
     // ── Proxy / Trace / hardening ───────────────────────────────────────────────────────────────────────────
@@ -300,7 +300,7 @@ object GameFormulas {
     }
 
     /**
-     * Effective levels a rootkit takes off the victim's Firewall and Encryptor (measured by the owner, 2026-11-22):
+     * Effective levels a rootkit takes off the victim's Firewall and Encryptor (measured by the developer, 2026-11-22):
      * Lv 1–2 → 1, Lv 3 → 2, Lv 6+ → 3 (the cap). Lv 4–5 are 2 by elimination (between Lv 3's 2 and Lv 6's
      * first 3), not yet seen. 0 for no rootkit.
      */
@@ -324,7 +324,7 @@ object GameFormulas {
         else -> (10 - softwareGap) / 5.0
     }
 
-    /** XP to the next level, known points only (guide + owner). Null = not measured yet (Q-19). */
+    /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-19). */
     val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
     /** Cold storage cap, known points only (guide). Q-16. */

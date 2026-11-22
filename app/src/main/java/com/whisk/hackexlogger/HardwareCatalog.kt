@@ -2,7 +2,7 @@ package com.whisk.hackexlogger
 
 /**
  * Single source of truth for device and network names, standard and prestige
- * (plan: docs/plans/prestige-hardware.md, owner answers 2026-11-19).
+ * (plan: docs/plans/prestige-hardware.md, developer answers 2026-11-19).
  *
  * - Standard devices: 12 levels, Raider (1) … Nova Ultra (12). Standard networks: 11 levels, DSL (1) … Quantum Link (11).
  * - Prestige ("Reboot Protocol") pieces are `<Line> <Roman>` and the numeral is the level, with the same
@@ -145,7 +145,7 @@ object HardwareCatalog {
 
     /**
      * How hard a target's device is to upload to, as tier 0–9: Raider I–III (levels 1–3) upload identically
-     * (owner-verified), then one tier per level up to Nova Ultra / `<Line> XII`. Null for unknown devices.
+     * (developer-verified), then one tier per level up to Nova Ultra / `<Line> XII`. Null for unknown devices.
      */
     fun uploadDefenceTier(hardware: String?): Int? {
         val hw = device(hardware) ?: return null

@@ -251,7 +251,7 @@ object KbCalculators {
                 listOf(
                     CalcInput.Number("av", "Your Antivirus level", d.antivirusLevel ?: 15, 1, 60),
                     CalcInput.Number("virus", "Virus level", 15, 1, 60),
-                    CalcInput.Toggle("scythe", "Virus owner on Harvest Node (+2)", false),
+                    CalcInput.Toggle("scythe", "Attacker on Harvest Node (+2)", false),
                     CalcInput.Number("scans", "Number of scans", 1, 1, 20),
                     CalcInput.Choice("device", "Your device", DEVICE_OPTIONS, ((d.deviceLevel ?: 1) - 1).coerceIn(0, 11)),
                     CalcInput.Number("hacks", "Bypasses/cracks running alongside", 0, 0, 20)

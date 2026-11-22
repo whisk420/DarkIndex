@@ -180,7 +180,7 @@ class UnmaskingTest {
 
     @Test
     fun testDatabaseMaintenanceLogic() {
-        // Several log-inferred wallets on one target are allowed now (owner rule 2026-11-20): left alone
+        // Several log-inferred wallets on one target are allowed now (developer rule 2026-11-20): left alone
         val multiLogWallets = TargetRecord(
             ip = "159.164.200.186",
             username = "Nelzayy",

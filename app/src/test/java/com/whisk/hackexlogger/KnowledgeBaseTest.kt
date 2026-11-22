@@ -14,7 +14,7 @@ class KnowledgeBaseTest {
     // ── Formulas vs published numbers ──────────────────────────────────────────────────────────────────────
 
     @Test
-    fun spamIncomeMatchesOwnerMeasurements() {
+    fun spamIncomeMatchesDeveloperMeasurements() {
         // 2026-11-22, fresh uploads read off SPAM EARNINGS: (victim level, Spam level) → Crypto/hr
         val measured = mapOf(
             (43 to 1) to 18, (43 to 2) to 23, (43 to 3) to 27, (43 to 7) to 47, (43 to 11) to 69,
@@ -42,7 +42,7 @@ class KnowledgeBaseTest {
 
     @Test
     fun rootkitDebuffMatchesMeasuredLevels() {
-        // Owner's in-game readings, 2026-11-22
+        // Developer's in-game readings, 2026-11-22
         mapOf(1 to 1, 2 to 1, 3 to 2, 6 to 3).forEach { (lvl, debuff) -> assertEquals("Lv$lvl", debuff, GameFormulas.rootkitDebuff(lvl)) }
         assertEquals(3, GameFormulas.rootkitDebuff(30)) // −3 is the cap
         assertEquals(0, GameFormulas.rootkitDebuff(0))
