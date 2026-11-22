@@ -83,7 +83,8 @@ object GoodSpamUtils {
      *   max(30, installed)); max(20, installed) when the cap is out of reach
      * - maxAchievableIncome: the payout at max(20, installed)
      *
-     * Model: the guide's earnings table (see [GameFormulas.spamBaseIncome] and [GameFormulas.spamLevelGapMultiplier]).
+     * Model: the guide's curve scaled to the owner's measured payouts (see [GameFormulas.spamBaseIncome]) and the
+     * guide's level-gap multiplier ([GameFormulas.spamLevelGapMultiplier]).
      */
     fun calculateSpamPayoutInfo(targetLevel: Int?, playerLevel: Int?, currentSpamLevel: Int): SpamPayoutInfo {
         val currSpam = currentSpamLevel.coerceAtLeast(0)

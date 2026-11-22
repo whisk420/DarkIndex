@@ -18,15 +18,27 @@ object GameFormulas {
     const val SPAM_CAP_PER_HOUR = 100
 
     /**
-     * Crypto/hr of a Spam of [spamLevel] on a victim of your own level, before the cap.
-     * Fit of the guide's table: with [spamLevelGapMultiplier] and normal rounding it reproduces all 17 published
-     * cells exactly (equal level Lv1 12, Lv5 24, Lv10 42, Lv15 62, Lv20 83; +10 and −10 columns).
+     * The guide's published Spam earnings curve (equal-level Crypto/hr, before the cap). With
+     * [spamLevelGapMultiplier] and normal rounding it reproduces all 17 guide cells (equal Lv1 12 … Lv20 83).
+     * The real game pays [SPAM_MEASURED_SCALE] times this; use [spamBaseIncome] for anything shown to the player.
      */
-    fun spamBaseIncome(spamLevel: Int): Double {
+    fun spamGuideBaseIncome(spamLevel: Int): Double {
         if (spamLevel <= 0) return 0.0
         val l = spamLevel.toDouble()
         return 8.85 + 2.89 * l + 0.0415 * l * l
     }
+
+    /**
+     * Real income ÷ guide income. Owner measurement 2026-11-22 (player Lv45, victim Lv43, gap −2, fresh uploads):
+     * Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69/hr. All five equal round(guide × 0.90 × k) only for
+     * k·0.90 in 1.5207–1.5221, i.e. the guide's curve shape is right but its numbers are ~1.69× too low.
+     * A straight line was ruled out by Lv11 (predicted 66). The split between this scale and the gap multiplier is
+     * still unmeasured: this assumes the guide's −5%/level penalty holds at −2 (M-01).
+     */
+    const val SPAM_MEASURED_SCALE = 1.69
+
+    /** Crypto/hr of a Spam of [spamLevel] on a victim of your own level, before the cap (measured, see [SPAM_MEASURED_SCALE]). */
+    fun spamBaseIncome(spamLevel: Int): Double = spamGuideBaseIncome(spamLevel) * SPAM_MEASURED_SCALE
 
     /**
      * Income multiplier for a victim [levelGap] = victim level − your level.

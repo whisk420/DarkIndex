@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 211 tests, all passing as of 2026-11-21
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 212 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -139,7 +139,7 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 **Hack (bypass/crack) success — empirical, in code (`TargetRecord.calculateSuccessProbability`):**
 `delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
 
-**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income `round((8.85 + 2.89L + 0.0415L²) × gap multiplier)` (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells. Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
+**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but the real game pays 1.69× that** (measured 2026-11-22, §5.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
 
 **AV removal (guide, not in code):** AV−virus ≥+5 → 95, +4 → 90, +3 → 80, +2 → 70, +1 → 60, 0 → 50, −1 → 20, then −2% per level to a 5% floor at −9.
 
@@ -326,8 +326,10 @@ The last two could feed the player profile automatically (TODO: profile from own
 - **Filter:** `firewall ≤ slider` (0–31, 31 = uncapped; null FW counts as 0). Turning it on sets the slider to your effective Bypasser.
 - **Sort:** `level×10 − uploadMinutes×0.5 − firewall`.
 - **Device tier:** standard names map exactly. Prestige devices map by numeral (I–III=0, IV=1 … XII=9). A bare prestige name is 0. **Unknown strings are 3.**
-- **Spam payout model (guide, owner-approved 2026-11-21):** `GameFormulas.spamIncomePerHour` = `round((8.85 + 2.89L + 0.0415L²) × gap multiplier)`, capped at 100, then decayed. Multiplier +4.1%/level above you (max ×1.5), −5%/level below (floor ×0.10, a guess below −10). Reproduces all 17 guide cells. At equal level the cap needs Lv24 (Lv20 = 83/hr).
-  - The shape between 0 and ±10 levels is still unmeasured (M-01).
+- **Spam payout model (measured 2026-11-22):** `GameFormulas.spamIncomePerHour` = `round(1.69 × (8.85 + 2.89L + 0.0415L²) × gap multiplier)`, capped at 100, then decayed. `spamGuideBaseIncome` keeps the guide's curve; `SPAM_MEASURED_SCALE = 1.69`.
+  - Measurements (player Lv45, victim Lv43, gap −2, fresh uploads, read off SPAM EARNINGS): Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69/hr. All five fit only for scale × 0.90 in 1.5207–1.5221. A straight line (13.5 + 4.5L) was ruled out by Lv7/Lv11. **The guide's table is ~1.69× too low** (its shape is right).
+  - Caps: equal level Lv15, −2 Lv16, +10 Lv10, −10 Lv28; unreachable below about −12 (search stops at Lv30).
+  - Gap multiplier (+4.1%/level above, max ×1.5; −5%/level below, ×0.10 floor) is still the guide's and unmeasured (M-01). Hint it's finer than 5% steps: the 2026-11-20 SPAM EARNINGS dump (player Lv39) shows Lv16 deployments at 96/98/99/hr, which integer −5% steps can't produce. Next step: SPAM EARNINGS dump + DB export to join rows with target levels.
 - **Current hardware:** `PlayerProfile.currentDevice/currentNetwork` (shown item if MAX TIER, else `decrementHardwareName(next)`); `nextDevice/nextNetwork` are null once maxed. Always use `PlayerProfileRepository.getCurrentNetwork()/getCurrentDevice()` for maths (they fall back to decrement(next) for old profiles).
 - **Spam upload level:** `GoodSpamUtils.calculateSpamPayoutInfo` → `recommendedSpamLevel` = **minimum** level reaching 100/hr, searched up to max(30, installed) (`isCapReachable`), `levelMultiplier` exposed. `spamUploadLevel(info, installed)` = min(recommended, installed) (recommended when installed is unknown). The target card chip shows `⏱ Spam Lv.X ~time`; Good Spam's `calculateScore(…, playerNetwork, playerLevel, installedSpam)` uses that level's upload time (falls back to Lv20 when player info is unknown).
 - **Player levels:** Store shows NEXT levels, so current = stored − 1. `getEffectiveBypasser/Cracker` = (next − 1) + 3 if `nextDevice` contains "apex". `updateBypasserLevel` stores `(Using Lv + bonus) + 1`.
@@ -367,7 +369,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (211 JVM + 2 instrumented; audited and rewritten 2026-11-20)
+## 6. Test suite (212 JVM + 2 instrumented; audited and rewritten 2026-11-20)
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
 5 in `UnmaskingTest` (re-implemented the logic inside the test), `ConsoleBundleTest.testImportInvalidFormat`
 (threw the exception itself), the instrumented `testTargetRecordModelOnDevice` (only read back constructor
@@ -423,7 +425,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B3 | Fixed | Downloads auto-backup broke after a reinstall forced by CI's throwaway signing key; one permanent key now |
 | B4 | Fixed | Wipe Database had no confirmation |
 | B5 | Fixed | Log-only screens fell to UNKNOWN; classifier now matches log headers and lines |
-| B6 | Mitigated | Spam payout now follows the guide's table (owner, 2026-11-21; §5.7). Shape between table points still to measure (M-01) |
+| B6 | Mitigated | Spam payout re-fitted to in-game measurements (2026-11-22, §5.7): guide curve × 1.69. Level-gap effect still to measure (M-01) |
 | B7 | Mitigated | Unknown hardware still gets tier 3 / 1.0×, but is marked " ?" and logged |
 | B8 | Fixed | Merges orphaned thefts of the dropped wallet; replaced by the wallet-authority rule |
 | B9 | Fixed | Search is hidden while Recon or Good Spam is on |

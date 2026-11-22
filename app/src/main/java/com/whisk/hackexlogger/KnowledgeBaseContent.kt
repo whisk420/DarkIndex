@@ -94,19 +94,23 @@ object KnowledgeBaseContent {
             ),
             h("Earnings by level"),
             p(
-                "The guide's table, reproduced exactly by the formula base = 8.85 + 2.89·L + 0.0415·L², ×(1 + 4.1% per level the victim is above you, max +50%) or ×(1 − 5% per level below), rounded, capped at 100.",
+                "Measured in-game (2026-11-22, victim 2 levels below): Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69 Crypto/hr. The guide's curve has the right shape but its numbers are about 1.69× too low (its equal-level Lv20 is 83/hr).",
+                MEASURED
+            ),
+            p(
+                "Model: base = 1.69 × (8.85 + 2.89·L + 0.0415·L²), ×(1 + 4.1% per level the victim is above you, max +50%) or ×(1 − 5% per level below), rounded, capped at 100. It reproduces all five measurements exactly.",
                 FORMULA
             ),
             table(
                 FORMULA, listOf("Spam Lv", "−10", "−5", "Equal", "+5", "+10"),
-                listOf(1, 5, 10, 15, 18, 20, 22, 24, 25).map { lvl ->
+                listOf(1, 3, 5, 7, 9, 11, 13, 15, 17, 20).map { lvl ->
                     listOf("Lv $lvl") + listOf(-10, -5, 0, 5, 10).map { GameFormulas.spamIncomePerHour(lvl, it).toString() }
                 },
-                "Crypto/hr for a fresh upload. Guide cells: Lv1/5/10/15/20 at equal and +10, Lv15/20 at −10; the rest is the formula."
+                "Crypto/hr for a fresh upload, from the measured model."
             ),
-            warn("Between 0 and ±10 levels the straight line is an assumption, and below −10 the guide gives nothing (the app assumes a ×0.10 floor). Measure M-01 to confirm."),
+            warn("Only the −2 column is measured. The level-gap effect (+4.1% / −5% per level) is still the guide's and unconfirmed, and below −10 the app assumes a ×0.10 floor. Measure M-01 to confirm."),
             tip("The cap is all that matters per victim: upload the cheapest Spam level that reaches 100/hr. At equal level that's about Lv ${GameFormulas.spamCapLevel(0)}; a victim 10 levels above you caps with Lv ${GameFormulas.spamCapLevel(10)}."),
-            tip("A victim 10 below you pays half. With matchmaking showing ±10 levels, always prefer the higher-level half of a scan."),
+            tip("A victim 10 below you pays half (guide). With matchmaking showing ±10 levels, always prefer the higher-level half of a scan."),
             calc(KbCalculators.SPAM),
             h("Decay"),
             p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Exact fit: rate = 100% − (day − 21) × 90/79.", FORMULA),
@@ -165,13 +169,13 @@ object KnowledgeBaseContent {
                 f("Elite Pass", "−50% fee", GUIDE),
             ),
             table(
-                GUIDE, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
+                FORMULA, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
                 GameFormulas.BOTNET_TIERS.map { t ->
-                    val gross = t.slots * 62
+                    val gross = t.slots * GameFormulas.SPAM_CAP_PER_HOUR
                     val fee = Math.round(gross * GameFormulas.spamFeeRate(t.slots)).toInt()
                     listOf(t.name, n(gross), n(fee), n(gross - fee), n((gross - fee) * 24))
                 },
-                "Every slot full of Lv 15 Spam on equal-level victims (62/hr), day 1. Matches the guide's example."
+                "Every slot at the 100/hr cap, day 1. (The guide's own example uses 62/hr, its too-low Lv 15 figure; the fee maths matches it.)"
             ),
             tip("Going from 44 to 64 Spam raises the fee from 21% to 30% on everything, so the last 20 slots add far less than 20 × your rate."),
             calc(KbCalculators.BOTNET),
@@ -993,7 +997,7 @@ object KnowledgeBaseContent {
             h("Good Spam & Recon"),
             bullets(
                 OWNER,
-                "Good Spam ranks targets by level × 10 − upload minutes × 0.5 − firewall, using the cheapest Spam that caps 100/hr (guide model).",
+                "Good Spam ranks targets by level × 10 − upload minutes × 0.5 − firewall, using the cheapest Spam that caps 100/hr (measured model).",
                 "Recon walks you through targets that are missing a wallet or core software.",
                 "Validate re-checks the oldest targets first.",
             ),

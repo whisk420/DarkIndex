@@ -412,7 +412,7 @@ class TargetAdapter(
                             "• Virus Lv 10: ~$t10\n" +
                             "• Virus Lv 20: ~$t20\n\n" +
                             capMessage +
-                            "\n\n(Spam payouts follow hackex.net/guide's earnings table for a fresh upload; they decay after day 21. See Knowledge Base → Spam.)"
+                            "\n\n(Spam payouts: measured in-game for a fresh upload, about 1.7× the guide's table. The level-gap effect is still estimated. Payouts decay after day 21. See Knowledge Base → Spam.)"
                         )
                         .setPositiveButton("OK", null)
                         .show()

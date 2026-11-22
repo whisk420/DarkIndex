@@ -16,13 +16,25 @@ class KnowledgeBaseTest {
     // ── Formulas vs published numbers ──────────────────────────────────────────────────────────────────────
 
     @Test
-    fun spamIncomeMatchesEveryGuideCell() {
+    fun spamGuideCurveMatchesEveryGuideCell() {
+        fun guide(lvl: Int, gap: Int) =
+            (GameFormulas.spamGuideBaseIncome(lvl) * GameFormulas.spamLevelGapMultiplier(gap)).roundToInt().coerceAtMost(100)
         val equal = mapOf(1 to 12, 5 to 24, 10 to 42, 15 to 62, 20 to 83)
         val up10 = mapOf(1 to 17, 5 to 34, 10 to 59, 15 to 87, 20 to 100)
         val down10 = mapOf(15 to 31, 20 to 42)
-        equal.forEach { (lvl, v) -> assertEquals("equal Lv$lvl", v, GameFormulas.spamIncomePerHour(lvl, 0)) }
-        up10.forEach { (lvl, v) -> assertEquals("+10 Lv$lvl", v, GameFormulas.spamIncomePerHour(lvl, 10)) }
-        down10.forEach { (lvl, v) -> assertEquals("-10 Lv$lvl", v, GameFormulas.spamIncomePerHour(lvl, -10)) }
+        equal.forEach { (lvl, v) -> assertEquals("equal Lv$lvl", v, guide(lvl, 0)) }
+        up10.forEach { (lvl, v) -> assertEquals("+10 Lv$lvl", v, guide(lvl, 10)) }
+        down10.forEach { (lvl, v) -> assertEquals("-10 Lv$lvl", v, guide(lvl, -10)) }
+    }
+
+    @Test
+    fun spamIncomeMatchesOwnerMeasurements() {
+        // 2026-11-22: player Lv45, victim Lv43, fresh uploads, read off SPAM EARNINGS
+        val measured = mapOf(1 to 18, 2 to 23, 3 to 27, 7 to 47, 11 to 69)
+        measured.forEach { (lvl, v) -> assertEquals("gap -2 Lv$lvl", v, GameFormulas.spamIncomePerHour(lvl, -2)) }
+        // Same victim, cap: Lv16 is the cheapest level reaching 100/hr; Lv15 at equal level
+        assertEquals(16, GameFormulas.spamCapLevel(-2))
+        assertEquals(15, GameFormulas.spamCapLevel(0))
     }
 
     @Test
@@ -197,7 +209,7 @@ class KnowledgeBaseTest {
     fun calculatorsUseTheSameMaths() {
         val spam = KbCalculators.byId(KbCalculators.SPAM)!!.run(mapOf("spam" to 20, "me" to 35, "target" to 45, "days" to 0))
         assertTrue(spam, spam.contains("Fresh upload: 100/hr"))
-        assertTrue(spam, spam.contains("Lv 18"))
+        assertTrue(spam, spam.contains("Lv 10"))
         val proxy = KbCalculators.byId(KbCalculators.PROXY)!!.run(mapOf("level" to 20, "hours" to 3, "count" to 2))
         assertTrue(proxy, proxy.contains("913"))
         assertTrue(proxy, proxy.contains("1,826"))
