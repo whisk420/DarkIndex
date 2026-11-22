@@ -81,7 +81,7 @@ object KnowledgeBaseContent {
 
     private fun spam() = KbTopic(
         "spam", "💸", "Spam virus & income",
-        "Your main passive income: up to 100 Crypto/hr per victim. Pays more on higher-level victims, less on lower ones, and decays after 21 days.",
+        "Your main passive income: up to 100 Crypto/hr per victim. Pays more the further the victim's level is above the Spam's (your own level doesn't matter), fixed at upload, and decays after 21 days.",
         listOf(
             h("The basics"),
             facts(
@@ -95,23 +95,27 @@ object KnowledgeBaseContent {
             ),
             h("Earnings by level"),
             p(
-                "Measured in-game (2026-11-22, victim 2 levels below): Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69 Crypto/hr. The guide's curve has the right shape but its numbers are about 1.69× too low (its equal-level Lv20 is 83/hr).",
+                "Measured in-game (2026-11-22, a Lv 45 player, fresh uploads). Victim Lv 43: Spam Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69/hr. Victim Lv 33: Lv7 47, Lv13 81/hr, the same as on the Lv 43 victim. Victim Lv 2: Lv1 13, Lv3 18, Lv7 24, Lv11 26/hr.",
                 MEASURED
             ),
             p(
-                "Model: base = 1.69 × (8.85 + 2.89·L + 0.0415·L²), ×(1 + 4.1% per level the victim is above you, max +50%) or ×(1 − 5% per level below), rounded, capped at 100. It reproduces all five measurements exactly.",
+                "What sets the rate is the victim's level compared with the Spam's level. Your own level plays no part, despite what the guide implies. A victim well above the Spam pays the full bonus; once the Spam outgrows the victim, each extra Spam level adds less.",
+                MEASURED
+            ),
+            p(
+                "Model: ${"%.2f".format(Locale.US, GameFormulas.SPAM_MEASURED_SCALE)} × (8.85 + 2.89·L + 0.0415·L²) × (1 + 4.1% per level the victim is above the Spam, max ×${"%.2f".format(Locale.US, GameFormulas.SPAM_MAX_BONUS)}; or 1 − 5% per level below, min ×0.50), rounded, capped at 100 (a rate just under 100 shows as 99). It reproduces all 11 measurements exactly. A higher Spam never earns less than a lower one on the same victim.",
                 CALCULATED
             ),
             table(
-                CALCULATED, listOf("Spam Lv", "−10", "−5", "Equal", "+5", "+10"),
-                listOf(1, 3, 5, 7, 9, 11, 13, 15, 17, 20).map { lvl ->
-                    listOf("Lv $lvl") + listOf(-10, -5, 0, 5, 10).map { GameFormulas.spamIncomePerHour(lvl, it).toString() }
+                CALCULATED, listOf("Spam Lv", "Victim 2", "Victim 10", "Victim 20", "Victim 30", "Victim 40+"),
+                listOf(1, 3, 5, 7, 9, 11, 13, 15, 16, 20).map { lvl ->
+                    listOf("Lv $lvl") + listOf(2, 10, 20, 30, 40).map { GameFormulas.spamIncomePerHour(lvl, it).toString() }
                 },
-                "Crypto/hr for a fresh upload, from the measured model."
+                "Crypto/hr for a fresh upload. The rate is fixed at upload."
             ),
-            warn("Only the −2 column is measured. The level-gap effect (+4.1% / −5% per level) is still the guide's and unconfirmed, and below −10 the app assumes a ×0.10 floor. Measure M-01 to confirm."),
-            tip("The cap is all that matters per victim: upload the cheapest Spam level that reaches 100/hr. At equal level that's about Lv ${GameFormulas.spamCapLevel(0)}; a victim 10 levels above you caps with Lv ${GameFormulas.spamCapLevel(10)}."),
-            tip("A victim 10 below you pays half (guide). With matchmaking showing ±10 levels, always prefer the higher-level half of a scan."),
+            warn("The −5% per level and the ×0.50 floor once the Spam is 10+ levels above the victim are the guide's numbers; only gaps down to −9 are measured. Measure M-01 to confirm."),
+            tip("Upload the cheapest Spam level that reaches 100/hr. Spam Lv ${GameFormulas.spamBestCap().first} caps on any victim Lv ${GameFormulas.spamBestCap().second} or higher, whatever your own level; no lower level ever caps."),
+            tip("Low-level victims still pay: a Lv 2 victim gives about ${GameFormulas.spamIncomePerHour(11, 2)}/hr with Lv 11 Spam. Past the victim's level, extra Spam levels add little, so a fast low upload is often the better deal."),
             calc(KbCalculators.SPAM),
             h("Decay"),
             p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Calculated: rate = 100% − (day − 21) × 90/79.", CALCULATED),
@@ -570,7 +574,7 @@ object KnowledgeBaseContent {
                 f("Device upgrades", "0.25 XP per crypto (best ratio)", GUIDE),
                 f("Older hardware / network", "0.20 XP per crypto", EMPIRICAL),
             ),
-            tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking and Spam. Upgrade what you use."),
+            tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking. Upgrade what you use."),
             unknowns(
                 "M-16" to "Store prices below Lv 15",
                 "M-17" to "Exact key fee by jump (Apps page LOCKED rows)",
@@ -708,7 +712,7 @@ object KnowledgeBaseContent {
                 f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
             p("Scan results look like \"1.2.3.4 FW Lv.23 ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
-            tip("Look for low firewalls and levels at or above yours: better Spam income and full rep."),
+            tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
             unknowns("M-20" to "Exact level window of a scan at your level"),
         ),
         related = listOf("leveling", "proxy", "spam")
@@ -766,7 +770,7 @@ object KnowledgeBaseContent {
 
     private fun leveling() = KbTopic(
         "leveling", "📈", "Leveling & XP",
-        "XP comes from spending, not hacking. Levels raise cold storage and give Credits and OC, but over-levelling hurts matchmaking, Spam income and rep.",
+        "XP comes from spending, not hacking. Levels raise cold storage and give Credits and OC, but over-levelling hurts matchmaking and rep.",
         listOf(
             h("XP sources"),
             facts(
@@ -793,7 +797,7 @@ object KnowledgeBaseContent {
             bullets(
                 GUIDE,
                 "Scans pull targets near your level: a higher level shows you tougher players.",
-                "Spam pays less on victims below you (−5% per level).",
+                "Spam doesn't care about your level: only the victim's level vs the Spam level counts (measured).",
                 "Hack rep falls off when your software outclasses theirs by 6+ levels.",
             ),
             tip("Spend on what you use (Bypasser, Cracker, Spam, Keygen, device). Upgrading unused apps for XP only drags your level ahead of your offence."),

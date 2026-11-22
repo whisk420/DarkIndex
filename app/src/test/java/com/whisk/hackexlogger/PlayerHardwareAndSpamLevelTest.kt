@@ -156,57 +156,59 @@ CREWS 3"""
 
     @Test
     fun minimumSpamLevelThatCapsIsRecommended() {
-        // Target 10 levels above a Lv35 player: ×1.41 → Lv10 already hits 100/hr
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 45, playerLevel = 35, currentSpamLevel = 20)
+        // Victim Lv45: Lv17 is the cheapest Spam that hits 100/hr (Lv16 tops out at 99)
+        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 45, currentSpamLevel = 20)
         assertTrue(info.isCapReachable)
-        assertEquals(10, info.recommendedSpamLevel)
-        assertEquals(10, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20))
+        assertEquals(17, info.recommendedSpamLevel)
+        assertEquals(17, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20))
         assertTrue(info.isCapReachedAtCurrent)
     }
 
     @Test
     fun capNeedingMoreThanInstalledUsesInstalledLevel() {
-        // Same level: the cap needs Lv15, but you only have Lv12 → upload Lv12 (84/hr)
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, playerLevel = 35, currentSpamLevel = 12)
+        // Victim Lv35: the cap needs Lv17, but you only have Lv12 → upload Lv12 (75/hr)
+        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, currentSpamLevel = 12)
         assertTrue(info.isCapReachable)
-        assertEquals(15, info.recommendedSpamLevel)
+        assertEquals(17, info.recommendedSpamLevel)
         assertEquals(12, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 12))
-        assertEquals(84, GoodSpamUtils.spamIncome(12, info.levelMultiplier))
+        assertEquals(75, GoodSpamUtils.spamIncome(12, info.targetLevel!!))
         // Unknown installed level → the recommendation itself
-        assertEquals(15, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 0))
+        assertEquals(17, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 0))
     }
 
     @Test
-    fun unreachableCapUsesStrongestInstalledLevel() {
-        // Target 12 below: ×0.40 → 100 out of reach up to Lv30; you can only upload what you have installed
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 23, playerLevel = 35, currentSpamLevel = 15)
+    fun unreachableCapUsesLowestLevelThatEarnsTheMost() {
+        // Victim Lv10: income flattens at 48/hr from Lv14, so Lv14 beats uploading Lv20 for the same Crypto
+        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 10, currentSpamLevel = 20)
         assertFalse(info.isCapReachable)
-        assertEquals(15, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 15))
-        assertEquals(42, GoodSpamUtils.spamIncome(15, info.levelMultiplier))
+        assertEquals(48, GoodSpamUtils.spamIncome(20, 10))
+        assertEquals(14, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20))
+        // With only Lv12 installed, Lv12 is the best you can do
+        val low = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 10, currentSpamLevel = 12)
+        assertEquals(12, GoodSpamUtils.spamUploadLevel(low, installedSpamLevel = 12))
     }
 
     @Test
     fun goodSpamScoreUsesCheapestCappingLevelUploadTime() {
         val net = "Null Route XI"
         val lv20Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Nova • Fiber", net, 20)
-        val lv10Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Nova • Fiber", net, 10)
-        assertTrue(lv10Secs < lv20Secs)
+        val lv17Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Nova • Fiber", net, 17)
+        assertTrue(lv17Secs < lv20Secs)
 
-        val withPlayer = GoodSpamUtils.calculateScore(45, 10, "Nova • Fiber", net, playerLevel = 35, installedSpamLevel = 20)
-        val expected = 45 * 10.0 - (lv10Secs / 60.0) * 0.5 - 10 // +10 levels: Lv10 caps
-        assertEquals(expected, withPlayer, 0.001)
+        val withSpam = GoodSpamUtils.calculateScore(45, 10, "Nova • Fiber", net, installedSpamLevel = 20)
+        assertEquals(45 * 10.0 - (lv17Secs / 60.0) * 0.5 - 10, withSpam, 0.001) // victim Lv45: Lv17 caps
 
-        // Without player info it falls back to the old Lv20 behaviour
-        val legacy = GoodSpamUtils.calculateScore(45, 10, "Nova • Fiber", net)
-        assertEquals(45 * 10.0 - (lv20Secs / 60.0) * 0.5 - 10, legacy, 0.001)
+        // Unknown target level → the Lv20 time
+        val unknown = GoodSpamUtils.calculateScore(null, 10, "Nova • Fiber", net, installedSpamLevel = 20)
+        assertEquals(-(lv20Secs / 60.0) * 0.5 - 10, unknown, 0.001)
     }
 
     @Test
     fun cheapTargetOutranksSameLevelTargetNeedingFullSpam() {
         val net = "Null Route XI"
-        // Same hardware & firewall; A is 10 levels above you (caps with Lv10), B is your level (caps with Lv15)
-        val a = GoodSpamUtils.calculateScore(45, 10, "Nova III • Fiber", net, playerLevel = 35, installedSpamLevel = 20)
-        val b = GoodSpamUtils.calculateScore(35, 10, "Nova III • Fiber", net, playerLevel = 35, installedSpamLevel = 20)
+        // Same hardware & firewall; A (Lv30) caps with Lv17, B (Lv24) needs Lv20 → A ranks higher
+        val a = GoodSpamUtils.calculateScore(30, 10, "Nova III • Fiber", net, installedSpamLevel = 20)
+        val b = GoodSpamUtils.calculateScore(24, 10, "Nova III • Fiber", net, installedSpamLevel = 20)
         assertTrue(a > b)
     }
 }

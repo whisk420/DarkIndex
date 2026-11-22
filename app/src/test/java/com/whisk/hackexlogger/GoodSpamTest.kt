@@ -56,56 +56,58 @@ class GoodSpamTest {
 
     @Test
     fun testCalculateScore() {
-        // Formula: (Level * 10.0) - (EstimatedUploadMinutes * 0.5) - (Firewall * 1.0)
-        // Target A: Level 35, Raider (upload = 45285s / 1.0 = 754.75 mins), Firewall 20 -> (350.0) - (377.375) - 20 = -47.375
+        // Formula: (Level * 10.0) - (UploadMinutes * 0.5) - (Firewall * 1.0)
+        // Target A: Level 35 → Spam Lv17 caps; Raider on DSL
+        val lv17Secs = NetworkSpeedUtils.getUploadSecondsForLevel("Raider • Fiber", "DSL", 17)
         val score1 = GoodSpamUtils.calculateScore(level = 35, firewall = 20, hardware = "Raider • Fiber", playerNetwork = "DSL")
-        assertEquals(-47.375, score1, 0.01)
+        assertEquals(350.0 - (lv17Secs / 60.0) * 0.5 - 20, score1, 0.01)
 
-        // Null handling defaults: null hardware falls back to Tier 0 Raider (45285s = 754.75 mins -> 377.375 penalty)
+        // Unknown target level: Lv20 time. Null hardware falls back to Tier 0 Raider (45285s = 754.75 mins -> 377.375 penalty)
         val scoreNull = GoodSpamUtils.calculateScore(level = null, firewall = null, hardware = null)
         assertEquals(-377.375, scoreNull, 0.1)
     }
 
     @Test
     fun testCalculateRecommendedSpamLevel() {
-        // Measured model. Target 45 vs player 35 (+10 → ×1.41): Lv10 already reaches 100/hr
-        val (lvl1, payout1) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 45, playerLevel = 35)
-        assertEquals(10, lvl1)
+        // Your own level plays no part; Lv17 caps on any victim Lv27+
+        val (lvl1, payout1) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 45)
+        assertEquals(17, lvl1)
         assertEquals(100, payout1)
+        assertEquals(17, GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 27).first)
 
-        // Same level: Lv14 earns 97/hr, Lv15 caps
-        val (lvl2, payout2) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 35, playerLevel = 35)
-        assertEquals(15, lvl2)
-        assertEquals(100, payout2)
+        // Victim Lv23: the bonus is smaller, so the cap needs Lv22 (Lv20 earns 97/hr)
+        val (lvl2, payout2) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 23)
+        assertEquals(22, lvl2)
+        assertEquals(97, payout2)
 
-        // 12 levels below (×0.40): out of reach up to Lv30; Lv20 earns 56/hr
-        val (lvl3, payout3) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 23, playerLevel = 35)
+        // Victim Lv3: out of reach up to Lv30; Lv20 earns 43/hr
+        val (lvl3, payout3) = GoodSpamUtils.calculateRecommendedSpamLevel(targetLevel = 3)
         assertEquals(20, lvl3)
-        assertEquals(56, payout3)
+        assertEquals(43, payout3)
     }
 
     @Test
     fun testCalculateSpamPayoutInfo() {
-        // Same level, installed Lv12 → 84/hr; the cap needs Lv15
-        val info1 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, playerLevel = 35, currentSpamLevel = 12)
+        // Victim Lv35, installed Lv12 → 75/hr; the cap needs Lv17
+        val info1 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, currentSpamLevel = 12)
         assertEquals(12, info1.currentSpamLevel)
-        assertEquals(84, info1.currentSpamIncome)
-        assertEquals(15, info1.recommendedSpamLevel)
+        assertEquals(75, info1.currentSpamIncome)
+        assertEquals(17, info1.recommendedSpamLevel)
         assertEquals(100, info1.maxAchievableIncome)
         assertTrue(info1.isCapReachable)
         assertFalse(info1.isCapReachedAtCurrent)
 
-        // Target 5 above (×1.205): Lv20 is capped, and Lv12 is the cheapest level that caps
-        val info2 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 40, playerLevel = 35, currentSpamLevel = 20)
+        // Victim Lv40: Lv20 is capped, and Lv17 is the cheapest level that caps
+        val info2 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 40, currentSpamLevel = 20)
         assertEquals(100, info2.currentSpamIncome)
-        assertEquals(12, info2.recommendedSpamLevel)
+        assertEquals(17, info2.recommendedSpamLevel)
         assertTrue(info2.isCapReachedAtCurrent)
 
-        // Target 32 below → ×0.10 floor → 14/hr
-        val info3 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 3, playerLevel = 35, currentSpamLevel = 20)
-        assertEquals(14, info3.currentSpamIncome)
+        // Victim Lv3: the Spam outgrows the victim → ×0.50 at most 10 levels above → 43/hr
+        val info3 = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 3, currentSpamLevel = 20)
+        assertEquals(43, info3.currentSpamIncome)
         assertEquals(20, info3.recommendedSpamLevel)
-        assertEquals(14, info3.maxAchievableIncome)
+        assertEquals(43, info3.maxAchievableIncome)
         assertFalse(info3.isCapReachable)
         assertFalse(info3.isCapReachedAtCurrent)
     }

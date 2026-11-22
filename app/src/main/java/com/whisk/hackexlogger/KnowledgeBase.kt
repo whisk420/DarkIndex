@@ -202,12 +202,11 @@ object KbCalculators {
                 SPAM, "Spam income",
                 listOf(
                     CalcInput.Number("spam", "Spam level", d.spamLevel ?: 15, 1, 60),
-                    CalcInput.Number("me", "Your level", myLevel, 1, 99),
                     CalcInput.Number("target", "Victim level", myLevel, 1, 99),
                     CalcInput.Number("days", "Days since upload", 0, 0, 400),
                     CalcInput.Toggle("scythe", "Scythe device (half decay)", false)
                 )
-            ) { v -> spamIncomeText(v.int("spam"), v.int("me"), v.int("target"), v.int("days"), v.bool("scythe")) },
+            ) { v -> spamIncomeText(v.int("spam"), v.int("target"), v.int("days"), v.bool("scythe")) },
 
             KbCalculator(
                 BOTNET, "Botnet net income",
@@ -291,17 +290,17 @@ object KbCalculators {
         )
     }
 
-    fun spamIncomeText(spam: Int, me: Int, target: Int, days: Int, scythe: Boolean): String {
-        val gap = target - me
+    fun spamIncomeText(spam: Int, target: Int, days: Int, scythe: Boolean): String {
+        val gap = target - spam
         val mult = GameFormulas.spamLevelGapMultiplier(gap)
-        val fresh = GameFormulas.spamIncomePerHour(spam, gap)
-        val now = GameFormulas.spamIncomePerHour(spam, gap, days.toDouble(), scythe)
+        val fresh = GameFormulas.spamIncomePerHour(spam, target)
+        val now = GameFormulas.spamIncomePerHour(spam, target, days.toDouble(), scythe)
         val decay = GameFormulas.spamDecayFactor(days.toDouble(), scythe)
-        val capLevel = GameFormulas.spamCapLevel(gap)
+        val capLevel = GameFormulas.spamCapLevel(target)
         val gapText = when {
-            gap > 0 -> "Victim is $gap above you: ×${"%.2f".format(Locale.US, mult)} bonus"
-            gap < 0 -> "Victim is ${-gap} below you: ×${"%.2f".format(Locale.US, mult)} penalty"
-            else -> "Same level: no bonus or penalty"
+            gap > 0 -> "Victim is $gap levels above the Spam: ×${"%.2f".format(Locale.US, mult)} bonus"
+            gap < 0 -> "Victim is ${-gap} levels below the Spam: ×${"%.2f".format(Locale.US, mult)} penalty"
+            else -> "Victim level = Spam level: no bonus or penalty"
         }
         return buildString {
             appendLine(gapText)

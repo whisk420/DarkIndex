@@ -524,14 +524,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (isGoodSpamEnabled) {
-                val profile = PlayerProfileRepository.getProfile()
                 val currentNetwork = PlayerProfileRepository.getCurrentNetwork()
                 val installedSpam = PlayerProfileRepository.getInstalledSpamLevel()
                 filtered = filtered.filter { record ->
                     GoodSpamUtils.isEligible(record.firewall, maxFirewallLevel)
                 }.sortedByDescending { record ->
                     // Rank by the upload time of the cheapest Spam that caps 100/hr, on the network you own
-                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, currentNetwork, profile.playerLevel, installedSpam)
+                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, currentNetwork, installedSpam)
                 }
             }
 

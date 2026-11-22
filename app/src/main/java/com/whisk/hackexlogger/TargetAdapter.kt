@@ -88,7 +88,6 @@ class TargetAdapter(
         when (val item = getItem(position)) {
             is ListItem.Header -> (holder as HeaderViewHolder).bind(item)
             is ListItem.Target -> {
-                val profile = PlayerProfileRepository.getProfile()
                 val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
                 val playerCracker = PlayerProfileRepository.getEffectiveCrackerLevel()
                 val currentSpamLevel = PlayerProfileRepository.getInstalledSpamLevel()
@@ -98,7 +97,6 @@ class TargetAdapter(
                     playerBypasser = playerBypasser,
                     playerCracker = playerCracker,
                     playerNetwork = PlayerProfileRepository.getCurrentNetwork(),
-                    playerLevel = profile.playerLevel,
                     currentSpamLevel = currentSpamLevel,
                     isOverlayActive = (activeOverlayPosition == position),
                     onToggleOverlay = {
@@ -178,7 +176,6 @@ class TargetAdapter(
             playerBypasser: Int,
             playerCracker: Int,
             playerNetwork: String?,
-            playerLevel: Int?,
             currentSpamLevel: Int,
             isOverlayActive: Boolean,
             onToggleOverlay: () -> Unit,
@@ -367,7 +364,7 @@ class TargetAdapter(
 
             if (target.hardware != null) {
                 // The Spam worth uploading = the cheapest level that hits the 100/hr cap (lower levels upload faster)
-                val payoutInfo = GoodSpamUtils.calculateSpamPayoutInfo(target.level, playerLevel, currentSpamLevel)
+                val payoutInfo = GoodSpamUtils.calculateSpamPayoutInfo(target.level, currentSpamLevel)
                 val uploadLevel = GoodSpamUtils.spamUploadLevel(payoutInfo, currentSpamLevel)
                 val uploadSecs = NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, uploadLevel)
                 val uploadStr = NetworkSpeedUtils.formatUploadDuration(uploadSecs)
@@ -376,9 +373,9 @@ class TargetAdapter(
                     uploadSecs <= 45 * 60 -> "#854d0e"
                     else -> "#991b1b"
                 }
-                val levelKnown = playerLevel != null
+                val levelKnown = target.level != null
                 val chip = if (levelKnown) addIntelligenceChip("⏱ Spam Lv.$uploadLevel ~$uploadStr", colorHex)
-                    else addIntelligenceChip("⏱ Spam Lv.? (your level unknown)", "#334155")
+                    else addIntelligenceChip("⏱ Spam Lv.? (target level unknown)", "#334155")
                 chip.setOnClickListener {
                     val t1 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 1))
                     val t5 = NetworkSpeedUtils.formatUploadDuration(NetworkSpeedUtils.getUploadSecondsForLevel(target.hardware, playerNetwork, 5))
@@ -389,17 +386,17 @@ class TargetAdapter(
                     val devName = target.hardware!!.substringBefore(" • ").trim()
 
                     val capMessage = if (!levelKnown) {
-                        "★ Your own level isn't known yet, so the Spam level that hits the 100/hr cap here can't be worked out.\n" +
-                            "   Scrape your own Home screen, then reopen this."
+                        "★ This target's level isn't known yet, so the Spam level that hits the 100/hr cap here can't be worked out.\n" +
+                            "   Scrape the target's Home screen, then reopen this."
                     } else if (payoutInfo.isCapReachable && uploadLevel >= payoutInfo.recommendedSpamLevel) {
                         "★ Upload Spam Lv.$uploadLevel (~$uploadStr) → hits the 100/hr cap.\n" +
                             "   Anything higher just uploads slower for no extra Crypto."
                     } else if (payoutInfo.isCapReachable) {
                         "★ Spam Lv.${payoutInfo.recommendedSpamLevel} would hit the 100/hr cap here; you have Lv.$currentSpamLevel.\n" +
-                            "   Best now: Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, payoutInfo.levelMultiplier)}/hr."
+                            "   Best now: Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, target.level!!)}/hr."
                     } else {
-                        "★ 100/hr is out of reach on this target (level-gap penalty).\n" +
-                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, payoutInfo.levelMultiplier)}/hr."
+                        "★ 100/hr is out of reach on this target (its level is too low for a capping Spam).\n" +
+                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, target.level!!)}/hr."
                     }
 
                     androidx.appcompat.app.AlertDialog.Builder(itemView.context)
@@ -412,7 +409,7 @@ class TargetAdapter(
                             "• Virus Lv 10: ~$t10\n" +
                             "• Virus Lv 20: ~$t20\n\n" +
                             capMessage +
-                            "\n\n(Spam payouts: measured in-game for a fresh upload, about 1.7× the guide's table. The level-gap effect is still estimated. Payouts decay after day 21. See Knowledge Base → Spam.)"
+                            "\n\n(Spam payouts: fitted to in-game uploads. They depend on the target's level vs the Spam level, not on your level, and are fixed at upload. Payouts decay after day 21. See Knowledge Base → Spam.)"
                         )
                         .setPositiveButton("OK", null)
                         .show()

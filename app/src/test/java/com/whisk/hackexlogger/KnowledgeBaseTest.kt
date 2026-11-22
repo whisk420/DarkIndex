@@ -29,12 +29,25 @@ class KnowledgeBaseTest {
 
     @Test
     fun spamIncomeMatchesOwnerMeasurements() {
-        // 2026-11-22: player Lv45, victim Lv43, fresh uploads, read off SPAM EARNINGS
-        val measured = mapOf(1 to 18, 2 to 23, 3 to 27, 7 to 47, 11 to 69)
-        measured.forEach { (lvl, v) -> assertEquals("gap -2 Lv$lvl", v, GameFormulas.spamIncomePerHour(lvl, -2)) }
-        // Same victim, cap: Lv16 is the cheapest level reaching 100/hr; Lv15 at equal level
-        assertEquals(16, GameFormulas.spamCapLevel(-2))
-        assertEquals(15, GameFormulas.spamCapLevel(0))
+        // 2026-11-22, player Lv45, fresh uploads read off SPAM EARNINGS: (victim level, Spam level) → Crypto/hr
+        val measured = mapOf(
+            (43 to 1) to 18, (43 to 2) to 23, (43 to 3) to 27, (43 to 7) to 47, (43 to 11) to 69,
+            (33 to 7) to 47, (33 to 13) to 81,
+            (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
+        )
+        measured.forEach { (key, v) ->
+            val (victim, spam) = key
+            assertEquals("victim Lv$victim Spam Lv$spam", v, GameFormulas.spamIncomePerHour(spam, victim))
+        }
+        // 2026-11-20 SPAM EARNINGS: Lv16 tops out at 99, Lv17 shows 100 → Lv17 is the lowest Spam that ever caps
+        assertEquals(99, GameFormulas.spamIncomePerHour(16, 99))
+        assertEquals(17, GameFormulas.spamBestCap().first)
+        assertEquals(17, GameFormulas.spamCapLevel(45))
+        // Owner: income never falls as the Spam level rises on the same victim
+        for (victim in 1..60) {
+            val rates = (1..60).map { GameFormulas.spamIncomePerHour(it, victim) }
+            assertTrue("victim Lv$victim $rates", rates.zipWithNext().all { (a, b) -> b >= a })
+        }
     }
 
     @Test
@@ -47,10 +60,10 @@ class KnowledgeBaseTest {
 
     @Test
     fun spamBonusCapsAtFiftyPercentAndPenaltyHasAFloor() {
-        assertEquals(1.5, GameFormulas.spamLevelGapMultiplier(30), 1e-9)
-        assertEquals(0.10, GameFormulas.spamLevelGapMultiplier(-40), 1e-9)
+        assertEquals(GameFormulas.SPAM_MAX_BONUS, GameFormulas.spamLevelGapMultiplier(30), 1e-9)
+        assertEquals(0.50, GameFormulas.spamLevelGapMultiplier(-40), 1e-9)
         assertEquals(0, GameFormulas.spamIncomePerHour(0, 0))
-        assertEquals(100, GameFormulas.spamIncomePerHour(60, 0))
+        assertEquals(100, GameFormulas.spamIncomePerHour(60, 1))
     }
 
     @Test
@@ -65,7 +78,7 @@ class KnowledgeBaseTest {
         // Scythe: half as fast
         assertEquals(GameFormulas.spamDecayFactor(50.0), GameFormulas.spamDecayFactor(100.0, halfDecay = true), 1e-9)
         // Decay applies to the capped rate
-        assertEquals(67, GameFormulas.spamIncomePerHour(30, 0, 50.0))
+        assertEquals(67, GameFormulas.spamIncomePerHour(30, 60, 50.0))
     }
 
     @Test
@@ -215,9 +228,9 @@ class KnowledgeBaseTest {
 
     @Test
     fun calculatorsUseTheSameMaths() {
-        val spam = KbCalculators.byId(KbCalculators.SPAM)!!.run(mapOf("spam" to 20, "me" to 35, "target" to 45, "days" to 0))
+        val spam = KbCalculators.byId(KbCalculators.SPAM)!!.run(mapOf("spam" to 20, "target" to 45, "days" to 0))
         assertTrue(spam, spam.contains("Fresh upload: 100/hr"))
-        assertTrue(spam, spam.contains("Lv 10"))
+        assertTrue(spam, spam.contains("Lv 17"))
         val proxy = KbCalculators.byId(KbCalculators.PROXY)!!.run(mapOf("level" to 20, "hours" to 3, "count" to 2))
         assertTrue(proxy, proxy.contains("913"))
         assertTrue(proxy, proxy.contains("1,826"))
