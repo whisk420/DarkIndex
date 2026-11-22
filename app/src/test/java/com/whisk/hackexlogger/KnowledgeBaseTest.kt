@@ -75,7 +75,7 @@ class KnowledgeBaseTest {
             t.related.forEach { assertTrue("${t.id} → $it", it in ids) }
             for (b in t.blocks) when (b) {
                 is KbBlock.Calc -> { assertTrue("${t.id} calc ${b.calculatorId}", b.calculatorId in calcIds); usedCalcs += b.calculatorId }
-                is KbBlock.Unknowns -> b.items.forEach { assertTrue("${t.id} ${it.first}", Regex("M-\\d\\d").matches(it.first)) }
+                is KbBlock.Unknowns -> b.items.forEach { assertTrue("${t.id} ${it.first}", Regex("Q-\\d\\d").matches(it.first)) }
                 is KbBlock.Table -> b.rows.forEach { assertEquals("${t.id} table width", b.header.size, it.size) }
                 else -> {}
             }

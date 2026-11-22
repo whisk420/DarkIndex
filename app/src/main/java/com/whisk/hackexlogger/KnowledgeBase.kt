@@ -34,7 +34,7 @@ sealed class KbBlock {
     data class Tip(val text: String) : KbBlock()
     data class Warning(val text: String) : KbBlock()
     data class Calc(val calculatorId: String) : KbBlock()
-    /** Open questions: measurement id (e.g. "M-01") to what's missing. */
+    /** Open questions: measurement id (e.g. "Q-01") to what's missing. */
     data class Unknowns(val items: List<Pair<String, String>>) : KbBlock()
 }
 

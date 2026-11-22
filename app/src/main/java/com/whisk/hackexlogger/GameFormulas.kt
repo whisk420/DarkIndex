@@ -9,7 +9,7 @@ import kotlin.math.sqrt
 /**
  * Game mechanics as pure functions, shared by the Knowledge Base calculators and the rest of the app so the two
  * can never disagree. Each function says where its numbers come from (see CLAUDE.md §2/§4 and
- * docs/knowledge-base-prep.md). "Exact fit" means the formula reproduces every number the guide publishes.
+ * KnowledgeBaseContent). "Exact fit" means the formula reproduces every number the guide publishes.
  */
 object GameFormulas {
 
@@ -32,7 +32,7 @@ object GameFormulas {
      * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
      * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
      *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
-     * Unmeasured (M-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
+     * Unmeasured (Q-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
 
     /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */
@@ -188,7 +188,7 @@ object GameFormulas {
     fun keygenFee(app: App, fromLevel: Int, toLevel: Int): Int? {
         val ratio = keygenFeeRatio(toLevel - fromLevel) ?: return null
         val price = storePrice(app, toLevel) ?: return null
-        return (price * ratio).roundToInt() // rounding unconfirmed (M-17)
+        return (price * ratio).roundToInt() // rounding unconfirmed (Q-13)
     }
 
     /** XP per Store crypto for software (GEMINI empirical 0.1717; one owner data point 0.170). Keygen unlocks pay full XP. */
@@ -324,10 +324,10 @@ object GameFormulas {
         else -> (10 - softwareGap) / 5.0
     }
 
-    /** XP to the next level, known points only (guide + owner). Null = not measured yet (M-22). */
+    /** XP to the next level, known points only (guide + owner). Null = not measured yet (Q-19). */
     val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
-    /** Cold storage cap, known points only (guide). M-18. */
+    /** Cold storage cap, known points only (guide). Q-16. */
     val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */
