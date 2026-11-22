@@ -17,26 +17,53 @@ object GameFormulas {
 
     const val SPAM_CAP_PER_HOUR = 100
 
-    /**
-     * Crypto/hr of a Spam of [spamLevel] on a victim of your own level, before the cap.
-     * Fit of the guide's table: with [spamLevelGapMultiplier] and normal rounding it reproduces all 17 published
-     * cells exactly (equal level Lv1 12, Lv5 24, Lv10 42, Lv15 62, Lv20 83; +10 and −10 columns).
+    /*
+     * Spam income model, fitted 2026-11-22 to 16 fresh uploads (rate read off SPAM EARNINGS; victim Lv / Spam Lv → /hr):
+     *   victim Lv43: 1→18, 2→23, 3→27, 7→47, 11→69      victim Lv33: 7→47, 13→81, 20→100
+     *   victim Lv28: 1→18, 2→23, 6→42                   victim Lv7:  13→38, 20→30
+     *   victim Lv19: 10→58
+     *   victim Lv2:  1→13, 3→18, 7→24, 11→26
+     * - Only VICTIM level − SPAM level matters; the player's own level plays no part (Lv7 pays 47 on both Lv43 and
+     *   Lv33 victims; the guide implies the player's level).
+     * - Victim 11+ levels above the Spam: full bonus, rate = [spamMaxIncome].
+     * - Spam above the victim: −5% per level with no floor seen (Lv20 on a Lv7 victim pays 30 = ×0.35), so an
+     *   over-levelled Spam earns LESS (Lv13 38 > Lv20 30 on that victim). Fitted slope 4.9–5.1%.
+     * - The guide's Spam curve (8.85 + 2.89L + 0.0415L²) has the wrong shape: no scaling of it fits all 16.
+     * - 2026-11-20 SPAM EARNINGS: eight Lv16 Spams at 99, none at 100; Lv17 at 100. So Lv16 tops out at 99.
+     * - Bonus: +4% per level the victim is above the Spam (fits 3.65–4.15%; the mirrored +5% is ruled out by
+     *   victim Lv19 / Spam Lv10 = 58), full bonus from about +12.
+     * Unmeasured (M-01): Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10).
      */
-    fun spamBaseIncome(spamLevel: Int): Double {
+
+    /** Crypto/hr when the victim is far enough above the Spam for the full bonus (fit above; Lv16 99.2, Lv17 105.6). */
+    fun spamMaxIncome(spamLevel: Int): Double {
         if (spamLevel <= 0) return 0.0
         val l = spamLevel.toDouble()
-        return 8.85 + 2.89 * l + 0.0415 * l * l
+        return 13.9 + 4.3 * l + 0.0645 * l * l
     }
 
+    /** Full bonus over an equal-level victim (fit: 1.465–1.485; the guide says "up to 50%"). */
+    const val SPAM_MAX_BONUS = 1.475
+
+    /** Bonus per level the victim is above the Spam (measured: fits 3.65–4.15%). */
+    const val SPAM_BONUS_PER_LEVEL = 0.04
+
+    /** Penalty per level the Spam is above the victim (measured, 4.9–5.1%). */
+    const val SPAM_PENALTY_PER_LEVEL = 0.05
+
+    /** Lowest multiplier: an assumption, nothing measured past ×0.35. */
+    const val SPAM_MIN_MULTIPLIER = 0.10
+
+    /** Crypto/hr of a Spam of [spamLevel] when the victim's level equals the Spam's, before the cap. */
+    fun spamBaseIncome(spamLevel: Int): Double = spamMaxIncome(spamLevel) / SPAM_MAX_BONUS
+
     /**
-     * Income multiplier for a victim [levelGap] = victim level − your level.
-     * Guide: +10 levels ≈ ×1.41 on every row, −10 = ×0.50; "up to 50% more against higher-level victims".
-     * Modelled as +4.1%/level (cap +50%) and −5%/level. The straight lines between 0 and ±10 are unmeasured (M-01);
-     * below −10 the guide has no data and the ×0.10 floor is a guess.
+     * Income multiplier for [levelGap] = **victim level − Spam level**: +4% per level the victim is above the Spam
+     * (max [SPAM_MAX_BONUS]), −5% per level the Spam is above the victim (min [SPAM_MIN_MULTIPLIER]).
      */
     fun spamLevelGapMultiplier(levelGap: Int): Double = when {
-        levelGap > 0 -> (1.0 + 0.041 * levelGap).coerceAtMost(1.5)
-        levelGap < 0 -> (1.0 + 0.05 * levelGap).coerceAtLeast(0.10)
+        levelGap > 0 -> (1.0 + SPAM_BONUS_PER_LEVEL * levelGap).coerceAtMost(SPAM_MAX_BONUS)
+        levelGap < 0 -> (1.0 + SPAM_PENALTY_PER_LEVEL * levelGap).coerceAtLeast(SPAM_MIN_MULTIPLIER)
         else -> 1.0
     }
 
@@ -50,11 +77,33 @@ object GameFormulas {
         return (1.0 - (d - 21.0) * 0.90 / 79.0).coerceAtLeast(0.10)
     }
 
-    /** Hourly income of one Spam deployment, capped at 100 and then decayed. Rounded like the guide's table. */
-    fun spamIncomePerHour(spamLevel: Int, levelGap: Int, daysSinceUpload: Double = 0.0, halfDecay: Boolean = false): Int {
+    /**
+     * Hourly income of one Spam of [spamLevel] uploaded to a victim of [victimLevel], capped at 100 and then decayed.
+     * Fixed at upload: later level changes on either side don't change it (owner). Not monotonic: past the victim's
+     * level a higher Spam can earn less (see [spamBestLevel]).
+     */
+    fun spamIncomePerHour(spamLevel: Int, victimLevel: Int, daysSinceUpload: Double = 0.0, halfDecay: Boolean = false): Int {
         if (spamLevel <= 0) return 0
-        val capped = (spamBaseIncome(spamLevel) * spamLevelGapMultiplier(levelGap)).roundToInt().coerceAtMost(SPAM_CAP_PER_HOUR)
-        return (capped * spamDecayFactor(daysSinceUpload, halfDecay)).roundToInt()
+        val fresh = (spamBaseIncome(spamLevel) * spamLevelGapMultiplier(victimLevel - spamLevel))
+            .roundToInt().coerceAtMost(SPAM_CAP_PER_HOUR)
+        return (fresh * spamDecayFactor(daysSinceUpload, halfDecay)).roundToInt()
+    }
+
+    /** The lowest Spam level up to [maxLevel] that earns the most on a victim of [victimLevel] (fresh upload). */
+    fun spamBestLevel(victimLevel: Int, maxLevel: Int): Int {
+        var best = 1
+        for (l in 2..maxLevel) if (spamIncomePerHour(l, victimLevel) > spamIncomePerHour(best, victimLevel)) best = l
+        return best
+    }
+
+    /** Cheapest Spam level that reaches the 100/hr cap on a victim of [victimLevel], or null if none up to [maxLevel]. */
+    fun spamCapLevel(victimLevel: Int, maxLevel: Int = 60): Int? =
+        (1..maxLevel).firstOrNull { spamIncomePerHour(it, victimLevel) >= SPAM_CAP_PER_HOUR }
+
+    /** The lowest Spam level that can ever cap (on a high enough victim), and the lowest victim level where it does. */
+    fun spamBestCap(): Pair<Int, Int> {
+        val level = spamCapLevel(999)!!
+        return level to (1..999).first { spamIncomePerHour(level, it) >= SPAM_CAP_PER_HOUR }
     }
 
     /**
@@ -78,6 +127,20 @@ object GameFormulas {
         BotnetTier("Hive", 44, 95_000, null),
         BotnetTier("Nexus", 64, 180_000, null),
     )
+
+    // ── Siphon ──────────────────────────────────────────────────────────────────────────────────────────────
+
+    /** Highest siphon rate seen: a Lv25 siphon shows 6%, not the line's 7% (Raw Dump #16). */
+    const val SIPHON_MAX_PERCENT = 6.0
+
+    /**
+     * Siphon skim rate in % for a siphon uploaded at [level]. Measured 2026-11-22 (Raw Dump #16, all 122 deployments):
+     * Lv1 1%, Lv2 1.25%, Lv5 2%, Lv6 2.25%, Lv13 4%, Lv17 5%, Lv20 5.75%, Lv25 6%. 0.75 + 0.25 × level fits every row
+     * up to Lv20. Lv25 shows 6%, so the rate is capped or flattens above Lv20; Lv21–24 are unmeasured and assumed to
+     * hit the 6% cap at Lv21.
+     */
+    fun siphonPercent(level: Int): Double? =
+        if (level <= 0) null else minOf(0.75 + 0.25 * level, SIPHON_MAX_PERCENT)
 
     // ── Store prices & Keygen ───────────────────────────────────────────────────────────────────────────────
 

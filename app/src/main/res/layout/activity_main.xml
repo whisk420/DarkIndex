@@ -101,7 +101,7 @@
                 android:id="@+id/searchInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search IP, clan, or software..."
+                android:hint="IP, name, clan · lvl 30 · fw 20 · sw 20"
                 android:paddingVertical="12dp"
                 android:textColor="#f8fafc"
                 android:textColorHint="#64748b"

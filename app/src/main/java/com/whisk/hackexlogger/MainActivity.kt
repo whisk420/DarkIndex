@@ -466,57 +466,10 @@ class MainActivity : AppCompatActivity() {
                 allRecords
             }
 
-            if (currentSearchQuery.isNotEmpty()) {
-                val query = currentSearchQuery.lowercase()
-                
-                // Parse software name and level search expressions (e.g. "firewall 10", "siphon lv5")
-                val swMatch = Regex("""^(.*?)\s*(?:lv\.?|lvl\.?)?\s*(\d+)$""", RegexOption.IGNORE_CASE).find(query)
-                var swFilteredRecords: List<TargetRecord>? = null
-                
-                if (swMatch != null) {
-                    val swName = swMatch.groupValues[1].trim()
-                    val targetLevel = swMatch.groupValues[2].toIntOrNull()
-                    
-                    if (swName.isNotEmpty() && targetLevel != null) {
-                        fun getMatching(levels: List<Int>): List<TargetRecord> {
-                            return allRecords.filter { record ->
-                                record.downloads.any { (k, v) ->
-                                    k.lowercase().contains(swName) && levels.contains(v.level)
-                                }
-                            }
-                        }
-                        
-                        val exactMatches = getMatching(listOf(targetLevel))
-                        if (exactMatches.isNotEmpty()) {
-                            swFilteredRecords = exactMatches
-                        } else {
-                            val plusMinusOne = getMatching(listOf(targetLevel - 1, targetLevel + 1).filter { it >= 1 })
-                            if (plusMinusOne.isNotEmpty()) {
-                                swFilteredRecords = plusMinusOne
-                            } else {
-                                val plusMinusTwo = getMatching(listOf(targetLevel - 2, targetLevel + 2).filter { it >= 1 })
-                                swFilteredRecords = plusMinusTwo
-                            }
-                        }
-                    }
-                }
-
-                val genericFiltered = allRecords.filter { record ->
-                    val q = query.replace("[", "").replace("]", "")
-                    record.ip.lowercase().contains(query) ||
-                    record.username?.lowercase()?.contains(query) == true ||
-                    record.clan?.lowercase()?.contains(q) == true ||
-                    record.level?.toString() == query ||
-                    record.hardware?.lowercase()?.contains(query) == true ||
-                    record.wallets.any { it.lowercase().contains(query) } ||
-                    record.downloads.keys.any { it.lowercase().contains(query) }
-                }
-                
-                filtered = if (swFilteredRecords != null) {
-                    (swFilteredRecords + genericFiltered).distinctBy { it.ip }
-                } else {
-                    genericFiltered
-                }
+            // Search results come back best first (see TargetSearch); keep that order below
+            val searchActive = currentSearchQuery.isNotEmpty()
+            if (searchActive) {
+                filtered = TargetSearch.search(allRecords, currentSearchQuery) // search ignores the Recon filter, as before
             }
 
             if (isReconModeEnabled && !isGoodSpamEnabled && currentSearchQuery.isEmpty()) {
@@ -524,24 +477,23 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (isGoodSpamEnabled) {
-                val profile = PlayerProfileRepository.getProfile()
                 val currentNetwork = PlayerProfileRepository.getCurrentNetwork()
                 val installedSpam = PlayerProfileRepository.getInstalledSpamLevel()
                 filtered = filtered.filter { record ->
                     GoodSpamUtils.isEligible(record.firewall, maxFirewallLevel)
                 }.sortedByDescending { record ->
                     // Rank by the upload time of the cheapest Spam that caps 100/hr, on the network you own
-                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, currentNetwork, profile.playerLevel, installedSpam)
+                    GoodSpamUtils.calculateScore(record.level, record.firewall, record.hardware, currentNetwork, installedSpam)
                 }
             }
 
-            val fullTargets = if (isGoodSpamEnabled) {
+            val fullTargets = if (isGoodSpamEnabled || searchActive) {
                 filtered.filter { !it.isMasked } // already sorted
             } else {
                 filtered.filter { !it.isMasked }.sortedBy { it.ip }
             }
             
-            val partialTargets = if (isGoodSpamEnabled) {
+            val partialTargets = if (isGoodSpamEnabled || searchActive) {
                 filtered.filter { it.isMasked } // already sorted
             } else {
                 filtered.filter { it.isMasked }.sortedBy { it.ip }

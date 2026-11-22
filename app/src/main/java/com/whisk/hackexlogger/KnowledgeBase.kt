@@ -11,9 +11,9 @@ import kotlin.math.roundToInt
 /** Where a fact comes from. Shown as a coloured badge next to it. */
 enum class KbSource(val badge: String, val colorHex: String, val meaning: String) {
     MEASURED("MEASURED", "#10b981", "Measured in-game or verified to the crypto against real numbers"),
-    FORMULA("EXACT FIT", "#38bdf8", "A formula that reproduces every number the guide publishes"),
+    CALCULATED("CALCULATED", "#38bdf8", "Calculated from a formula that reproduces every published or measured number"),
     GUIDE("GUIDE", "#a78bfa", "Stated by hackex.net/guide, not yet checked in-game"),
-    OWNER("OWNER", "#f59e0b", "Confirmed by the DarkIndex owner from play"),
+    CONFIRMED("CONFIRMED", "#f59e0b", "Confirmed in-game from play"),
     EMPIRICAL("EMPIRICAL", "#fb923c", "Older empirical data, not re-verified"),
     UNKNOWN("UNKNOWN", "#ef4444", "Not known yet: on the measurement list");
 }
@@ -202,12 +202,11 @@ object KbCalculators {
                 SPAM, "Spam income",
                 listOf(
                     CalcInput.Number("spam", "Spam level", d.spamLevel ?: 15, 1, 60),
-                    CalcInput.Number("me", "Your level", myLevel, 1, 99),
                     CalcInput.Number("target", "Victim level", myLevel, 1, 99),
                     CalcInput.Number("days", "Days since upload", 0, 0, 400),
                     CalcInput.Toggle("scythe", "Scythe device (half decay)", false)
                 )
-            ) { v -> spamIncomeText(v.int("spam"), v.int("me"), v.int("target"), v.int("days"), v.bool("scythe")) },
+            ) { v -> spamIncomeText(v.int("spam"), v.int("target"), v.int("days"), v.bool("scythe")) },
 
             KbCalculator(
                 BOTNET, "Botnet net income",
@@ -291,27 +290,28 @@ object KbCalculators {
         )
     }
 
-    fun spamIncomeText(spam: Int, me: Int, target: Int, days: Int, scythe: Boolean): String {
-        val gap = target - me
+    fun spamIncomeText(spam: Int, target: Int, days: Int, scythe: Boolean): String {
+        val gap = target - spam
         val mult = GameFormulas.spamLevelGapMultiplier(gap)
-        val fresh = GameFormulas.spamIncomePerHour(spam, gap)
-        val now = GameFormulas.spamIncomePerHour(spam, gap, days.toDouble(), scythe)
+        val fresh = GameFormulas.spamIncomePerHour(spam, target)
+        val now = GameFormulas.spamIncomePerHour(spam, target, days.toDouble(), scythe)
         val decay = GameFormulas.spamDecayFactor(days.toDouble(), scythe)
-        val capLevel = (1..60).firstOrNull { GameFormulas.spamIncomePerHour(it, gap) >= GameFormulas.SPAM_CAP_PER_HOUR }
+        val capLevel = GameFormulas.spamCapLevel(target)
         val gapText = when {
-            gap > 0 -> "Victim is $gap above you: ×${"%.2f".format(Locale.US, mult)} bonus"
-            gap < 0 -> "Victim is ${-gap} below you: ×${"%.2f".format(Locale.US, mult)} penalty"
-            else -> "Same level: no bonus or penalty"
+            gap > 0 -> "Victim is $gap levels above the Spam: ×${"%.2f".format(Locale.US, mult)} bonus"
+            gap < 0 -> "Victim is ${-gap} levels below the Spam: ×${"%.2f".format(Locale.US, mult)} penalty"
+            else -> "Victim level = Spam level: no bonus or penalty"
         }
         return buildString {
             appendLine(gapText)
             appendLine("Fresh upload: ${fresh}/hr (${n(fresh * 24)}/day)")
             if (days > 21) appendLine("After $days days: ${now}/hr (${pct(decay)} of fresh, ${n(now * 24)}/day)")
             else appendLine("Day $days: full rate until day ${if (scythe) 42 else 21}")
-            append(
-                if (capLevel != null) "Cheapest Spam that hits 100/hr here: Lv $capLevel"
-                else "100/hr isn't reachable on this victim (up to Lv 60)"
-            )
+            if (capLevel != null) append("Cheapest Spam that hits 100/hr here: Lv $capLevel")
+            else {
+                val best = GameFormulas.spamBestLevel(target, 60)
+                append("100/hr isn't reachable on this victim. Best: Spam Lv $best (${GameFormulas.spamIncomePerHour(best, target)}/hr); higher earns less")
+            }
         }
     }
 
