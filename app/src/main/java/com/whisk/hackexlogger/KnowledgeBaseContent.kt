@@ -930,25 +930,45 @@ object KnowledgeBaseContent {
             h("Upgrade price and upkeep"),
             table(
                 MEASURED, listOf("Part", "Price to Lv 1 / 2 / 3 / 4 / 5", "Upkeep/day at Lv 1 / 2 / 3 / 4 / 5"),
-                GameFormulas.CrewPart.values().filter { it.base != null }.map { part ->
+                GameFormulas.CrewPart.values().map { part ->
                     listOf(
                         part.displayName,
                         (1..5).joinToString(" / ") { compact(GameFormulas.crewPartUpgradePrice(part, it)!!) },
-                        (1..5).joinToString(" / ") { n(GameFormulas.crewPartUpkeep(part, it)!!.toInt()) }
+                        if (part.hasUpkeep) (1..5).joinToString(" / ") { n(GameFormulas.crewPartUpkeep(part, it)!!.toInt()) } else "none"
                     )
                 },
-                "Price to reach level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K). Upkeep = 0.5% of everything spent on the part, which matches the guide's table. Measured on the server screen: CPU/NIC L4 1.1M, RAM L4 1.9M, Uplink L3 405K, total upkeep 19,325/day."
+                "Price to reach level k = base × k² (CPU/NIC 70K, RAM 120K, Uplink 45K, Storage 60K). Upkeep = 0.5% of everything spent on the part per day. Checked against a crew's full server log: every upgrade matches, and the log balances to the treasury."
+            ),
+            facts(
+                f("Upkeep billing", "Charged about once a day for the hours since the last charge, so single charges vary", MEASURED),
+                f("Price display", "Rounded down to one decimal: RAM Lv 3 (1.08M) shows as \"1M\"", MEASURED),
+            ),
+            h("Surges"),
+            table(
+                MEASURED, listOf("Part at", "6 h", "12 h", "24 h"),
+                listOf(GameFormulas.CrewPart.CPU, GameFormulas.CrewPart.UPLINK).flatMap { part ->
+                    (1..5).map { lvl ->
+                        listOf("${if (part == GameFormulas.CrewPart.CPU) "CPU/NIC" else part.displayName} L$lvl") +
+                            listOf(6, 12, 24).map { n(GameFormulas.crewSurgePrice(part, lvl, it)!!.toInt()) }
+                    }
+                },
+                "Price = the next two levels' price × hours ÷ 1,200, minus 5% for 12 h or 10% for 24 h. Matches all 19 surges in the log. 6 h is assumed full price (not seen yet)."
+            ),
+            facts(
+                f("Extending", "Costs the same as starting a new surge", MEASURED),
+                f("Ending early", "Allowed; no refund appears in the log", MEASURED),
             ),
             bullets(
                 GUIDE,
                 "Server level = sum of the 5 parts (max 25).",
                 "Leaders can switch parts off; an unpowered part costs no upkeep.",
-                "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000), after 24 h in the crew.",
+                "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000). Members top up to exactly 50,000 a day (confirmed in the log).",
+                "New members wait 24 h (\"24H TENURE GATE\") before they get buffs (confirmed in the log).",
                 "Treasury at 0: server offline, buffs pause, RAM Spam pauses; Storage keeps working and levels are never lost.",
                 "Surge: CPU, NIC or Uplink +2 levels for 6/12/24 h (up to +21% or 17 targets), paid up front.",
                 "Every contribution, upgrade and upkeep day shows in the Server Log.",
             ),
-            unknowns("Q-21" to "Storage part prices and surge prices"),
+            unknowns("Q-21" to "Price of a 6-hour surge"),
         ),
         related = listOf("rootkit", "botnet", "scanning")
     )

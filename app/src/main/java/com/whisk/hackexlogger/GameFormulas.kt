@@ -336,23 +336,38 @@ object GameFormulas {
     // ── Crew server ─────────────────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Crew-server parts. Upgrading a part to level k costs `base × k²` (measured on the crew server screen,
-     * Raw Dump #25: CPU and NIC L4 1.1M, RAM L4 1.9M, Uplink L3 405K). Upkeep is 0.5% of everything spent on the
-     * part (guide), which reproduces the guide's whole upkeep table and the screen's 19,325/day for
-     * CPU 3 + NIC 3 + RAM 3 + Uplink 2. Storage has no upkeep, so its price can't be derived (null).
+     * Crew-server parts, all measured from a crew's complete server log (Raw Dumps #25 and #27; the log's
+     * contributions minus its spending equal the treasury balance to the crypto):
+     * - Upgrading a part to level k costs `base × k²` (every upgrade in the log, L1–L5).
+     * - Upkeep is 0.5% of everything spent on the part per day (the guide's table; 19,325/day on screen). It is
+     *   charged about once a day for the time since the last charge. Storage has no upkeep.
+     * - Surge (+2 levels): see [crewSurgePrice].
      */
-    enum class CrewPart(val displayName: String, val base: Int?) {
-        CPU("CPU", 70_000), NIC("NIC", 70_000), RAM("RAM", 120_000), UPLINK("Uplink", 45_000), STORAGE("Storage", null)
+    enum class CrewPart(val displayName: String, val base: Int, val hasUpkeep: Boolean = true, val surgeable: Boolean = true) {
+        CPU("CPU", 70_000), NIC("NIC", 70_000), RAM("RAM", 120_000, surgeable = false), UPLINK("Uplink", 45_000),
+        STORAGE("Storage", 60_000, hasUpkeep = false, surgeable = false)
     }
 
     /** Price to upgrade [part] from level − 1 to [level] (1–5). */
     fun crewPartUpgradePrice(part: CrewPart, level: Int): Long? =
-        part.base?.takeIf { level in 1..5 }?.let { it.toLong() * level * level }
+        if (level in 1..5) part.base.toLong() * level * level else null
 
     /** Daily upkeep of [part] at [level] while powered: 0.5% of the total spent on it. 0 at level 0. */
     fun crewPartUpkeep(part: CrewPart, level: Int): Long? {
-        val base = part.base ?: return 0
         if (level !in 0..5) return null
-        return base.toLong() * level * (level + 1) * (2 * level + 1) / 6 / 200
+        if (!part.hasUpkeep) return 0
+        return part.base.toLong() * level * (level + 1) * (2 * level + 1) / 6 / 200
+    }
+
+    /**
+     * Price of a surge (+2 levels) on [part] at [level] for [hours] (6/12/24): the next two levels' price
+     * × hours/1200, with 5% off for 12 h and 10% off for 24 h. Matches all 19 surges in the log (L1–L3, 12 h and 24 h;
+     * extending costs the same as starting). 6 h is assumed full price (not seen yet). Null if the part can't surge.
+     */
+    fun crewSurgePrice(part: CrewPart, level: Int, hours: Int): Long? {
+        if (!part.surgeable || level !in 0..5) return null
+        val discount = when (hours) { 6 -> 0.0; 12 -> 0.05; 24 -> 0.10; else -> return null }
+        val nextTwo = part.base.toLong() * ((level + 1) * (level + 1) + (level + 2) * (level + 2))
+        return Math.round(nextTwo * hours / 1200.0 * (1 - discount))
     }
 }
