@@ -731,7 +731,7 @@ object BypassScreenParser {
         if (scanRow != null) {
             ip = scanRow.groupValues[1]
             firewall = scanRow.groupValues[2].toIntOrNull()
-            encryptor = scanRow.groupValues[3].toIntOrNull() // ENC only shows with an Apex / Null Route loadout
+            encryptor = scanRow.groupValues[3].toIntOrNull() // ENC shows only on an Apex reboot, not by default
         } else {
             ip = CommonParserUtil.extractIp(text)
             firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
