@@ -10,12 +10,18 @@ Vibe-coded to the moon and back, just like the game.
 
 - **On-Demand Game Screen Scraper**: Captures visible text from the HackEx game interface when manually triggered via a floating quick-action overlay button.
 - **In-Game Overlay Toolbar**: Floating camera button and advanced targeting/validation controls overlay the game window for fast target clipboard copying and status tracking.
-- **Local On-Device Database**: Persists collected target intelligence locally on-device in a private JSON file (`targets.json`), written atomically in the background.
-- **Regex Game Text Parser**: Extracts in-game target profiles, software inventories, and activity logs using pattern matching tailored to HackEx UI text layouts.
-- **Passive Wallet Income Estimator**: Intelligently parses your personal log thefts, filters out outdated events with >24h gaps, and calculates highly accurate passive hourly crypto generation for every target's wallet.
+- **Local On-Device Database**: Keeps target intelligence on the device in a private JSON file, saved in the background so scraping stays fast even with thousands of targets.
+- **Regex Game Text Parser**: Extracts target profiles, software inventories, wallets, activity logs, crew rosters, processes and scan results using pattern matching tailored to HackEx UI text layouts.
+- **Passive Wallet Income Estimator**: Groups the thefts in your own log into sessions (split wherever more than an hour passes) and works out each target wallet's hourly crypto rate.
+- **Hack Odds & Upload Times**: Each target card shows your bypass and crack success chances and how long a virus upload will take, based on your own hardware and software from the Store.
+- **Good Spam Ranking**: Ranks targets you can bypass by how much Spam would earn there and how fast it uploads, and recommends the cheapest Spam level that still hits the 100/hr cap.
+- **Siphon Alerts**: Warns you when a siphon disappears from your earnings list, usually because the victim ran Antivirus.
+- **Marathon Mode**: A timed stealing run (5, 10 or 20 minutes) that reads your log at the end and ranks every wallet by income.
+- **Knowledge Base**: In-app game reference with formulas, tables and calculators, each fact labelled by where it comes from (measured, calculated, guide…).
 - **Advanced Targeting Mode**: Optional dashboard mode that filters your list to only show targets lacking critical scraping information, paired with a specialized overlay toolbar to cycle through incomplete targets and skip time-consuming bypasses.
-- **Search & Filtering**: Quickly filter target records by virtual IP address, username, wallet address, software name, software level, clan tags, or hardware tiers.
+- **Search & Filtering**: Filter by IP, username, wallet, clan, hardware or app name, or use shortcuts: `lvl 30` / `lvl 28-32` for player level, `sw 20` for targets with the most apps at exactly Lv20, `spam 17` or `fw 20` for one app's level.
 - **Smart SAF Import & Export**: Instantly export your target database or import target bundles with Android's Storage Access Framework seamlessly linked to your `Downloads/DarkIndex/` folder.
+- **Raw Dump Mode** (debug): Records exactly what each scrape saw and how it was understood, for troubleshooting a screen the app gets wrong.
 
 ---
 
@@ -78,7 +84,9 @@ DarkIndex requires specific Android permissions to provide overlay controls and 
 | :--- | :--- |
 | `SYSTEM_ALERT_WINDOW` ("Display over other apps") | Renders the floating quick-action overlay camera button and validation toolbar over the HackEx game window. |
 | `FOREGROUND_SERVICE` | Keeps the floating overlay service active during gameplay sessions. |
+| `FOREGROUND_SERVICE_SPECIAL_USE` | The foreground-service type Android 14+ requires for an overlay like this one. |
 | `BIND_ACCESSIBILITY_SERVICE` | Used strictly as an **on-demand UI screen reader** to read visible text node elements on screen when the user manually taps the floating overlay button while playing HackEx. |
+| `VIBRATE` | One short buzz when a Marathon Mode timer runs out. |
 
 ---
 
@@ -86,15 +94,24 @@ DarkIndex requires specific Android permissions to provide overlay controls and 
 
 ```text
 com.whisk.hackexlogger
- ├── MainActivity                   # Dashboard for database browsing, searching, and JSON backup/restore.
+ ├── MainActivity                   # Dashboard: target list, search, Good Spam / Recon modes, backup & restore.
  ├── ScraperAccessibilityService    # Accessibility Service that reads active window text nodes upon user trigger.
  ├── OverlayService                 # Foreground Service presenting floating UI widgets over the game interface.
- ├── TargetRepository               # Thread-safe local storage handling caching and durable JSON persistence.
- ├── ScreenParsers                  # Modular Regex parsers mapping HackEx game UI to structured target states.
- ├── SiphonTracker                  # Tracks deployed siphon botnets to alert you of wiped botnets.
- ├── DatabaseManager                # Thin architectural facade proxying actions into the domain repositories.
+ ├── ScrapePipeline                 # One scrape: recognise the screen, parse it, save what it found.
+ ├── ScreenParsers                  # Regex parsers mapping HackEx game UI text to structured data.
+ ├── DatabaseManager                # Turns each parsed screen into database changes.
+ ├── TargetRepository               # The in-memory database and its background saving.
+ ├── TargetStore                    # The database file (targets.json): tolerant loading, atomic writes.
+ ├── RecordMerger                   # Rules for merging records that describe the same player.
+ ├── DatabaseBackup                 # Export / import and the Downloads auto-backup format.
+ ├── DatabaseMaintenance            # Database clean-up and the 30-day theft purge.
+ ├── SiphonTracker                  # Tracks deployed siphons to alert you when one is wiped.
+ ├── GameFormulas & HardwareCatalog # Game maths (prices, odds, Spam income) and device/network names.
+ ├── Marathon                       # Marathon Mode engine.
+ ├── KnowledgeBase                  # In-app game reference and calculators.
+ ├── RawDump                        # Raw Dump Mode recording and storage.
  ├── TargetAdapter                  # RecyclerView adapter for rendering target cards and headers.
- ├── TargetRecord & ConsoleBundle   # Data models and JSON export/import schema definitions.
+ └── TargetRecord & ConsoleBundle   # Data models and the JSON export/import format.
 ```
 
 ---
@@ -113,11 +130,11 @@ com.whisk.hackexlogger
 Your data is **100% under your exclusive control and 100% offline**.
 
 - **No Internet Permission:** DarkIndex excludes internet permissions completely. Zero network calls or cloud connections are made.
-- **Durable Storage:** Database backups are automatically mirrored to your phone's public `Downloads/DarkIndex/` folder. Files stored here persist through app uninstalls and data wipes.
+- **Durable Storage:** A full backup is automatically kept in your phone's public `Downloads/DarkIndex/` folder (refreshed about 30 seconds after you scrape, and whenever you leave the app). Files stored here persist through app uninstalls and data wipes.
 - **Smart Import/Export:** Import and export file pickers launch directly inside `Downloads/DarkIndex/` for instant one-tap backup management.
 
 ---
 
 ## License
 
-This project is open-source and available under the [MIT License](LICENSE).
+Public domain: see [UNLICENSE](UNLICENSE). Do whatever you want with it.
