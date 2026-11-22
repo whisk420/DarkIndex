@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 182 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 188 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -32,7 +32,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 ### Running tests without the Android SDK (cloud sandboxes)
 Google Maven and services.gradle.org may be blocked. The pure-logic code can still be compiled and tested with the Kotlin compiler bundled in a local Gradle install (`/opt/gradle/lib/kotlin-compiler-embeddable-*.jar` + gson, junit, hamcrest, coroutines from the same folder):
 - Write tiny stubs for `android.content.{Context,ContextWrapper,SharedPreferences,Intent}`, `android.os.Environment` (return null), `android.util.Log`, `kotlinx.datetime.{Instant,Clock}` and `androidx.recyclerview.widget.DiffUtil.ItemCallback`.
-- Compile `TargetRecord, ConsoleBundle, ScreenParsers, GoodSpamUtils, NetworkSpeedUtils, PlayerProfileRepository, TargetRepository, DatabaseManager, SiphonTracker, HardwareCatalog, GameFormulas, KnowledgeBase, KnowledgeBaseContent, Marathon, RawDump, ScrapePipeline`, plus all of `src/test`. Write the `android.content`/`android.os` stubs in **Java** (Kotlin stubs clash with property syntax like `context.filesDir`).
+- Compile `TargetRecord, ConsoleBundle, ScreenParsers, GoodSpamUtils, NetworkSpeedUtils, PlayerProfileRepository, TargetRepository, DatabaseManager, SiphonTracker, HardwareCatalog, GameFormulas, KnowledgeBase, KnowledgeBaseContent, Marathon, RawDump, ScrapePipeline, TargetSearch`, plus all of `src/test`. Write the `android.content`/`android.os` stubs in **Java** (Kotlin stubs clash with property syntax like `context.filesDir`).
 - Run with `org.junit.runner.JUnitCore`, with `app/src/test/resources` on the runtime classpath (fixtures). Reproduces the full suite.
 
 ---
@@ -182,7 +182,8 @@ TargetRepository: cachedRecords (synchronized) → prefs "HackExDB"/"targets" (G
 | `NetworkSpeedUtils.kt` | Network boost table, base upload seconds, level scaling, duration formatting |
 | `SiphonTracker.kt` | Known siphons and amounts, first-seen times, alerts, `siphon_history.jsonl` |
 | `OverlayService.kt` | 📸 button (drag to the bottom ✖ to stop the service), HUD toast, Validation toolbar (✓ / 🗑 / ✕), Recon toolbar (⏭ skip / ✓ / 🗑 / ✕). Copies the IP to the clipboard |
-| `MainActivity.kt` | Dashboard: search, Good Spam switch + FW slider, Recon switch, VALIDATE/RECON FAB, ⋮ menu (Settings, Export, Import, Maintenance, Wipe (type-`WIPE` confirm), Reset Siphon Tracker), Siphon Alerts button, Android 13 restricted-settings onboarding |
+| `TargetSearch.kt` | Dashboard search (pure, tested): `lvl 30`/`lvl 28-32` player level; `sw 20` = most loot apps (all but Firewall) at exactly Lv20, then lowest FW, ENC, near misses; `<app|alias> 20` one app, ±1/±2 fallback, closest then lowest FW; else text. Results keep this order (MainActivity skips the IP sort while searching) |
+| `MainActivity.kt` | Dashboard: search (via `TargetSearch`), Good Spam switch + FW slider, Recon switch, VALIDATE/RECON FAB, ⋮ menu (Settings, Export, Import, Maintenance, Wipe (type-`WIPE` confirm), Reset Siphon Tracker), Siphon Alerts button, Android 13 restricted-settings onboarding |
 | `TargetAdapter.kt` | `ListItem` (Header/Target) + `ListItemDiffCallback`. Card rows: IP (tap copies) / username / wallets + income; chips LVL FW ENC DEV NET CREW; odds chips (Bypass %, Crack %, tap for detail); "⏱ Upload Times" dialog with Spam payout advice; DEFENSE (FW, ENC, AV, Proxy) / OFFENSE (Bypasser, Cracker, Trace) / VIRUSES grid. Long-press opens EDIT / SHARE / DELETE |
 | `SettingsActivity.kt` | Shows the parsed player profile (current = next − 1). Purge thefts > 30 days |
 | `SiphonAlertsActivity.kt` | Alert list: "Siphon Re-installed" clears the alert. "IP Not Found" clears it and deletes the target |
@@ -374,7 +375,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (182 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (188 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Owner rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -394,6 +395,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
 | **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
 | ScreenClassifierTest, GoodSpamTest (firewall filter), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |
 
