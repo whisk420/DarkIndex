@@ -41,6 +41,14 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun rootkitDebuffMatchesMeasuredLevels() {
+        // Owner's in-game readings, 2026-11-22
+        mapOf(1 to 1, 2 to 1, 3 to 2, 6 to 3).forEach { (lvl, debuff) -> assertEquals("Lv$lvl", debuff, GameFormulas.rootkitDebuff(lvl)) }
+        assertEquals(3, GameFormulas.rootkitDebuff(30)) // −3 is the cap
+        assertEquals(0, GameFormulas.rootkitDebuff(0))
+    }
+
+    @Test
     fun storePricesMatchVerifiedNumbers() {
         assertEquals(35_596, GameFormulas.storePrice(GameFormulas.App.FIREWALL, 21))
         assertEquals(41_877, GameFormulas.storePrice(GameFormulas.App.BYPASSER, 21))

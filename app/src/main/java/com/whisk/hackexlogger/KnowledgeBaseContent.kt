@@ -237,13 +237,18 @@ object KnowledgeBaseContent {
                 f("Effect", "Victim's Firewall and Encryptor count as up to 3 levels lower", GUIDE),
                 f("Who benefits", "You and every crewmate", GUIDE),
                 f("Stacking", "None: only the highest-level rootkit on a victim applies", GUIDE),
-                f("Debuff per rootkit level", "Unknown (grows with level, max 3)", UNKNOWN, "The upload card shows the debuff stat"),
                 f("Hardening", "The debuff applies before the Backdoor / Exploit Kit block roll, and can switch hardening off at low levels", GUIDE),
             ),
+            h("Debuff by level"),
+            table(
+                MEASURED, listOf("Rootkit Lv", "Debuff"),
+                listOf(listOf("1–2", "−1"), listOf("3–5", "−2"), listOf("6+", "−3 (cap)")),
+                "Measured at Lv 1, 2, 3 and 6. Lv 4–5 must be −2 (between Lv 3 and Lv 6)."
+            ),
+            tip("Lv 6 already gives the full −3: a higher rootkit only costs more and uploads slower."),
             tip("Upload a rootkit after the bypass and before the crack: the crack is then up to 3 levels easier."),
             tip("Coordinate: one crewmate's high-level rootkit carries the whole crew. Your own lower rootkit on top adds nothing."),
             calc(KbCalculators.HACK),
-            unknowns("M-07" to "Debuff at each rootkit level"),
         ),
         related = listOf("hacking", "crews", "virusRules")
     )

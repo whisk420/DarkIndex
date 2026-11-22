@@ -300,6 +300,18 @@ object GameFormulas {
         return rep
     }
 
+    /**
+     * Effective levels a rootkit takes off the victim's Firewall and Encryptor (measured by the owner, 2026-11-22):
+     * Lv 1–2 → 1, Lv 3 → 2, Lv 6+ → 3 (the cap). Lv 4–5 are 2 by elimination (between Lv 3's 2 and Lv 6's
+     * first 3), not yet seen. 0 for no rootkit.
+     */
+    fun rootkitDebuff(rootkitLevel: Int): Int = when {
+        rootkitLevel <= 0 -> 0
+        rootkitLevel <= 2 -> 1
+        rootkitLevel <= 5 -> 2
+        else -> 3
+    }
+
     /** Rep a victim loses when a virus lands: min(500, 25 × virus level). Daily loss cap 500, floor 50% of peak (guide). */
     fun repLossFromVirus(virusLevel: Int): Int = minOf(500, 25 * virusLevel.coerceAtLeast(0))
 

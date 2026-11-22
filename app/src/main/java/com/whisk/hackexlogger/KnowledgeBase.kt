@@ -263,7 +263,7 @@ object KbCalculators {
                 listOf(
                     CalcInput.Number("off", "Your Bypasser or Cracker level", d.bypasserLevel ?: 15, 1, 60),
                     CalcInput.Number("def", "Their Firewall or Encryptor level", 15, 1, 60),
-                    CalcInput.Number("rootkit", "Rootkit debuff on them (0–3)", 0, 0, 3),
+                    CalcInput.Number("rootkit", "Highest rootkit level on them (0 = none)", 0, 0, 60),
                     CalcInput.Toggle("apex", "You run an Apex device (+3)", false),
                     CalcInput.Toggle("cipher", "They run a Cipher device (+3)", false)
                 )
@@ -395,7 +395,7 @@ object KbCalculators {
 
     fun hackText(off: Int, def: Int, rootkit: Int, apex: Boolean, cipher: Boolean): String {
         val effOff = off + if (apex) 3 else 0
-        val effDef = (def - rootkit + if (cipher) 3 else 0).coerceAtLeast(1)
+        val effDef = (def - GameFormulas.rootkitDebuff(rootkit) + if (cipher) 3 else 0).coerceAtLeast(1)
         val chance = GameFormulas.hackSuccessChance(effOff, effDef)
         val block = GameFormulas.hardeningBlockChance(effDef)
         val gap = effOff - effDef

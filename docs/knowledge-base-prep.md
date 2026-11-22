@@ -117,7 +117,7 @@ Order below is the proposed index order. Each topic lists what we already know a
 ### 3.4 Rootkit virus
 - Debuffs victim FW + ENC by up to 3 effective levels for you and your whole crew; only the highest rootkit
   applies [G]. Applies before the Backdoor/Exploit hardening roll [G].
-- Debuff per rootkit level unknown → **M-07** (the upload card shows "defense debuff" stat line [G], so one dump answers it).
+- Debuff per rootkit level: Lv1–2 −1, Lv3–5 −2, Lv6+ −3 [M, 2026-11-22; Lv4–5 by elimination]. M-07 done.
 
 ### 3.5 Virus rules (shared)
 - 2 slots per victim per attacker, any 2 of the 3 types [G][O]. Many attackers can infect one victim.
@@ -289,7 +289,7 @@ Ordered by value. "Capture" says what to send; a 📼 Raw Dump of the screen is 
 - **M-17 Keygen fees.** Apps page `LOCKED LVL N available <price>` rows: your installed level, locked level, price.
   Dumps of your own Apps page whenever something is waiting to be unlocked.
 - **M-04 Siphon % per level.** SIPHON EARNINGS rows show `LV.x  y%`. One dump with mixed levels answers it.
-- **M-07 Rootkit debuff per level.** The UPLOAD VIRUS card's stat line for your rootkit at a few levels.
+- ~~**M-07 Rootkit debuff per level.**~~ Done 2026-11-22 (Lv1–2 −1, Lv3–5 −2, Lv6+ −3). The UPLOAD VIRUS card's stat line for your rootkit at a few levels.
 
 ### Medium priority (fills KB tables)
 - **M-22 XP table.** Own Home shows `xp / next` — dump own Home once per level as you climb (R-run makes this easy).

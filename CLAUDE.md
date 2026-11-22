@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 191 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 192 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -73,7 +73,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (§5.7). Full rate for 21 days, decays to a 10% floor around day 100 |
 | Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%; Lv25 shows 6%, Lv21–24 unseen; measured, Raw Dump #16). Combined cap 30% per victim. No decay. Cold-storage deposits bypass it |
-| Rootkit | virus, debuff | 1400 | Victim's defences up to −3 effective levels for you and your crew. Only the highest rootkit applies |
+| Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
 
 - **You choose the upload level of a virus** (any level up to your installed one). Lower uploads faster, so the goal is the **minimum Spam level that hits the 100/hr cap**, not your max level (owner uploads Lv17 Spam with Lv20 installed).
@@ -377,7 +377,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (191 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (192 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Owner rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -396,7 +396,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | TargetRepositoryTest | Validate doesn't wipe, IP-edit merge keeps the existing wallet + logs the conflict, delete, maintenance keeps thefts, purge shield, Downloads mirror goes only to the backup folder |
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
-| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
 | **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
 | ScreenClassifierTest, GoodSpamTest (firewall filter, Spam priority order), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |
