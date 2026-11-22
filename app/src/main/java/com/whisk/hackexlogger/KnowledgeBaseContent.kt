@@ -274,7 +274,7 @@ object KnowledgeBaseContent {
             ),
             h("Performance penalty"),
             p("Each active virus on a device cuts that device's performance by 1%, capped at 40% (60% speed). It slows bypasses, cracks, downloads, uploads and its own AV scans.", GUIDE),
-            p("Viruses on you slow you. The only way to see what's on you is to run Antivirus: it lists what it removed.", CONFIRMED),
+            warn("The only way to detect viruses on yourself is an Antivirus scan: it lists what it removed."),
         ),
         related = listOf("spam", "siphon", "rootkit", "antivirus")
     )
