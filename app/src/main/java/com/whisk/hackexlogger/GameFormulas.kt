@@ -57,6 +57,10 @@ object GameFormulas {
         return (capped * spamDecayFactor(daysSinceUpload, halfDecay)).roundToInt()
     }
 
+    /** Cheapest Spam level that reaches the 100/hr cap on a fresh upload at [levelGap], or null if none up to [maxLevel]. */
+    fun spamCapLevel(levelGap: Int, maxLevel: Int = 60): Int? =
+        (1..maxLevel).firstOrNull { spamIncomePerHour(it, levelGap) >= SPAM_CAP_PER_HOUR }
+
     /**
      * Fee taken from Spam collections: 0.5% per active Spam beyond 2, capped at 30% (exact fit of the guide's
      * table). Hacker Pass cuts the fee by 25%, Elite Pass by 50% ([subscriptionDiscount] = 0.25 / 0.50).

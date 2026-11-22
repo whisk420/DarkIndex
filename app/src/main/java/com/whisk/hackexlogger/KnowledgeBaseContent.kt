@@ -105,7 +105,7 @@ object KnowledgeBaseContent {
                 "Crypto/hr for a fresh upload. Guide cells: Lv1/5/10/15/20 at equal and +10, Lv15/20 at −10; the rest is the formula."
             ),
             warn("Between 0 and ±10 levels the straight line is an assumption, and below −10 the guide gives nothing (the app assumes a ×0.10 floor). Measure M-01 to confirm."),
-            tip("The cap is all that matters per victim: upload the cheapest Spam level that reaches 100/hr. At equal level that's about Lv 24; a victim 10 levels above you caps with Lv 18."),
+            tip("The cap is all that matters per victim: upload the cheapest Spam level that reaches 100/hr. At equal level that's about Lv ${GameFormulas.spamCapLevel(0)}; a victim 10 levels above you caps with Lv ${GameFormulas.spamCapLevel(10)}."),
             tip("A victim 10 below you pays half. With matchmaking showing ±10 levels, always prefer the higher-level half of a scan."),
             calc(KbCalculators.SPAM),
             h("Decay"),

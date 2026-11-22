@@ -297,7 +297,7 @@ object KbCalculators {
         val fresh = GameFormulas.spamIncomePerHour(spam, gap)
         val now = GameFormulas.spamIncomePerHour(spam, gap, days.toDouble(), scythe)
         val decay = GameFormulas.spamDecayFactor(days.toDouble(), scythe)
-        val capLevel = (1..60).firstOrNull { GameFormulas.spamIncomePerHour(it, gap) >= GameFormulas.SPAM_CAP_PER_HOUR }
+        val capLevel = GameFormulas.spamCapLevel(gap)
         val gapText = when {
             gap > 0 -> "Victim is $gap above you: ×${"%.2f".format(Locale.US, mult)} bonus"
             gap < 0 -> "Victim is ${-gap} below you: ×${"%.2f".format(Locale.US, mult)} penalty"
