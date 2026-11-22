@@ -194,9 +194,8 @@ object KnowledgeBaseContent {
                 f("Rate per level", "0.75% + 0.25% × level up to Lv 20 (5.75%)", MEASURED, "All 122 rows of a SIPHON EARNINGS dump, Lv 1–20"),
                 f("Top rate", "6% from Lv 21 (a Lv 25 siphon shows 6%, not 7%)", MEASURED),
                 f("Combined cap", "30% per victim, across all attackers", GUIDE),
-                f("Decay", "None: full rate until AV removes it", GUIDE),
+                f("Decay", "None", CONFIRMED),
                 f("Deployment cap", "700 siphons in total (each also takes one of your 2 virus slots on that victim)", CONFIRMED),
-                f("Scythe device", "2× drain (Siphon Surge)", GUIDE),
                 f("Wallet Shield", "Does not stop siphons", GUIDE),
             ),
             table(
