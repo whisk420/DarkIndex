@@ -3,8 +3,15 @@ name: Build & Publish Release
 on:
   workflow_dispatch:
     inputs:
+      release:
+        description: 'Release type. Minor: 1.6.1 -> 1.6.2. Major: 1.6.5 -> 1.7.'
+        type: choice
+        options:
+          - minor
+          - major
+        default: minor
       version:
-        description: 'Release version (e.g. 1.6). Leave empty to bump the latest v* tag automatically (v1.5 -> 1.6).'
+        description: 'Exact version (optional, e.g. 2.0). Overrides the release type.'
         required: false
         default: ''
   push:
@@ -65,18 +72,21 @@ jobs:
         elif [ "${{ github.ref_type }}" = "tag" ] && [[ "$REF_VER" == v* ]]; then
           VER="$REF_VER"                         # pushed a v* tag
         else
-          # Automatic: bump the minor of the latest v* tag (v1.5 -> 1.6). No tags yet -> 1.0.
-          LAST=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          # Automatic: bump the highest v* tag. Minor = last number (1.6.1 -> 1.6.2, 1.7 -> 1.7.1),
+          # major = middle number, dropping the last (1.6.5 -> 1.7). No tags yet -> 1.0.
+          LAST=$(git tag -l 'v*' | sort -V | tail -1)
           if [ -z "$LAST" ]; then
             VER="1.0"
           else
-            LAST="${LAST#v}"
-            MAJOR="${LAST%%.*}"
-            REST="${LAST#*.}"
-            MINOR="${REST%%.*}"
-            [ "$REST" = "$LAST" ] && MINOR=0
-            VER="$MAJOR.$((MINOR + 1))"
+            IFS=. read -r MAJOR MINOR PATCH <<< "${LAST#v}"
+            MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+            if [ "${{ inputs.release }}" = "major" ]; then
+              VER="$MAJOR.$((MINOR + 1))"
+            else
+              VER="$MAJOR.$MINOR.$((PATCH + 1))"
+            fi
           fi
+          echo "Latest tag: ${LAST:-none} -> ${{ inputs.release || 'minor' }} release $VER"
         fi
 
         CLEAN_VER="${VER#v}"                     # versionName without the v
