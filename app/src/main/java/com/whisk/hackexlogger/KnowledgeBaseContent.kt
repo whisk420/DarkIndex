@@ -81,7 +81,7 @@ object KnowledgeBaseContent {
 
     private fun spam() = KbTopic(
         "spam", "💸", "Spam virus & income",
-        "Your main passive income: up to 100 Crypto/hr per victim. Pays more the further the victim's level is above the Spam's (your own level doesn't matter), fixed at upload, and decays after 21 days.",
+        "Your main passive income: up to 100 Crypto/hr per victim. Set at upload by the victim's level vs the Spam's (your own level doesn't matter); an over-levelled Spam earns less. Decays after 21 days.",
         listOf(
             h("The basics"),
             facts(
@@ -95,27 +95,27 @@ object KnowledgeBaseContent {
             ),
             h("Earnings by level"),
             p(
-                "Measured in-game (2026-11-22, a Lv 45 player, fresh uploads). Victim Lv 43: Spam Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69/hr. Victim Lv 33: Lv7 47, Lv13 81/hr, the same as on the Lv 43 victim. Victim Lv 2: Lv1 13, Lv3 18, Lv7 24, Lv11 26/hr.",
+                "Measured in-game (2026-11-22, 16 fresh uploads; victim Lv → Spam Lv: /hr). Victim 43: Lv1 18, Lv2 23, Lv3 27, Lv7 47, Lv11 69. Victim 33: Lv7 47, Lv13 81, Lv20 100. Victim 28: Lv1 18, Lv2 23, Lv6 42. Victim 7: Lv13 38, Lv20 30. Victim 2: Lv1 13, Lv3 18, Lv7 24, Lv11 26.",
                 MEASURED
             ),
             p(
-                "What sets the rate is the victim's level compared with the Spam's level. Your own level plays no part, despite what the guide implies. A victim well above the Spam pays the full bonus; once the Spam outgrows the victim, each extra Spam level adds less.",
+                "What sets the rate is the victim's level compared with the Spam's level. Your own level plays no part, despite what the guide implies. A victim 11+ levels above the Spam pays the full bonus. A Spam above the victim's level loses 5% per level, so an over-levelled Spam earns less: Lv 20 on a Lv 7 victim pays 30/hr, Lv 13 pays 38.",
                 MEASURED
             ),
             p(
-                "Model: ${"%.2f".format(Locale.US, GameFormulas.SPAM_MEASURED_SCALE)} × (8.85 + 2.89·L + 0.0415·L²) × (1 + 4.1% per level the victim is above the Spam, max ×${"%.2f".format(Locale.US, GameFormulas.SPAM_MAX_BONUS)}; or 1 − 5% per level below, min ×0.50), rounded, capped at 100 (a rate just under 100 shows as 99). It reproduces all 11 measurements exactly. A higher Spam never earns less than a lower one on the same victim.",
+                "Model: full-bonus rate = 13.9 + 4.3·L + 0.0645·L². Divide by ${"%.3f".format(Locale.US, GameFormulas.SPAM_MAX_BONUS)} for a victim at the Spam's own level, then +4.1% per level the victim is above the Spam (up to the full bonus) or −5% per level it is below. Rounded, capped at 100. It reproduces all 16 uploads exactly. The guide's own curve has the wrong shape.",
                 CALCULATED
             ),
             table(
                 CALCULATED, listOf("Spam Lv", "Victim 2", "Victim 10", "Victim 20", "Victim 30", "Victim 40+"),
-                listOf(1, 3, 5, 7, 9, 11, 13, 15, 16, 20).map { lvl ->
+                listOf(1, 3, 5, 7, 9, 11, 13, 15, 16, 17, 20).map { lvl ->
                     listOf("Lv $lvl") + listOf(2, 10, 20, 30, 40).map { GameFormulas.spamIncomePerHour(lvl, it).toString() }
                 },
-                "Crypto/hr for a fresh upload. The rate is fixed at upload."
+                "Crypto/hr for a fresh upload. The rate is fixed at upload. Note the low-victim columns fall at the bottom."
             ),
-            warn("The −5% per level and the ×0.50 floor once the Spam is 10+ levels above the victim are the guide's numbers; only gaps down to −9 are measured. Measure M-01 to confirm."),
-            tip("Upload the cheapest Spam level that reaches 100/hr. Spam Lv ${GameFormulas.spamBestCap().first} caps on any victim Lv ${GameFormulas.spamBestCap().second} or higher, whatever your own level; no lower level ever caps."),
-            tip("Low-level victims still pay: a Lv 2 victim gives about ${GameFormulas.spamIncomePerHour(11, 2)}/hr with Lv 11 Spam. Past the victim's level, extra Spam levels add little, so a fast low upload is often the better deal."),
+            warn("Two parts are still estimates: the bonus between 1 and 10 levels above the Spam (one measurement, uses the guide's +4.1%/level), and Spam more than 13 levels above the victim (the app assumes the −5% line stops at ×0.10). M-01."),
+            tip("Upload the cheapest Spam level that reaches 100/hr. Spam Lv ${GameFormulas.spamBestCap().first} caps on any victim Lv ${GameFormulas.spamBestCap().second} or higher, whatever your own level; Lv 16 tops out at 99."),
+            tip("On low victims, don't upload your highest Spam: it earns less and takes longer. A Lv 7 victim pays most with Lv ${GameFormulas.spamBestLevel(7, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(7, 30), 7)}/hr); a Lv 2 victim with Lv ${GameFormulas.spamBestLevel(2, 30)} (${GameFormulas.spamIncomePerHour(GameFormulas.spamBestLevel(2, 30), 2)}/hr). The card's ⏱ Spam chip and the calculator below show the best level for each target."),
             calc(KbCalculators.SPAM),
             h("Decay"),
             p("Every deployment has a hidden age clock from its upload. Full rate for days 1–21, then a straight line down to 10% at day 100, which is the floor. Calculated: rate = 100% − (day − 21) × 90/79.", CALCULATED),

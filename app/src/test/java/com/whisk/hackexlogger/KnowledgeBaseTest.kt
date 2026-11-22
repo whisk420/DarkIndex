@@ -15,11 +15,12 @@ class KnowledgeBaseTest {
 
     @Test
     fun spamIncomeMatchesOwnerMeasurements() {
-        // 2026-11-22, player Lv45, fresh uploads read off SPAM EARNINGS: (victim level, Spam level) → Crypto/hr
+        // 2026-11-22, fresh uploads read off SPAM EARNINGS: (victim level, Spam level) → Crypto/hr
         val measured = mapOf(
             (43 to 1) to 18, (43 to 2) to 23, (43 to 3) to 27, (43 to 7) to 47, (43 to 11) to 69,
             (33 to 7) to 47, (33 to 13) to 81, (33 to 20) to 100,
-            (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42, // predicted before upload
+            (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42,
+            (7 to 13) to 38, (7 to 20) to 30,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
         )
         measured.forEach { (key, v) ->
@@ -29,12 +30,6 @@ class KnowledgeBaseTest {
         // 2026-11-20 SPAM EARNINGS: Lv16 tops out at 99, Lv17 shows 100 → Lv17 is the lowest Spam that ever caps
         assertEquals(99, GameFormulas.spamIncomePerHour(16, 99))
         assertEquals(17, GameFormulas.spamBestCap().first)
-        assertEquals(17, GameFormulas.spamCapLevel(45))
-        // Owner: income never falls as the Spam level rises on the same victim
-        for (victim in 1..60) {
-            val rates = (1..60).map { GameFormulas.spamIncomePerHour(it, victim) }
-            assertTrue("victim Lv$victim $rates", rates.zipWithNext().all { (a, b) -> b >= a })
-        }
     }
 
     @Test

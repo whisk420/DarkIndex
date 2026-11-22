@@ -155,27 +155,23 @@ CREWS 3"""
     }
 
     @Test
-    fun capNeedingMoreThanInstalledUsesInstalledLevel() {
-        // Victim Lv35: the cap needs Lv17, but you only have Lv12 → upload Lv12 (75/hr)
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 35, currentSpamLevel = 12)
+    fun uploadLevelNeverExceedsWhatYouHaveInstalled() {
+        // A high victim caps with Lv17; with only Lv12 installed you upload Lv12
+        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 45, currentSpamLevel = 12)
         assertTrue(info.isCapReachable)
-        assertEquals(17, info.recommendedSpamLevel)
         assertEquals(12, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 12))
-        assertEquals(75, GoodSpamUtils.spamIncome(12, info.targetLevel!!))
-        // Unknown installed level → the recommendation itself
-        assertEquals(17, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 0))
+        // Unknown installed level → the cap level itself
+        assertEquals(info.recommendedSpamLevel, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 0))
     }
 
     @Test
-    fun unreachableCapUsesLowestLevelThatEarnsTheMost() {
-        // Victim Lv10: income flattens at 48/hr from Lv14, so Lv14 beats uploading Lv20 for the same Crypto
-        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 10, currentSpamLevel = 20)
+    fun lowVictimGetsThePeakLevelNotTheHighest() {
+        // Real uploads on a Lv7 victim: Lv13 paid 38/hr, Lv20 paid 30/hr. With Lv20 installed, don't recommend Lv20.
+        val info = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 7, currentSpamLevel = 20)
         assertFalse(info.isCapReachable)
-        assertEquals(48, GoodSpamUtils.spamIncome(20, 10))
-        assertEquals(14, GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20))
-        // With only Lv12 installed, Lv12 is the best you can do
-        val low = GoodSpamUtils.calculateSpamPayoutInfo(targetLevel = 10, currentSpamLevel = 12)
-        assertEquals(12, GoodSpamUtils.spamUploadLevel(low, installedSpamLevel = 12))
+        val upload = GoodSpamUtils.spamUploadLevel(info, installedSpamLevel = 20)
+        assertTrue("upload Lv$upload", upload < 20)
+        assertTrue((1..20).all { GoodSpamUtils.spamIncome(it, 7) <= GoodSpamUtils.spamIncome(upload, 7) })
     }
 
 }

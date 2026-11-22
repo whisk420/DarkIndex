@@ -396,7 +396,8 @@ class TargetAdapter(
                             "   Best now: Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, target.level!!)}/hr."
                     } else {
                         "★ 100/hr is out of reach on this target (its level is too low for a capping Spam).\n" +
-                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, target.level!!)}/hr."
+                            "   Best: Spam Lv.$uploadLevel (~$uploadStr) → ~${GoodSpamUtils.spamIncome(uploadLevel, target.level!!)}/hr.\n" +
+                            "   A higher Spam earns LESS here (−5% per level above the target's level)."
                     }
 
                     androidx.appcompat.app.AlertDialog.Builder(itemView.context)
@@ -409,7 +410,7 @@ class TargetAdapter(
                             "• Virus Lv 10: ~$t10\n" +
                             "• Virus Lv 20: ~$t20\n\n" +
                             capMessage +
-                            "\n\n(Spam payouts: fitted to in-game uploads. They depend on the target's level vs the Spam level, not on your level, and are fixed at upload. Payouts decay after day 21. See Knowledge Base → Spam.)"
+                            "\n\n(Spam payouts: fitted to 16 in-game uploads. They depend on the target's level vs the Spam level, not on your level, and are fixed at upload. Payouts decay after day 21. See Knowledge Base → Spam.)"
                         )
                         .setPositiveButton("OK", null)
                         .show()

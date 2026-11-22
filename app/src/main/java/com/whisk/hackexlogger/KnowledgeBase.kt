@@ -307,10 +307,11 @@ object KbCalculators {
             appendLine("Fresh upload: ${fresh}/hr (${n(fresh * 24)}/day)")
             if (days > 21) appendLine("After $days days: ${now}/hr (${pct(decay)} of fresh, ${n(now * 24)}/day)")
             else appendLine("Day $days: full rate until day ${if (scythe) 42 else 21}")
-            append(
-                if (capLevel != null) "Cheapest Spam that hits 100/hr here: Lv $capLevel"
-                else "100/hr isn't reachable on this victim (up to Lv 60)"
-            )
+            if (capLevel != null) append("Cheapest Spam that hits 100/hr here: Lv $capLevel")
+            else {
+                val best = GameFormulas.spamBestLevel(target, 60)
+                append("100/hr isn't reachable on this victim. Best: Spam Lv $best (${GameFormulas.spamIncomePerHour(best, target)}/hr); higher earns less")
+            }
         }
     }
 
