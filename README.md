@@ -132,3 +132,9 @@ Your data is **100% under your exclusive control and 100% offline**.
 - **No Internet Permission:** DarkIndex excludes internet permissions completely. Zero network calls or cloud connections are made.
 - **Durable Storage:** A full backup is automatically kept in your phone's public `Downloads/DarkIndex/` folder (refreshed about 30 seconds after you scrape, and whenever you leave the app). Files stored here persist through app uninstalls and data wipes.
 - **Smart Import/Export:** Import and export file pickers launch directly inside `Downloads/DarkIndex/` for instant one-tap backup management.
+
+---
+
+## License
+
+Public domain: see [UNLICENSE](UNLICENSE). Do whatever you want with it.
