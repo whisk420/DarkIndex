@@ -88,7 +88,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - **Upload defence (developer-confirmed, rigorous):** Raider, Raider II and Raider III upload identically, which gives the 10 defence tiers 0–9 used in code. The guide does not document upload defence.
 - **Network** affects your downloads and uploads.
   - Order: `DSL 1.0, Cable 1.5, Cable+ 2.25, 4G LTE 3.5, 5G 5, 5G+ 7, Fiber 9.5, Fiber+ 12, 10G Fiber 15, 10G Fiber+ 18, Quantum Link 21` (multipliers).
-- Upload time ≈ `base(target device) / your network boost`. Concurrent processes do get slower (guide: +75% per extra process; whether that's bandwidth sharing or overhead is unknown). The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
+- Upload time ≈ `base(target device) / your network boost`. Concurrent processes do get slower (guide: +75% per extra process). **Two separate pools** (developer, 2026-11-22): network (uploads + downloads slow each other) and processor (bypasses + cracks slow each other); a bypass does not slow an upload. The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
 - **Virus performance penalty:** each active virus *on a device* cuts that device's performance by 1%, capped at 40%. The guide says this applies to the infected player.
 - Stored as `TargetRecord.hardware = "<Device> • <Network>"`.
 

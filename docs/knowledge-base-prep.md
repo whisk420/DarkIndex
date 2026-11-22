@@ -34,13 +34,13 @@ are deleted; the others keep their numbers.
 
 **Partly done**
 - Botnet & Spam fees: the fee is guide (checked)
-- Uploads & downloads: the upload model is measured
+- Uploads & downloads: the upload model is measured; uploads and downloads slow each other, not hacks
 - Antivirus: the scan report lists every virus, removed or not
 - Scanning: 10 targets by default (12 with our +2 Uplink); Encryptor only shows on an Apex reboot
 
 **Not started**
 - Bypass & crack
-- Processes
+- Processes (two separate slowdown pools confirmed: network and processor)
 - Consumables & hardening
 - Proxy, Stealth & Trace
 - Keygen & Store prices
@@ -76,9 +76,6 @@ times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen i
 ### Uploads & downloads
 - **Q-05 ⭐ Download times.** How long a download takes by software level and network.
   *To measure:* software and level, your network, and the duration shown.
-- **Q-06 Shared slowdown.** Running several processes slows them down. Do uploads and downloads slow down
-  bypasses and cracks too, or do they have their own pool?
-  *To measure:* run one upload alongside one bypass and compare the durations.
 
 ### Bypass & crack
 - **Q-07 ⭐ Success odds.** The app's odds table isn't in the guide at all; it came from old notes.

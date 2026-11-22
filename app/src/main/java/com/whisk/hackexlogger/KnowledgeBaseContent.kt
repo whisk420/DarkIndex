@@ -287,6 +287,7 @@ object KnowledgeBaseContent {
                 f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", MEASURED),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
                 f("Concurrency", "+75% per extra process", GUIDE),
+                f("Shared slowdown", "Uploads and downloads slow each other down. Bypasses and cracks don't affect them", CONFIRMED),
                 f("Virus penalty", "−1% speed per virus on your device (max −40%)", GUIDE),
                 f("Harvest Node network", "Uploads −50%", GUIDE),
                 f("Null Route network", "Downloads −40%", GUIDE),
@@ -304,7 +305,6 @@ object KnowledgeBaseContent {
             tip("Upload the lowest Spam level that caps 100/hr on that victim: it can be hours faster than your max level on a Nova Ultra."),
             unknowns(
                 "Q-05" to "Download time by software level and network",
-                "Q-06" to "Do uploads/downloads share the +75% pool with bypasses and cracks?",
             ),
         ),
         related = listOf("hardware", "spam", "processes")
@@ -375,6 +375,7 @@ object KnowledgeBaseContent {
             facts(
                 f("Statuses", "Pending, Completed, Failed, Invalidated, EMP Killed", GUIDE),
                 f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", GUIDE),
+                f("Two pools", "Network (uploads, downloads) and processor (bypasses, cracks) slow down only their own kind. A bypass doesn't slow an upload", CONFIRMED),
                 f("Overclock", "Skips 90 s each", GUIDE),
                 f("Ads", "Up to 4 per process: −10%, −9%, −8%, −7% (34% total)", GUIDE),
                 f("Running limit", "500 in progress", GUIDE),
@@ -392,7 +393,6 @@ object KnowledgeBaseContent {
                 "Tap a process's target icon to pin it to the Targets filter.",
             ),
             p("Processes are also a scrape source for DarkIndex: it creates bare records for new IPs it sees there.", CONFIRMED),
-            unknowns("Q-06" to "Whether network and hack processes share one pool"),
         ),
         related = listOf("hacking", "transfers", "antivirus")
     )
