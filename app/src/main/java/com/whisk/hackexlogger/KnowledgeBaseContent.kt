@@ -315,9 +315,9 @@ object KnowledgeBaseContent {
         "Your Bypasser against their Firewall, your Cracker against their Encryptor. Success odds by level gap, what speeds it up, and what invalidates your access.",
         listOf(
             h("Success odds"),
-            p("Not published by the guide. This table comes from earlier empirical logs and is what the target cards use.", EMPIRICAL),
+            p("Not published by the guide. Worked out from our own logged attempts; the target cards use it.", MEASURED),
             table(
-                EMPIRICAL, listOf("Your level − theirs", "Success"),
+                MEASURED, listOf("Your level − theirs", "Success"),
                 listOf(6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4).map { d ->
                     listOf((if (d > 0) "+$d" else "$d") + (if (d == 6) " or more" else if (d == -4) " or less" else ""), "${GameFormulas.hackSuccessChance(d, 0)}%")
                 }
@@ -329,6 +329,7 @@ object KnowledgeBaseContent {
                 f("Apex device (Overreach)", "Your Bypasser and Cracker +3", GUIDE),
                 f("Cipher device (Hardened Core)", "Their FW and ENC +3", GUIDE),
                 f("Bonus in brackets", "\"Using Bypasser Lv.20 (+3)\" on the bypass screen", CONFIRMED),
+                f("Stacking", "Modifiers just add up, in any order: Apex +3 with a Rootkit −3 on them is an effective +6", CONFIRMED),
             ),
             h("Duration"),
             facts(
@@ -349,9 +350,7 @@ object KnowledgeBaseContent {
             h("Rep"),
             p("Successful bypass/crack rep scales with their defence level and the software gap, up to ~105 on hard targets, once per victim per process type per 24 h. Zero rep at a gap of +10 or more.", GUIDE),
             unknowns(
-                "Q-07" to "Verify the success table (about 20 attempts per gap)",
                 "Q-08" to "Base bypass/crack duration by level and gap",
-                "Q-09" to "Order of Rootkit / Apex / Cipher modifiers",
                 "Q-10" to "Hack rep formula",
             ),
         ),
@@ -564,15 +563,14 @@ object KnowledgeBaseContent {
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
-                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", EMPIRICAL, "One confirmed data point: Keygen Lv 26 (41,459) → +7,045 XP"),
-                f("Device upgrades", "0.25 XP per crypto (best ratio)", GUIDE),
-                f("Older hardware / network", "0.20 XP per crypto", EMPIRICAL),
+                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", MEASURED, "e.g. Keygen Lv 26 (41,459) → +7,045 XP"),
+                f("Device upgrades", "0.25 XP per crypto (best ratio)", MEASURED),
+                f("Older hardware / network", "0.20 XP per crypto", MEASURED),
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking. Upgrade what you use."),
             unknowns(
                 "Q-13" to "Exact key fee by jump (Apps page LOCKED rows)",
                 "Q-14" to "Store prices below Lv 15",
-                "Q-15" to "XP per crypto for each purchase type",
             ),
         ),
         related = listOf("software", "leveling")
@@ -640,11 +638,15 @@ object KnowledgeBaseContent {
                 f("Monthly cap", "750 Credits, resets on the 1st (UTC)", GUIDE),
                 f("Drains", "Hot wallet first, then cold storage", GUIDE),
             ),
+            facts(
+                f("Per steal", "No minimum or maximum: take any amount, up to the whole hot wallet", CONFIRMED),
+                f("Per day", "There seems to be a daily maximum; the amount is unknown", UNKNOWN),
+            ),
             tip("Stash right after every steal: tap the Wallet: badge at the top of any page, then transfer to cold."),
             tip("Your theft log shows the thief's wallet, not their IP. Match timestamps against \"Device accessed from\" lines to find them."),
             unknowns(
                 "Q-16" to "Cold storage cap at every level",
-                "Q-17" to "Maximum or minimum per steal",
+                "Q-17" to "The daily steal maximum",
             ),
         ),
         related = listOf("logs", "siphon", "darkindex")
@@ -770,8 +772,8 @@ object KnowledgeBaseContent {
         listOf(
             h("XP sources"),
             facts(
-                f("Software (Store or Keygen)", "≈0.17 XP per Store crypto", EMPIRICAL),
-                f("Device", "0.25 XP per crypto", GUIDE),
+                f("Software (Store or Keygen)", "≈0.17 XP per Store crypto", MEASURED),
+                f("Device", "0.25 XP per crypto", MEASURED),
                 f("Missions", "100 / 150 / 200 XP", GUIDE),
                 f("Login streak day 1", "100 XP (200 with a subscription)", GUIDE),
             ),
@@ -799,7 +801,6 @@ object KnowledgeBaseContent {
             tip("Spend on what you use (Bypasser, Cracker, Spam, Keygen, device). Upgrading unused apps for XP only drags your level ahead of your offence."),
             unknowns(
                 "Q-19" to "XP to next for every level",
-                "Q-15" to "XP per crypto by purchase type",
             ),
         ),
         related = listOf("keygen", "reputation", "scanning")

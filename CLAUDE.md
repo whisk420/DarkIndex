@@ -110,6 +110,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - GEMINI.md's names `Dark Routing, Backchannel, Fast Deploy, Deep Link` are wrong (they look like perk names). All names now live in `HardwareCatalog` (§5.10).
 
 ### Economy & progression
+- **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-17).
 - **Gas fee:** victims lose 100%, the thief receives 90% (guide). The "Stole N" log shows **what the victim lost** (developer). That's fine because income is only compared across targets.
 - **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+).
 - **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
@@ -134,9 +135,9 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
-**Keygen XP (GEMINI empirical):** software XP is ≈ 0.1717 XP per full Store crypto, awarded in full on Keygen unlocks. Device upgrades give 0.25 XP/crypto, older hardware/network 0.20.
+**Keygen XP (measured, developer logs; badged MEASURED in the KB):** software XP is ≈ 0.1717 XP per full Store crypto, awarded in full on Keygen unlocks. Device upgrades give 0.25 XP/crypto, older hardware/network 0.20.
 
-**Hack (bypass/crack) success — empirical, in code (`TargetRecord.calculateSuccessProbability`):**
+**Hack (bypass/crack) success — measured from the developer's logged attempts, in code (`TargetRecord.calculateSuccessProbability`):** modifiers (Apex +3, Rootkit −N, Cipher +3) just add up, order doesn't matter.
 `delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
 
 **Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, §5.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).

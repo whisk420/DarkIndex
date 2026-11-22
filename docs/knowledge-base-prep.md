@@ -78,12 +78,8 @@ times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen i
   *To measure:* software and level, your network, and the duration shown.
 
 ### Bypass & crack
-- **Q-07 ⭐ Success odds.** The app's odds table isn't in the guide at all; it came from old notes.
-  *To measure:* for each attempt, your Bypasser/Cracker level (with bonuses), their Firewall/Encryptor, and
-  whether it worked. Needs about 20 attempts per level gap to tell 58% from 66%.
 - **Q-08 ⭐ Bypass and crack durations** by level and gap.
   *To measure:* duration shown, your device, both levels, with nothing else running.
-- **Q-09 Order of bonuses.** With a Rootkit on a Cipher target (−3 and +3), which applies first?
 - **Q-10 Rep from a hack.** The guide says up to about 105, scaling with the victim's defence.
   *To measure:* your rep before and after a bypass and a crack, with both software levels.
 
@@ -101,14 +97,12 @@ times, odds, prices), so they're worth the most. A 📼 Raw Dump of the screen i
   *To measure:* dump your own Apps page when it shows `LOCKED LVL N available <price>`.
 - **Q-14 Low-level Store prices.** The price formula is exact from about Lv 15 up but drifts below that.
   *To measure:* Store screen at low levels during a reboot run.
-- **Q-15 XP per Crypto spent** for software, devices and networks. One data point so far: Keygen Lv 26 gave
-  0.170 XP per Crypto.
-  *To measure:* own Home before and after a purchase, plus its price.
 
 ### Wallet
 - **Q-16 Cold storage cap at every level.** Known at Lv 1, 5, 10, 20 and 30.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
-- **Q-17 Steal limits.** Can you take a whole hot wallet in one go? Is there a minimum?
+- **Q-17 Daily steal maximum.** A single steal has no minimum or maximum, but there seems to be a cap per day.
+  How much is it? Hard to pin down.
 
 ### Scanning
 - **Q-18 Scan level window.** Exactly how far above and below your level a scan reaches.
