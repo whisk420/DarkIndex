@@ -89,6 +89,7 @@ object KnowledgeBaseContent {
                 f("Accrues", "Continuously, collect any time", GUIDE),
                 f("Upload level", "You choose any level up to your installed Spam; lower uploads faster", CONFIRMED),
                 f("Locked level", "A deployment earns at the level it was uploaded forever; uninstall and re-upload to upgrade", GUIDE),
+                f("Locked income", "The rate is fixed at upload from the Spam level and both players' levels then; levelling up later never changes it", CONFIRMED),
                 f("Slots", "Limited by your botnet (2 free, up to 64) plus crew-server RAM", GUIDE),
                 f("Rep for the upload", "Flat 5, once per victim per virus type per 24 h", GUIDE),
             ),
