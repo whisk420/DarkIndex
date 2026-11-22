@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 188 tests, all passing as of 2026-11-22
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 189 tests, all passing as of 2026-11-22
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -327,7 +327,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 
 ### 5.7 Good Spam / upload / payout (MainActivity, GoodSpamUtils, NetworkSpeedUtils, TargetAdapter)
 - **Filter:** `firewall ≤ slider` (0–31, 31 = uncapped; null FW counts as 0). Turning it on sets the slider to your effective Bypasser.
-- **Sort:** `level×10 − uploadMinutes×0.5 − firewall`.
+- **Sort (owner, 2026-11-22):** `GoodSpamUtils.rankForSpam`: fresh income of your best upload level, descending (100/hr cappers first; unknown level last), then that level's upload time ascending (weakest device first; unknown device last), then Firewall ascending. Replaced the old `level×10 − uploadMinutes×0.5 − firewall` score, whose level term rewarded victim levels that pay nothing extra past the cap.
 - **Device tier:** standard names map exactly. Prestige devices map by numeral (I–III=0, IV=1 … XII=9). A bare prestige name is 0. **Unknown strings are 3.**
 - **Spam payout model (measured 2026-11-22, 17 fresh uploads):** `GameFormulas.spamIncomePerHour(spamLevel, victimLevel)` = `round(spamMaxIncome(L) / 1.475 × m(victim − spam))`, capped at 100, then decayed. `spamMaxIncome(L) = 13.9 + 4.3L + 0.0645L²` (the rate with the full bonus). `m` = +4%/level the victim is above the **Spam** (max ×1.475; fits 3.65–4.15%, the mirrored +5% is ruled out by victim 19 / Spam 10 = 58), −5%/level the Spam is above the victim (min ×0.10, assumed). **Your own level plays no part** (contradicts the guide's wording).
   - Data (victim Lv: Spam Lv → /hr): 43: 1→18, 2→23, 3→27, 7→47, 11→69. 33: 7→47, 13→81, 20→100. 28: 1→18, 2→23, 6→42. 7: 13→38, 20→30. 19: 10→58. 2: 1→13, 3→18, 7→24, 11→26. Plus 2026-11-20: Lv16 tops out at 99, Lv17 shows 100.
@@ -335,7 +335,7 @@ The last two could feed the player profile automatically (TODO: profile from own
   - **Over-levelled Spam earns less.** `GameFormulas.spamBestLevel(victim, max)` = lowest level with the highest rate. Lv17 is the cheapest cap, on any victim Lv27+. Peak on low victims: Lv2 → Lv10 (26/hr), Lv7 → Lv12 (38), Lv10 → Lv13 (47).
   - **Income is locked at upload** (owner): later level changes on either side don't change it, so SPAM EARNINGS rows can't be joined with current DB levels. Gap data must come from fresh uploads.
   - Unmeasured (M-01): Spam more than 13 levels above the victim (×0.10 floor assumed).
-  - `GoodSpamUtils`: `recommendedSpamLevel` = cap level, else the best-earning level (search up to max(30, installed)); `spamUploadLevel` = the best-earning level up to min(recommended, installed). `calculateSpamPayoutInfo(targetLevel, installedSpam)` and `calculateScore(level, fw, hw, network, installedSpam)` take no player level; unknown target level → Lv20 time.
+  - `GoodSpamUtils`: `recommendedSpamLevel` = cap level, else the best-earning level (search up to max(30, installed)); `spamUploadLevel` = the best-earning level up to min(recommended, installed). `calculateSpamPayoutInfo(targetLevel, installedSpam)` takes no player level.
 - **Current hardware:** `PlayerProfile.currentDevice/currentNetwork` (shown item if MAX TIER, else `decrementHardwareName(next)`); `nextDevice/nextNetwork` are null once maxed. Always use `PlayerProfileRepository.getCurrentNetwork()/getCurrentDevice()` for maths (they fall back to decrement(next) for old profiles).
 - **Spam upload level:** `GoodSpamUtils.calculateSpamPayoutInfo` → `recommendedSpamLevel` = **minimum** level reaching 100/hr, searched up to max(30, installed) (`isCapReachable`), `levelMultiplier` exposed. `spamUploadLevel(info, installed)` = min(recommended, installed) (recommended when installed is unknown). The target card chip shows `⏱ Spam Lv.X ~time`; Good Spam's `calculateScore(…, playerNetwork, playerLevel, installedSpam)` uses that level's upload time (falls back to Lv20 when player info is unknown).
 - **Player levels:** Store shows NEXT levels, so current = stored − 1. `getEffectiveBypasser/Cracker` = (next − 1) + 3 if `nextDevice` contains "apex". `updateBypasserLevel` stores `(Using Lv + bonus) + 1`.
@@ -375,7 +375,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 - Rows are **per wallet** (owner: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (owner). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 6. Test suite (188 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 6. Test suite (189 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Owner rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -396,7 +396,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
 | **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices; KB content integrity (ids, related links, calculator ids, M-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
 | **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
-| ScreenClassifierTest, GoodSpamTest (firewall filter), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
+| ScreenClassifierTest, GoodSpamTest (firewall filter, Spam priority order), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads + `sanitizeRecord` on ART (read-only) |
 
 Test infrastructure (`TestSupport.kt`):
