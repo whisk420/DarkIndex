@@ -274,7 +274,7 @@ object KnowledgeBaseContent {
             ),
             h("Performance penalty"),
             p("Each active virus on a device cuts that device's performance by 1%, capped at 40% (60% speed). It slows bypasses, cracks, downloads, uploads and its own AV scans.", GUIDE),
-            warn("The only way to detect viruses on yourself is an Antivirus scan: it lists what it removed."),
+            warn("The only way to detect viruses on yourself is an Antivirus scan. It lists every virus it removed and every one it didn't, so after one scan you know exactly what's on you."),
         ),
         related = listOf("spam", "siphon", "rootkit", "antivirus")
     )
@@ -412,6 +412,7 @@ object KnowledgeBaseContent {
                 }
             ),
             facts(
+                f("Scan report", "Lists every virus found: what was removed and what wasn't. One scan shows everything on you", CONFIRMED),
                 f("Harvest Node attackers", "Their viruses count +2 levels against your AV", GUIDE),
                 f("Rep", "Each removal restores 90% of the rep that virus cost you", GUIDE),
                 f("System Purge", "Removes every virus instantly and restores most rep", GUIDE),

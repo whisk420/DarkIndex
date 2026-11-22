@@ -498,7 +498,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 
 ### Follow-up answers (2026-11-19)
 - F1: Yes. The 14 Nov break coincided with an install needing an uninstall, caused by CI's throwaway signing key.
-- F2: Viruses installed **on you** slow **your** processing. The only way to find out is to run Antivirus (it lists the viruses removed).
+- F2: Viruses installed **on you** slow **your** processing. The only way to find out is to run Antivirus: its report lists every virus removed **and** every one not removed, so one scan shows 100% of the viruses on you (owner, 2026-11-22).
 - F3: After a victim runs AV, the wiped siphon **disappears from SIPHON EARNINGS immediately** on your next scan. `SiphonTracker`'s "missing after a full scroll" logic matches this.
 - F4: A crew's full name can't be correlated with a home-screen `[TAG]`. **Keep the current behaviour:** discard a Crew screen unless a member's clan is already known.
 - F5: After a reboot you start at `<Line> I`; devices go to XII, networks to XI; R6+ mixed loadouts name each piece `<Line> <Roman>` (a bare line name = I).
