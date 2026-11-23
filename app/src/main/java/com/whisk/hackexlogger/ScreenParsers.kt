@@ -120,7 +120,9 @@ object HomeScreenParser {
     private val REGEX_PROFILE_IP = Regex("""IP\s+([0-9]{1,3}(?:\.[0-9]{1,3}|\.xxx){3}|\[?UNKNOWN\]?)""", RegexOption.IGNORE_CASE)
     private val REGEX_USER_HEADER = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE)
     private val REGEX_CLAN_TAG = Regex("""\[([^\]]{2,10})\]""")
-    private val REGEX_LEVEL = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE)
+    // A prestiged player's rank sits between the label and the value on target Home screens
+    // ("LVL" / "R1" / "48", Raw Dump #28); own Home puts it before LVL.
+    private val REGEX_LEVEL = Regex("""LVL\s+(?:R\d+\s+)?(\d+)""", RegexOption.IGNORE_CASE)
     private val REGEX_DEVICE = Regex("""DEVICE\s*\r?\n?\s*([^\n\r]+)""", RegexOption.IGNORE_CASE)
     private val REGEX_NETWORK = Regex("""NETWORK\s*\r?\n?\s*([^\n\r]+)""", RegexOption.IGNORE_CASE)
     private val REGEX_FIREWALL = Regex("""FIREWALL\s*\r?\n?\s*Lv\.?\s*(\d+)""", RegexOption.IGNORE_CASE)
@@ -168,7 +170,9 @@ data class OwnHomeScreen(
 
 object OwnHomeScreenParser {
     private val REGEX_USER_HEADER = Regex("""^[ \t]*>\s*(.+?)$""", RegexOption.MULTILINE)
-    private val REGEX_LEVEL = Regex("""LVL\s+(\d+)""", RegexOption.IGNORE_CASE)
+    // A prestiged player's rank sits between the label and the value on target Home screens
+    // ("LVL" / "R1" / "48", Raw Dump #28); own Home puts it before LVL.
+    private val REGEX_LEVEL = Regex("""LVL\s+(?:R\d+\s+)?(\d+)""", RegexOption.IGNORE_CASE)
 
     fun parse(text: String): OwnHomeScreen? {
         if (!text.lowercase().contains("my device")) return null
