@@ -227,6 +227,54 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun ownAppsPageSetsInstalledLevels() {
+        // Raw Dump #29: your own Apps page. Levels are stored as installed + 1 (the Store's NEXT convention).
+        val result = scrape("own_apps_2026-11-24.txt")
+        assertEquals(ScreenType.APPS, result.detectedType)
+        assertTrue(result.savedItems.contains("My Apps (11 levels)"))
+        val expectedInstalled = mapOf(
+            "Antivirus" to 30, "Firewall" to 29, "Password Encryptor" to 30, "Proxy" to 27, "Trace" to 29,
+            "Bypasser" to 31, "Password Cracker" to 30, "Spam" to 20, "Rootkit" to 6, "Siphon" to 25, "Keygen" to 33
+        )
+        assertEquals(expectedInstalled.mapValues { it.value + 1 }, PlayerProfileRepository.getProfile().softwareLevels)
+        // "(+3)" is shown beside the level, not in it; LOCKED rows (e.g. Antivirus LVL 42) are not installed
+        assertEquals(31, PlayerProfileRepository.getEffectiveBypasserLevel()) // no Apex device in this profile
+        assertEquals(20, PlayerProfileRepository.getInstalledSpamLevel())
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
+    fun appsPageIsNotASiphonScrapeAndNewestLevelsWin() {
+        // The Siphon earnings page carries the Apps list underneath (2026-11-20: Antivirus 20, Bypasser 20).
+        scrape("siphons_2026-11-20.txt")
+        assertEquals(21, PlayerProfileRepository.getProfile().softwareLevels["Antivirus"])
+        val known = SiphonTracker.getKnownSiphons().size
+
+        // The plain Apps page contains "siphoned" and "DEPLOYED" but must not count as a (empty) siphon list
+        scrape("own_apps_2026-11-24.txt")
+        assertEquals(known, SiphonTracker.getKnownSiphons().size)
+        assertTrue(SiphonTracker.getSiphonAlerts().isEmpty())
+        assertEquals(31, PlayerProfileRepository.getProfile().softwareLevels["Antivirus"])
+        assertEquals(32, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
+    }
+
+    @Test
+    fun bypassScreenDoesNotCountTheApexBonusTwice() {
+        // B12, Raw Dump #30: "Using Bypasser Lv.31" + "(+3)" on an Apex device. Before the fix the scrape stored
+        // 31 + 3 + 1 = 35 and the effective level added +3 again (37). The Apps page (dump #29) also says 31.
+        DatabaseManager.processStoreScreen(StoreScreen("Apex VII", null, null, emptyMap()))
+        scrape("own_apps_2026-11-24.txt")
+        assertEquals(34, PlayerProfileRepository.getEffectiveBypasserLevel())
+
+        val result = scrape("bypass_apex_2026-11-24.txt")
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(32, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
+        assertEquals(34, PlayerProfileRepository.getEffectiveBypasserLevel())
+        assertEquals(31, record("57.134.50.54")?.firewall)
+        assertEquals(32, record("57.134.50.54")?.encryptor)
+    }
+
+    @Test
     fun processScreenCreatesTargetsFromRealText() {
         val result = scrape("processes_2026-11-20.txt")
         assertEquals(ScreenType.PROCESS, result.detectedType)

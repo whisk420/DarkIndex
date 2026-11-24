@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 209 tests, all passing as of 2026-11-24
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 212 tests, all passing as of 2026-11-24
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -44,7 +44,7 @@ Google Maven and services.gradle.org were reachable on 2026-11-22, so the real G
 |---|---|
 | `CLAUDE.md` (this file) | The app: commands, pipeline and code map, storage, tests, rules |
 | `docs/game.md` | The game: mechanics, measured and verified numbers, formulas, screen text formats, the developer's answers. **Read it before touching parsers or game maths** |
-| `docs/history.md` | Fixed bugs (B1–B15) |
+| `docs/history.md` | Fixed bugs (B1–B16) |
 | `docs/knowledge-base-prep.md` | The developer's Knowledge Base review tracker and open questions (Q-ids) |
 
 Facts about the game go in `docs/game.md`, not here.
@@ -67,7 +67,7 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
 
 | File | Role |
 |---|---|
-| `ScreenParsers.kt` | `SharedRegex`, `ScreenClassifier`, `CommonParserUtil` (`isMaskedIp`, `stripNavBar`, `decodeEntities`), `LogTime` (UTC log times), plus parsers: Home, OwnHome, Log, Software, Wallet, Siphon, SpamEarnings, Crew, Process, Store, Bypass |
+| `ScreenParsers.kt` | `SharedRegex`, `ScreenClassifier`, `CommonParserUtil` (`isMaskedIp`, `stripNavBar`, `decodeEntities`), `LogTime` (UTC log times), plus parsers: Home, OwnHome, OwnApps, Log, Software, Wallet, Siphon, SpamEarnings, Crew, Process, Store, Bypass |
 | `HardwareCatalog.kt` | Single source of truth for device/network names, levels, network boost and upload-defence tier (§3.10) |
 | `ScraperAccessibilityService.kt` | On-demand only (`onAccessibilityEvent` is a no-op). Main thread: text snapshot (+ node tree in dump mode). Background: `ScrapePipeline.run`. Pipeline exceptions are caught and toasted ("Scrape error: …") instead of killing the coroutine. Refuses any window that isn't HackEx 2 (`ScrapeGate`) before reading text or starting a dump. Logs `DOSSIER_BENCHMARK` timings only (screen text is never logged since 2026-11-24) |
 | `ScrapeGate.kt` | `GAME_PACKAGE = net.cncapps.hackex2`, `isGameWindow(pkg)`: the privacy gate for every scrape |
@@ -108,7 +108,7 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
 4. `SOFTWARE`: "installed software"
 5. `WALLET`: "wallet address" OR "'s wallet" OR "’s wallet"
 6. `SPAM_EARNINGS`: "SPAM EARNINGS" (before Siphon: both pages start with the Apps page text)
-7. `SIPHON`: "siphoned" AND "deployed"
+7. `SIPHON`: "SIPHON EARNINGS"; then `APPS`: a `// APPS` line AND "Installed Applications" (your own Apps page, 2026-11-24); then `SIPHON` again for "siphoned" AND "deployed" (the Apps page has both words, so it must come first)
 8. `LOGS` (`isLogScreen`): log headers (`// LOG`, `~/log.txt`, `// VICTIM LOG`, `~/victim_log.txt`), the old access/crack/bypass phrases, or any `[M-D H:MM]` line with a known action (stole, uploaded, downloaded, failed, purchased …)
 9. `PROCESS`: a `// PROCESSES` line OR `N active tasks`
 10. `HOME`: "firewall" AND ("encryptor" | "ip" | "device")
@@ -157,10 +157,10 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - **processHomeScreen:** upserts by IP, sets fields, `lastValidated = now`.
 - **processSoftwareScreen:** finds the record by username, or else creates `unknown:<username>`. Sets downloads with status "installed".
 - **processWalletScreen:** finds by username, or else `unknown:<username>`. **The wallet page is proof** (`walletSource = wallet_page`): it replaces every other wallet on the target (dropping their thefts) and takes the wallet, with its thefts, from any other record. Every change is written to `wallet_conflicts.jsonl`.
-- **processBypassScreen:** upserts target FW/ENC by IP. Stores the player's Bypasser as `Using Lv + (+N)`.
+- **processBypassScreen:** upserts target FW/ENC by IP. Stores the player's Bypasser as `Using Lv` + 1 (Store form). The `(+N)` beside it is the Apex perk and is **not** stored: `getEffectiveBypasserLevel` adds it from the owned device (B12, fixed 2026-11-24).
 - **processCrewScreen:** does nothing unless some member IP already has a clan. Then it tags every member and creates bare records for unknown IPs. Masked members are skipped.
 - **processProcessScreen:** creates bare records for new IPs (invalidated-only IPs get `lastValidated = null`; masked IPs and `0.0.0.0` skipped). Records process downloads with status "Unknown" when the level is higher.
-- **processStoreScreen / processOwnHomeScreen:** update the player profile only.
+- **processStoreScreen / processOwnHomeScreen / processOwnAppsScreen:** update the player profile only. The Apps page (`OwnAppsParser`) stores installed + 1 per app, the Store's NEXT convention, so readers keep subtracting 1; the newest scrape of either wins. `(+N)` bonuses and `LOCKEDLVL` rows are parsed but not stored. The Spam and Siphon earnings pages carry the same Apps text, so `ScrapePipeline` reads levels from them too.
 
 ### 3.5 Records, merging, placeholders
 - The key is `ip`. Placeholders are `unknown:<Username>` and `unknown:wallet_<W>`. Scraping the Wallet screen (username + wallet) merges them.
@@ -192,7 +192,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
   - `GoodSpamUtils`: `recommendedSpamLevel` = cap level, else the best-earning level (search up to max(30, installed)); `spamUploadLevel` = the best-earning level up to min(recommended, installed). `calculateSpamPayoutInfo(targetLevel, installedSpam)` takes no player level.
 - **Current hardware:** `PlayerProfile.currentDevice/currentNetwork` (shown item if MAX TIER, else `decrementHardwareName(next)`); `nextDevice/nextNetwork` are null once maxed. Always use `PlayerProfileRepository.getCurrentNetwork()/getCurrentDevice()` for maths (they fall back to decrement(next) for old profiles).
 - **Spam upload level:** `GoodSpamUtils.calculateSpamPayoutInfo` → `recommendedSpamLevel` = **minimum** level reaching 100/hr, searched up to max(30, installed) (`isCapReachable`), `levelMultiplier` exposed. `spamUploadLevel(info, installed)` = min(recommended, installed) (recommended when installed is unknown). The target card chip shows `⏱ Spam Lv.X ~time`; Good Spam's `calculateScore(…, playerNetwork, playerLevel, installedSpam)` uses that level's upload time (falls back to Lv20 when player info is unknown).
-- **Player levels:** Store shows NEXT levels, so current = stored − 1. `getEffectiveBypasser/Cracker` = (next − 1) + 3 if `nextDevice` contains "apex". `updateBypasserLevel` stores `(Using Lv + bonus) + 1`.
+- **Player levels:** Store shows NEXT levels, so current = stored − 1. Your own Apps page shows installed levels and is stored as installed + 1 to match (2026-11-24). `getEffectiveBypasser/Cracker` = (next − 1) + 3 if `nextDevice` contains "apex". `updateBypasserLevel` stores `Using Lv + 1` (no bonus; B12).
 
 ### 3.8 SiphonTracker
 - If `items` is empty and `deployed > 0`, the scrape is ignored (scrolled to the header).
@@ -233,7 +233,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 4. Test suite (209 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 4. Test suite (212 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -244,7 +244,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 
 | Class | What it covers |
 |---|---|
-| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: scan list (first real row keeps its own FW/ENC past a masked row), double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, prestiged target Home level (`R1` between label and value), Processes, Siphons (masked row skipped), the 6 known log discards |
+| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: scan list (first real row keeps its own FW/ENC past a masked row), double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, own Apps → installed levels (+ the Apps page is not a siphon scrape; newest scrape wins), Bypass screen doesn't count the Apex +3 twice (B12), prestiged target Home level (`R1` between label and value), Processes, Siphons (masked row skipped), the 6 known log discards |
 | **DatabaseCoverageTest** (new) | Processes (create/keep/invalidated/downloads only if higher/no 0.0.0.0), Crew (known clan spreads, unknown → nothing saved), Bypass (target defences + stored bypasser), Import (merge by IP/username, siphon state, raw ingests) |
 | **WalletAuthorityTest**, **SaveQueueAndBackupTest**, **HardwareCatalogTest**, **ScreenFixesTest**, **LogTimeTest** (new) | Wallet-page authority rules; save queue order, debounced backup, `targets.json` format, migration from prefs, downgrade merge, unreadable records/files kept aside, profile in backups; every hardware name; masked IPs, nav bar, Spam Earnings, entities, failed crack; UTC log times + migration |
 | HackExParserTest | Real logcat fixtures for every parser, the 3-min cap, the blank-line barrier |

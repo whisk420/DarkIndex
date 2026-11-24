@@ -19,7 +19,7 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B9 | Fixed | Search is hidden while Recon or Good Spam is on |
 | B10 | Fixed | Profile JSON parsed several times per card bind; now cached |
 | B11 | Fixed | Whole-DB saves blocked scrapes; now on an ordered background queue |
-| B12 | **Partly open** | `isApexDeviceOwned()` reads the owned device now; possible double Apex +3 still to verify (TODO) |
+| B12 | Fixed | The Bypass screen stored `Using Lv + (+3) + 1`, then the Apex perk was added again (Bypasser 34 counted as 37). Raw Dump #30: the level excludes the `(+3)`. Now stores `Using Lv + 1` |
 | B13 | Fixed | Log minutes ignored the month; now UTC epoch minutes |
 | B14 | Fixed | Leftover ProGuard Google Identity rules removed; releases signed with the permanent key |
 | B15 | Fixed | Repo clutter removed; tests no longer write `DarkIndex/` |

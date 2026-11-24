@@ -7,7 +7,7 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
 }
 
 object ScreenClassifier {
@@ -28,6 +28,10 @@ object ScreenClassifier {
         if (lowerText.contains("wallet address") || lowerText.contains("'s wallet") || lowerText.contains("’s wallet")) return ScreenType.WALLET
         // The Spam and Siphon earnings pages both start with the Apps page text, so check Spam first
         if (text.contains("SPAM EARNINGS")) return ScreenType.SPAM_EARNINGS
+        if (text.contains("SIPHON EARNINGS")) return ScreenType.SIPHON
+        // Your own Apps page (Raw Dump #29). It also contains "siphoned" and "DEPLOYED", so it must come before the
+        // older Siphon signature below. The earnings pages above carry the same Apps text and are parsed for it too.
+        if (OwnAppsParser.isAppsPage(lines)) return ScreenType.APPS
         if (lowerText.contains("siphoned") && lowerText.contains("deployed")) return ScreenType.SIPHON
         if (isLogScreen(lowerText, lines)) return ScreenType.LOGS
         if (lines.any { it.trim().equals("// PROCESSES", ignoreCase = true) } || Regex("""\b\d+ active tasks?\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)) return ScreenType.PROCESS
@@ -603,6 +607,55 @@ object ProcessScreenParser {
             }
         }
         return ProcessScreen(ips.distinct(), invalidatedIps.distinct(), downloads)
+    }
+}
+
+// ----------------------------------------
+// OwnAppsScreen (your own Apps page)
+// ----------------------------------------
+/**
+ * Your own Apps page (Raw Dump #29): per app the name, optional status lines (`ACTIVE`, `12h 27m`, `6,262/hr`,
+ * `76,789 siphoned`), `LVL <installed>`, an optional `(+3)` device bonus shown separately, and an optional
+ * `LOCKEDLVL <n> available<price> Crypto` row for a downloaded copy that isn't activated yet.
+ */
+data class OwnAppsScreen(
+    /** Installed levels, without any device bonus. */
+    val installedLevels: Map<String, Int>,
+    /** The `(+N)` bonus shown next to an app's level (Apex: Bypasser and Password Cracker). */
+    val bonuses: Map<String, Int>,
+    /** Downloaded but not activated: the level waiting to be unlocked. Not stored. */
+    val lockedLevels: Map<String, Int>
+)
+
+object OwnAppsParser {
+    val APP_NAMES = listOf(
+        "Firewall", "Bypasser", "Password Encryptor", "Password Cracker",
+        "Spam", "Siphon", "Rootkit", "Antivirus", "Proxy", "Trace", "Keygen"
+    )
+    private val LEVEL = Regex("""^LVL\s+(\d+)$""")
+    private val BONUS = Regex("""^\(\+(\d+)\)$""")
+    private val LOCKED = Regex("""^LOCKEDLVL\s+(\d+)\s+available""")
+
+    fun isAppsPage(lines: List<String>): Boolean =
+        lines.any { it.trim() == "// APPS" } && lines.any { it.contains("Installed Applications") }
+
+    fun parse(lines: List<String>): OwnAppsScreen? {
+        val start = lines.indexOfFirst { it.contains("Installed Applications") }
+        if (start < 0) return null
+        val installed = linkedMapOf<String, Int>()
+        val bonuses = linkedMapOf<String, Int>()
+        val locked = linkedMapOf<String, Int>()
+        var app: String? = null
+        for (raw in lines.drop(start + 1)) {
+            val line = raw.trim()
+            if (line.contains("Consumables")) break
+            if (line in APP_NAMES) { app = line; continue }
+            val current = app ?: continue
+            LEVEL.find(line)?.let { if (current !in installed) installed[current] = it.groupValues[1].toInt(); return@let }
+            BONUS.find(line)?.let { if (current in installed) bonuses[current] = it.groupValues[1].toInt() }
+            LOCKED.find(line)?.let { locked[current] = it.groupValues[1].toInt() }
+        }
+        return if (installed.isEmpty()) null else OwnAppsScreen(installed, bonuses, locked)
     }
 }
 

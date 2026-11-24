@@ -243,6 +243,10 @@ object DatabaseManager {
         PlayerProfileRepository.updateProfile(storeScreen)
     }
 
+    fun processOwnAppsScreen(appsScreen: OwnAppsScreen) {
+        PlayerProfileRepository.updateInstalledSoftware(appsScreen.installedLevels)
+    }
+
     fun processOwnHomeScreen(ownHomeScreen: OwnHomeScreen) {
         PlayerProfileRepository.updateOwnProfile(ownHomeScreen.username, ownHomeScreen.level)
     }
@@ -262,8 +266,9 @@ object DatabaseManager {
         }
 
         if (bypassScreen.playerBypasser != null) {
-            val totalBypasser = bypassScreen.playerBypasser + (bypassScreen.apexBonus ?: 0)
-            PlayerProfileRepository.updateBypasserLevel(totalBypasser)
+            // "Using Bypasser Lv.31" is the installed level; the "(+3)" beside it is the Apex perk, which
+            // getEffectiveBypasserLevel adds from the owned device. Storing it here counted it twice (B12, Raw Dump #30).
+            PlayerProfileRepository.updateBypasserLevel(bypassScreen.playerBypasser)
         }
     }
 
