@@ -313,6 +313,49 @@ class RawDumpTest {
     }
 
     @Test
+    fun compactExportSharesRepeatedLinesDropsNavAndNodesAndDedupesTexts() {
+        // Two real Apps pages (Raw Dumps #29 and #33): same consumable descriptions, different levels
+        val store = RawDumpStore(tmpDir)
+        val texts = listOf("own_apps_2026-11-24.txt", "own_apps_locked_2026-11-24.txt").map { TestEnv.fixture(it) }
+        val nodes = listOf(RawDumpNode(d = 0, cls = "android.widget.FrameLayout", id = "nav-item-scan", text = "SCAN", desc = null, bounds = listOf(0, 0, 1, 1)))
+        fun apps(t: String) = sampleDump(t).apply { detectedType = "APPS"; nodeTree = nodes }
+        texts.forEach { store.save(apps(it)) }
+        store.save(apps(texts[1])) // identical to the second
+        val w = StringWriter()
+        assertEquals(3, store.exportCompact(w))
+        val out = w.toString()
+
+        assertTrue(out.startsWith("# darkindex-dumps-compact v1"))
+        assertFalse("node tree must not be exported", out.contains("nav-item-scan") || out.contains("FrameLayout"))
+        assertFalse("bottom nav stripped", out.contains("STORE\nCREWS"))
+        assertEquals(3, Regex("""## dump \d+ · [^\n]* · APPS · nav""").findAll(out).count())
+        assertTrue(out.contains("text: same as #2"))
+        // A consumable description shared by both pages is written once, in ## shared
+        val purge = "Nuke every virus on your device. No scan, no wait, just gone. Restores 90% of lost reputation."
+        assertEquals(1, Regex(Regex.escape(purge)).findAll(out).count())
+        assertTrue(out.lines().any { it.startsWith("§") && it.endsWith(purge) })
+        assertTrue("three texts cost less than two raw texts", out.length < texts.sumOf { it.length })
+    }
+
+    @Test
+    fun compactExportLogRowsPointAtTextLines() {
+        val store = RawDumpStore(tmpDir)
+        store.save(recordedLogDump())
+        val out = StringWriter().also { store.exportCompact(it) }.toString()
+        val textLines = out.substringAfter("text:\n").split("\n")
+        val rows = out.substringAfter("interp Log (").substringBefore("text:").lines().drop(1).filter { it.isNotBlank() }
+        assertTrue(rows.isNotEmpty())
+        for (row in rows) {
+            val n = Regex("""^\s+L(\d+) """).find(row)!!.groupValues[1].toInt()
+            // The row's wallet, or else its IP, is on that line (a steal's IP comes from the access line above it)
+            val (ip, wallet) = row.trim().split(" ").let { it[1] to it[2] }
+            val key = if (wallet != "-") wallet else ip
+            if (key != "-") assertTrue("$row → ${textLines[n]}", textLines[n].contains(key))
+        }
+        assertTrue(out.contains("discarded: "))
+    }
+
+    @Test
     fun storedJsonHasExplicitKeyOrder() {
         val store = RawDumpStore(tmpDir)
         val id = store.save(recordedLogDump())
