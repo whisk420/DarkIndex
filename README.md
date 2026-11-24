@@ -4,6 +4,10 @@ Vibe-coded to the moon and back, just like the game.
 
 **DarkIndex** is an open-source companion and organization tool for the mobile game **HackEx 2**. It allows players to track, search, validate, and export virtual in-game target intelligence (such as IP addresses, player names, software levels, and in-game crypto wallet addresses) gathered during gameplay.
 
+<p align="center"><img src="docs/images/dashboard.png" width="360" alt="The DarkIndex dashboard: four target cards at different stages of scouting"></p>
+
+Each card fills in as you scrape. From the bottom up: a bare IP (seen in a log or process list), a crew tag (from a crew roster), level and hardware with hack odds and a Spam upload time (from the target's Home screen), and a full card with the wallet and its income, plus every app's level (from the Wallet and Software screens). Other players' details are blurred here.
+
 ---
 
 ## Features
@@ -32,12 +36,15 @@ Because DarkIndex is not distributed via the Google Play Store and utilizes Andr
 1. **Download the APK**: Navigate to the Releases page on GitHub and download the latest `.apk` file to your Android device.
 2. **Enable "Install Unknown Apps"**: Tap the downloaded APK to open it. If your phone prompts you that your browser/file manager is not allowed to install unknown apps, tap **Settings** and toggle **"Allow from this source"**.
 3. **Bypass Play Protect Warning**: Google Play Protect may show an "Unsafe app blocked" warning because the developer is unknown. Tap **More details** (or the small arrow) and select **Install anyway**.
-4. **Allow Restricted Settings (Crucial for Android 13+)**: Modern Android versions block accessibility services for sideloaded apps by default. To unlock it:
-   - Go to your phone's **Settings** -> **Apps** -> **DarkIndex**.
-   - Tap the **3 vertical dots (⋮)** in the top-right corner of the app info screen.
-   - Tap **Allow restricted settings** and confirm with your PIN or fingerprint.
-   - *(If you skip this step, the Accessibility service will be greyed out when you try to enable it).*
-5. **Open DarkIndex**: Launch the app and follow the in-app prompts to grant the final "Display over other apps" and "Accessibility" permissions.
+4. **Allow Restricted Settings (Crucial for Android 13+)**: Android blocks sideloaded apps from the overlay and accessibility permissions, and the menu that unblocks them **stays hidden until Android has blocked you once**:
+   - Open DarkIndex and tap **Grant Overlay**. The **Allow display over other apps** toggle is greyed out. **Tap it anyway**: Android shows **"App was denied access"**. Tap **Close**.
+   - Now go to **Settings** -> **Apps** -> **DarkIndex**, tap the **3 vertical dots (⋮)** in the top-right corner, then **Allow restricted settings**, and confirm with your PIN or fingerprint.
+   - Go back and turn on the overlay toggle. It works now.
+   - *(Until you've tapped the greyed-out toggle once, the ⋮ menu doesn't offer Allow restricted settings.)*
+
+   <p align="center"><img src="docs/images/restricted-settings.png" width="720" alt="Tap the greyed-out toggle to get 'App was denied access', then App info, the three-dot menu, Allow restricted settings"></p>
+
+5. **Finish in DarkIndex**: Launch the app again and follow the prompts to turn on **Accessibility**. The unlock from step 4 covers it too.
 6. **Manually Enable Accessibility (If needed)**: If the app does not automatically take you to the correct Accessibility menu, or if the camera icon fails to appear after granting permissions, you can manually enable it by going to your phone's **Settings** -> **Accessibility** -> **Downloaded Apps** (or **Installed Services**) -> **DarkIndex** and toggling it **ON**.
 
 ---

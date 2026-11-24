@@ -593,7 +593,19 @@ class MainActivity : AppCompatActivity() {
         
         if (!hasOverlay) {
             builder.setTitle("Step 1: Overlay Permission")
-            builder.setMessage("To use the on-screen scraping overlay, DarkIndex requires the 'Display over other apps' permission.")
+            if (Build.VERSION.SDK_INT >= 33) {
+                // Android blocks sideloaded apps from this permission too, and only offers "Allow restricted
+                // settings" after it has blocked you once (developer, Android 17).
+                builder.setMessage("To use the on-screen scraping overlay, DarkIndex requires the 'Display over other apps' permission.\n\nIf the toggle is greyed out:\n\n1. Tap 'Grant Overlay' and tap the greyed-out toggle anyway. Android shows 'App was denied access'. Close it and come back.\n\n2. Tap 'App Info', tap the 3 dots (⋮) in the top-right corner and select 'Allow restricted settings'. (It only appears after step 1.) Come back.\n\n3. Tap 'Grant Overlay' again and turn it on.")
+                builder.setNeutralButton("App Info") { _, _ ->
+                    expectingPermissionResult = true
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                    })
+                }
+            } else {
+                builder.setMessage("To use the on-screen scraping overlay, DarkIndex requires the 'Display over other apps' permission.")
+            }
             builder.setPositiveButton("Grant Overlay") { _, _ ->
                 expectingPermissionResult = true
                 val intent = Intent(
@@ -602,7 +614,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 startActivity(intent)
             }
-            if (!force) {
+            if (!force && Build.VERSION.SDK_INT < 33) {
                 builder.setNeutralButton("Don't Ask Again") { _, _ ->
                     prefs.edit().putBoolean("hide_permission_warning", true).apply()
                 }
@@ -610,7 +622,7 @@ class MainActivity : AppCompatActivity() {
         } else if (!hasAccessibility) {
             if (Build.VERSION.SDK_INT >= 33) {
                 builder.setTitle("Step 2: Android 13+ Security Unlock")
-                builder.setMessage("Android blocks sideloaded accessibility apps by default. You MUST follow these exact steps:\n\n1. Tap '1. Accessibility' below, find DarkIndex, and try to turn it on. Android will block you with a 'Restricted setting' popup. Hit OK and come back.\n\n2. Tap '2. App Info' below, tap the 3 dots (⋮) in the top-right corner, and select 'Allow restricted settings'. Come back.\n\n3. Tap '1. Accessibility' one last time to successfully turn it on.")
+                builder.setMessage("Android blocks sideloaded accessibility apps by default. If you already allowed restricted settings for the overlay, just tap '1. Accessibility' and turn DarkIndex on. Otherwise follow these exact steps:\n\n1. Tap '1. Accessibility' below, find DarkIndex, and try to turn it on. Android will block you with a 'Restricted setting' popup. Hit OK and come back.\n\n2. Tap '2. App Info' below, tap the 3 dots (⋮) in the top-right corner, and select 'Allow restricted settings'. Come back.\n\n3. Tap '1. Accessibility' one last time to successfully turn it on.")
                 
                 builder.setPositiveButton("1. Accessibility") { _, _ ->
                     expectingPermissionResult = true
