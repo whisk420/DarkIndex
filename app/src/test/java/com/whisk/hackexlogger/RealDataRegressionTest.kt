@@ -32,6 +32,21 @@ class RealDataRegressionTest {
 
     private fun theftsOf(ip: String, wallet: String) = record(ip)?.walletThefts?.get(wallet)?.map { it.amount }
 
+    // ---- Home screens -----------------------------------------------------------------------------
+
+    @Test
+    fun prestigedTargetHomeKeepsItsLevel() {
+        // Raw Dump #28: the prestige rank sits between the label and the value ("LVL" / "R1" / "48").
+        // It must not stop the level being read, nor be taken for it.
+        scrape("target_home_prestige_2026-11-23.txt")
+        val r = record("61.213.195.71")!!
+        assertEquals(48, r.level)
+        assertEquals("vernix", r.username)
+        assertEquals("SPAIN", r.clan)
+        assertEquals(28, r.firewall)
+        assertEquals(30, r.encryptor)
+    }
+
     // ---- Log attribution ------------------------------------------------------------------------
 
     @Test

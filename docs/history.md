@@ -23,3 +23,4 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B13 | Fixed | Log minutes ignored the month; now UTC epoch minutes |
 | B14 | Fixed | Leftover ProGuard Google Identity rules removed; releases signed with the permanent key |
 | B15 | Fixed | Repo clutter removed; tests no longer write `DarkIndex/` |
+| B16 | Fixed | Prestiged targets' level read as null (`LVL` / `R1` / `48` on target Home); the level regex now skips the rank |
