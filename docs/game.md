@@ -27,6 +27,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **Own log can show masked targets too** (e.g. `Uploaded Lv20 Spam to xxx.xxx.xxx.xxx`).
 - **Wallet**: `hx` + 30 hex = 32 chars. Logs show `hx1a2b...9f0e`, and the app normalises everything to `first6...last4`.
 - **Clan tag** `[TAG]` (2–10 chars) shows on the profile. The crew screen shows IPs + `LEADER/OFFICER/MEMBER` only.
+- **Crew OPSEC (developer, 2026-11-24):** hacking any member shows the attacker the crew roster with every member's IP, and the crew chat unless the **hacked** member owns Message Encryptor (the Store's E2E item). Each roster IP is masked by that member's **own** Proxy. **Trace never rolls on crew screens**, so a masked roster IP stays masked.
 
 ### Software (11 apps)
 | App | Role | Guide base price | Notes |
@@ -46,7 +47,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **You choose the upload level of a virus** (any level up to your installed one). Lower uploads faster, so the goal is the **minimum Spam level that hits the 100/hr cap**, not your max level (developer uploads Lv17 Spam with Lv20 installed).
 - At most **2 virus slots per victim per attacker** (`+ UPLOAD VIRUS 2 / 2 slots`). Many attackers can infect one device.
 - Viruses are locked at their upload level. To upgrade, uninstall and re-upload.
-- **Consumables:** Backdoor (instant bypass), Exploit Kit (instant crack), IP Scrambler, System Purge, EMP Pulse, Wallet Shield, Log Lock.
+- **Consumables:** Backdoor (instant bypass), Exploit Kit (instant crack), IP Scrambler, System Purge, EMP Pulse, Wallet Shield, Log Lock. In-game descriptions (own Apps page, Raw Dump #33): IP Scrambler "fresh random IP; current active bypasses against you will fail"; System Purge "every virus, no scan; restores 90% of lost reputation"; EMP Pulse "cancels all pending processes against you and blocks new ones for 1 hour; 2 hr cooldown"; Wallet Shield "blocks crypto theft for 24 hours; 48 hr cooldown" (siphons keep skimming, guide); Backdoor / Exploit Kit "targets with Firewall / Encryptor Hardening (Lv.3+) have a chance to block it; consumed on use"; Log Lock "locks your device log for 8 hours; 12 hr cooldown".
 
 ### Hardware
 - **Device** (CPU) affects your bypass, crack and AV speed, and **as a victim** it scales how long others take to upload to you.
@@ -78,14 +79,26 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 
 ### Economy & progression
 - **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-11).
+- **Crypto → Credits (confirmed, Raw Dump #32):** 250 Crypto = 1 Credit, 750 Credits per month, resets on the 1st. Minimum 5 Credits and "hot wallet drains first" are guide-only.
+- **Changing your wallet address** (`regen`) costs 50 Credits (guide); old log lines keep the old address.
 - **Gas fee (measured, Raw Dump #31, 10 thefts):** gas = floor(10% of the steal); the victim loses the full amount, the thief receives the rest (e.g. 993 → 99 gas, +894). The "Stole N" log shows **what the victim lost** (developer). That's fine because income is only compared across targets.
-- **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+).
+- **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+). The developer's own Wallet showed `Max Limit: 755,519` on 2026-11-24 (level not recorded; the developer will measure Q-10 after their next reboot).
 - **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
 - **Over-levelling hurts:** scans find targets near your level (exact window unknown, Q-12). (Spam income ignores your level: CLAUDE.md §3.7.) Hack rep falls off at a +6..+9 **software** gap (your offence vs their defence software, not player levels) and is zero at +10 (guide).
 - **Botnet** tiers (spam slots): Free 2, Node 4, Cluster 8, Grid 16, Farm 28, Hive 44, Nexus 64. There is a scaling fee on spam income up to 30% at Nexus. The Store shows e.g. `Botnet - Nexus / 64 slots / MAX TIER`.
 - **Downloaded apps are activated manually** (developer, 2026-11-20). Activation writes **no log line**, so installed levels can rise with no `Purchased`/log evidence. **Both the Apps screen and the Store are reliable for your levels** (developer, 2026-11-20): Apps shows the installed level directly (plus `LOCKEDLVL N available <price> Crypto` for a downloaded version waiting to be activated, and `(+N)` bonuses); the Store shows next level, so subtract 1. They only disagree when one is stale (in dump #8 the developer had upgraded since the last Store scrape). Since 2026-11-24 the app reads both (`OwnAppsParser`, Raw Dump #29); the newest scrape wins.
 - **XP from purchases:** one data point: Keygen Lv26 (41,459 Crypto) → +7,045 XP (0.170 XP/crypto, close to the 0.1717 for software in §3); Rep and Score unchanged. Score = floor(L × Rep^0.75) re-confirmed on two own-Home scrapes.
 - **Rep loss** per virus = min(500, 25×virus level). Daily loss cap 500, floor 50% of peak. AV restores 90%.
+- **Daily missions are RNG** (developer, 2026-11-24): not worth modelling; the guide's spawn rates (80/50/20%) were dropped from the KB.
+
+### Processes (developer, 2026-11-24)
+- Finished uploads, downloads, password cracks and antivirus scans can all be deleted; nothing needs them afterwards. Keep the bypass row (its HACK button re-enters the device; guide).
+- **Invalidated** rows: delete freely if the IP is masked, even partly. If the real IP shows, re-hack instead: the player may appear masked now, so that row can be the only copy of their real IP.
+- **Tags** apply both ways between a player's masked process and their unmasked IP.
+- After an **EMP** kills your process, the row must be deleted before that IP can be hacked again (bug or intended, unknown).
+
+### Logs (developer, 2026-11-24)
+- Wipe your own log after scraping it: anyone who bypasses you can read it and harvest your best targets.
 
 ---
 
@@ -132,6 +145,7 @@ Parser-facing descriptions of each game screen's accessibility text, mostly lear
 - **The bottom nav only appears on your OWN screens.** Target screens (Home/Wallet/Apps/Crew while CONNECTED) don't have it; they start with `CONNECTED`/`< back` + `DISCONNECT`.
 - **Target Home (2026-11 format):** `> <user> _ [TAG]` on one line; `LVL` / `33` (a prestiged target puts its rank between them: `LVL` / `R1` / `48`, Raw Dump #28), `REP` / `20,000`, `SCORE` / `55,000` as label/value line pairs; SYSTEM INFO as label/value pairs. The Notepad button has desc `Notepad`, the avatar has desc `badge`.
 - **Wallet:** the address is on its own line after `WALLET ADDRESS`; the balance line is mashed: `HHOT WALLET10,000 CryptoCCOLD STORAGESecured1,000 Crypto/ 362,654 max`; the transfer box has view id `steal-amount`.
+- **Proxy panel (own Apps → Proxy, Raw Dump #34):** `Proxy`, `LVL 27`, description, `STEALTH MODE UNLOCKED`, `STATUS` `ACTIVE` `Lv27` `11h 43m`, `STEALTH RESERVE` `90h / 170h`, `Refills +1h per 1.5h with Stealth off`, `STEALTH OFF` + "Your Proxy still masks your IP.", `> Select Duration` `2h 104 Crypto` … `24h 1,061 Crypto`, "Activations stack — buy another while active to extend your timer past 24h. No cap." Appended after the Apps page text in the same snapshot.
 - **Own Wallet (Raw Dumps #31, #32, 2026-11-24):** `// WALLET`, the address after `WALLET ADDRESS` / `?`, then `regen`; `H` / `HOT WALLET` / `<n> Crypto` and `C` / `COLD STORAGE` / `Secured` / `<n> Crypto` / `Max Limit: <cap> ⓘ` on separate lines; transfer box id `transfer-amount`. Collapsible `// Convert to Credits` (`RATE` `250 in-game Crypto = 1 in-game Credit`, `MONTHLY` `750 / 750 Credits (0 left)`, `Monthly limit reached. Resets on the 1st.`) and `// Transaction History` (per theft: `THEFT`, `Crypto stolen from another player`, shortened victim wallet `hxfec3...ace3`, `Network (Gas) Fee: -99 Crypto`, `+894`, `1h ago`; 10 rows then `LOAD MORE`). Classified WALLET; nothing is saved (no username).
 - **Software:** `+ UPLOAD VIRUS 0 / 2 slots ▼` = **your** viruses on that target (0 after the target's AV wiped them; developer-confirmed); each app has an icon node whose desc is the lower-case app name, then name, description, `LVL n`, and a delta badge vs your **installed** level (downloaded-but-not-installed copies don't count). The parser **intentionally ignores** the badges.
 - **Crew:** `// <name incl. emoji> Members`, then ip/role pairs. **Off-screen rows are still exposed** (bounds clamp to the screen height of 2244), so the whole roster is captured without scrolling. Rosters can contain masked IPs.
@@ -198,7 +212,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 7. Masked IPs come from the other player's Proxy. Partial masks (1–3 octets) are possible; `[UNKNOWN]` means a Ghost-reboot attacker. Trace unmasks passively, not guaranteed.
 8. Log timestamps are created when the device is accessed (your login, or an attacker's access).
 9. Log times are **UTC+0**.
-10. Spam payout vs level gap: not yet calculated; it's definitely worse on lower targets. To-do (research).
+10. Spam payout vs level gap: measured since (2026-11-22, 17 uploads); see CLAUDE.md §3.7.
 11. Virus performance penalty: in the guide (applies to the infected device; see follow-up F2).
 12. Siphon list behaviour after an AV wipe: the developer says it's in the guide (see follow-up F3).
 13. Proxy/Trace Store discount: irrelevant. Players download apps and unlock them with Keygen, which is always far cheaper.
