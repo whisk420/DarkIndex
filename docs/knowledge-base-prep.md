@@ -87,8 +87,9 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 ### Keygen & Store prices
 - **Q-09 Store prices outside Lv 15–25.** The price formula is exact from about Lv 15 to 25. It drifts below the
   guide's low-level prices, and above Lv 25 real prices run slightly higher (Keygen unlock fees on your Apps page imply
-  +0.04% at Lv 30, +0.1% at Lv 33, +0.6% at Lv 42).
-  *To measure:* Store screen at low levels during a reboot run; any Store price above Lv 25.
+  +0.04% at Lv 30, +0.1% at Lv 33, +0.6% at Lv 42). Your Store on 2026-11-24 agrees: 11 real prices run +0.01% to
+  +0.17% above the formula from Lv 28 to 35, and Rootkit Lv 7 is +1.9%.
+  *To measure:* Store screen at low levels during the reboot run (one Store dump per few levels is enough).
 
 ### Wallet
 - **Q-10 Cold storage cap at every level.** Known at Lv 1, 5, 10, 20 and 30.
