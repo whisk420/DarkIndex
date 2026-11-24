@@ -130,9 +130,9 @@ class DatabaseCoverageTest {
 
         assertEquals(23, record("231.130.229.178")?.firewall)
         assertEquals(24, record("231.130.229.178")?.encryptor)
-        // Stored in Store ("next level") form: 20 + Apex (+3) + 1. Whether the Apex bonus is then
-        // counted twice is part of the deferred "Verify isApexDeviceOwned" item.
-        assertEquals(24, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
+        // Stored in Store ("next level") form: 20 + 1. The "(+3)" Apex bonus is not stored: it's added from
+        // the owned device when the effective level is worked out (B12).
+        assertEquals(21, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
     }
 
     @Test

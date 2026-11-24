@@ -18,11 +18,6 @@ FW (and ENC when shown, Apex/Null Route only). Needs a real dump of a scan witho
 log is your own, feed them to `PlayerProfileRepository` (Store stores NEXT levels, so store N + 1; network via
 `HardwareCatalog`). Only move levels forward. Needs fixtures with both lines.
 
-### Verify the Apex bonus isn't counted twice (B12)
-`updateBypasserLevel` stores `Using Lv + (+N) + 1` from the Bypass screen, and `getEffectiveBypasserLevel` adds +3
-again for an Apex device. Store scrapes store the level without the bonus, so the two sources disagree. Plan: confirm
-in-game what `(+3)` includes, then store the base level only. Evidence (Raw Dump #29): the Apps page shows `LVL 31` and `(+3)` as separate nodes, so the base level excludes the bonus.
-
 ### Spam tracker
 Planned alongside the Siphon tracker (SPAM EARNINGS is already parsed, not stored). Plan: track known Spam
 deployments and alert when one disappears, reusing `SiphonTracker`'s full-scroll logic.
@@ -41,6 +36,7 @@ Both are about 650 lines. Plan: move menu actions (export, import, maintenance, 
 helpers. Readability only; needs on-device testing.
 
 ## Done
+- 2026-11-24: B12 fixed: the Bypass screen no longer stores the Apex `(+3)` (Raw Dump #30), so it isn't counted twice.
 - 2026-11-24: Your own Apps page feeds your installed software levels (`OwnAppsParser`, Raw Dump #29), also read from the Spam/Siphon earnings pages.
 - 2026-11-24: Privacy hardening: HackEx 2 only (`ScrapeGate`), no screen text in Logcat, cloud backup off, `SECURITY.md`, `PrivacyGuardTest`, release APK permission check + provenance attestation.
 - 2026-11-22: Database moved to `targets.json`, immutable records, repository split (scrape thread 28 ms → 5 ms).

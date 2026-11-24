@@ -1,0 +1,39 @@
+// SCAN
+Notepad
+Wallet:
+57,701
+Credits:
+1,517
+Locate target devices on the network
+SCAN
+SCANNING ...
+// SCAN RESULTS
+12 targets
+57.134.50.54 FW Lv.31 ENC Lv.32 >
+248.106.133.80 FW Lv.31 ENC Lv.31 >
+xxx.xxx.xxx.xxx FW Lv.20 ENC Lv.29 >
+134.249.121.162 FW Lv.35 ENC Lv.32 >
+xxx.xxx.xxx.xxx FW Lv.26 ENC Lv.25 >
+22.84.232.226 FW Lv.32 ENC Lv.1 >
+55.180.136.234 FW Lv.16 ENC Lv.31 >
+9.245.165.240 FW Lv.31 ENC Lv.31 >
+150.52.170.143 FW Lv.21 ENC Lv.20 >
+119.141.65.131 FW Lv.35 ENC Lv.31 >
+56.160.16.246 FW Lv.26 ENC Lv.29 >
+xxx.xxx.xxx.xxx FW Lv.29 ENC Lv.32 >
+// BYPASS FIREWALL
+57.134.50.54
+Firewall Lv.31
+Encryptor Lv.32
+Using Bypasser Lv.31
+(+3)
+Initiate firewall bypass on this target?
+CANCEL
+BYPASS
+Use Backdoor x41
+HOME
+SCAN
+PROCESSES
+APPS
+STORE
+CREWS

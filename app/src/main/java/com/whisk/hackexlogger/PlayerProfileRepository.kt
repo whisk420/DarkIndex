@@ -128,10 +128,11 @@ object PlayerProfileRepository {
         save(current.copy(softwareLevels = merged))
     }
 
-    fun updateBypasserLevel(effectiveBypasserLevel: Int) {
+    /** [installedBypasserLevel] = the Bypass screen's "Using Bypasser Lv.N", without any "(+N)" bonus. */
+    fun updateBypasserLevel(installedBypasserLevel: Int) {
         val current = getProfile()
         val mergedSoftware = current.softwareLevels.toMutableMap()
-        mergedSoftware["Bypasser"] = effectiveBypasserLevel + 1 // Store format (+1 for next upgrade level)
+        mergedSoftware["Bypasser"] = installedBypasserLevel + 1 // Store format (+1 for next upgrade level)
         val updated = current.copy(softwareLevels = mergedSoftware)
         save(updated)
     }

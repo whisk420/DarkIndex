@@ -259,6 +259,22 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun bypassScreenDoesNotCountTheApexBonusTwice() {
+        // B12, Raw Dump #30: "Using Bypasser Lv.31" + "(+3)" on an Apex device. Before the fix the scrape stored
+        // 31 + 3 + 1 = 35 and the effective level added +3 again (37). The Apps page (dump #29) also says 31.
+        DatabaseManager.processStoreScreen(StoreScreen("Apex VII", null, null, emptyMap()))
+        scrape("own_apps_2026-11-24.txt")
+        assertEquals(34, PlayerProfileRepository.getEffectiveBypasserLevel())
+
+        val result = scrape("bypass_apex_2026-11-24.txt")
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(32, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
+        assertEquals(34, PlayerProfileRepository.getEffectiveBypasserLevel())
+        assertEquals(31, record("57.134.50.54")?.firewall)
+        assertEquals(32, record("57.134.50.54")?.encryptor)
+    }
+
+    @Test
     fun processScreenCreatesTargetsFromRealText() {
         val result = scrape("processes_2026-11-20.txt")
         assertEquals(ScreenType.PROCESS, result.detectedType)
