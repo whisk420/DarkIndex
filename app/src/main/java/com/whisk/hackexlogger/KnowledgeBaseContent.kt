@@ -334,7 +334,6 @@ object KnowledgeBaseContent {
                 f("Rootkit (yours or crew's)", "Their FW/ENC −1 to −3", GUIDE),
                 f("Apex device (Overreach)", "Your Bypasser and Cracker +3", GUIDE),
                 f("Cipher device (Hardened Core)", "Their FW and ENC +3", GUIDE),
-                f("Bonus in brackets", "\"Using Bypasser Lv.20 (+3)\" on the bypass screen", CONFIRMED),
                 f("Stacking", "Modifiers just add up, in any order: Apex +3 with a Rootkit −3 on them is an effective +6", CONFIRMED),
             ),
             h("Duration"),
