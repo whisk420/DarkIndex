@@ -573,7 +573,7 @@ object KnowledgeBaseContent {
                 f("Device upgrades", "0.25 XP per crypto (best ratio)", MEASURED),
                 f("Older hardware / network", "0.20 XP per crypto", MEASURED),
             ),
-            tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling hurts matchmaking. Upgrade what you use."),
+            tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling changes who your scans find. Upgrade what you use."),
             unknowns(
                 "Q-08" to "Exact key fee by jump (Apps page LOCKED rows)",
                 "Q-09" to "Store prices below Lv 15",
@@ -700,16 +700,14 @@ object KnowledgeBaseContent {
     )
 
     private fun scanning() = KbTopic(
-        "scanning", "📡", "Scanning & matchmaking",
+        "scanning", "📡", "Scanning",
         "Scan Random fills 10 targets (more with a crew Uplink) close to your level, widening the range until the list is full. Stealth players don't appear.",
         listOf(
             facts(
                 f("Results", "10 targets per scan by default; range widens as needed", CONFIRMED),
-                f("Typical window", "About ±10 levels", CONFIRMED),
                 f("Stealth", "Proxy 20+ players with Stealth on never appear in random scans", GUIDE),
                 f("Direct lookup", "Anyone whose IP you have can be found directly", GUIDE),
                 f("Ghost device", "Last octet hidden in scanners even without a Proxy", GUIDE),
-                f("Encryptor in scans", "Not shown by default. The Apex reboot shows it (the guide credits its Null Route network perk)", CONFIRMED),
                 f("Proxied players", "Still listed, with their IP masked (fully or partly) as their Proxy dictates", CONFIRMED),
                 f("Crew-server Uplink", "+1 target per level (15 at Lv 5, 17 with a surge) and reaches a little higher", GUIDE),
                 f("Uplink in practice", "A crew Uplink giving +2 shows 12 targets per scan", CONFIRMED),
@@ -774,7 +772,7 @@ object KnowledgeBaseContent {
 
     private fun leveling() = KbTopic(
         "leveling", "📈", "Leveling & XP",
-        "XP comes from spending, not hacking. Levels raise cold storage and give Credits and OC, but over-levelling hurts matchmaking and rep.",
+        "XP comes from spending, not hacking. Levels raise cold storage and give Credits and OC, but over-levelling changes who your scans find and costs rep.",
         listOf(
             h("XP sources"),
             facts(
