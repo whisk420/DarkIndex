@@ -695,6 +695,7 @@ object KnowledgeBaseContent {
                 "Victim logs are editable, so treat odd lines with suspicion.",
             ),
             tip("Scrape your log often: with only 100 lines kept, a busy day pushes steals off the end."),
+            tip("Wipe your own log after scraping it: anyone who bypasses you can read it and harvest your best targets."),
         ),
         related = listOf("proxy", "wallet", "darkindex")
     )
