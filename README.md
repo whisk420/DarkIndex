@@ -6,7 +6,7 @@ Vibe-coded to the moon and back, just like the game.
 
 <p align="center"><img src="docs/images/dashboard.png" width="360" alt="The DarkIndex dashboard: four target cards at different stages of scouting"></p>
 
-Each card fills in as you scrape. From the bottom up: a bare IP (seen in a log or process list), a crew tag (from a crew roster), level and hardware with hack odds and a Spam upload time (from the target's Home screen), and a full card with the wallet and its income, plus every app's level (from the Wallet and Software screens). Other players' details are blurred here.
+Each card fills in as you scrape. From the bottom up: a bare IP (seen in a log or process list), a crew tag (from a crew roster), level and hardware with hack odds and a Spam upload time (from the target's Home screen), and a full card with the wallet and its income, plus every app's level (from the Wallet and Software screens). The last part of each IP is blurred.
 
 ---
 
