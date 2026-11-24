@@ -4,6 +4,8 @@ Vibe-coded to the moon and back, just like the game.
 
 **DarkIndex** is an open-source companion and organization tool for the mobile game **HackEx 2**. It allows players to track, search, validate, and export virtual in-game target intelligence (such as IP addresses, player names, software levels, and in-game crypto wallet addresses) gathered during gameplay.
 
+> **Want to test out the functionality first?** Check out the web version: [DarkIndexWeb](https://github.com/whisk420/DarkIndexWeb).
+
 <p align="center"><img src="docs/images/dashboard.png" width="360" alt="The DarkIndex dashboard: four target cards at different stages of scouting"></p>
 
 Each card fills in as you scrape. From the bottom up: a bare IP (seen in a log or process list), a crew tag (from a crew roster), level and hardware with hack odds and a Spam upload time (from the target's Home screen), and a full card with the wallet and its income, plus every app's level (from the Wallet and Software screens). The last part of each IP is blurred.
