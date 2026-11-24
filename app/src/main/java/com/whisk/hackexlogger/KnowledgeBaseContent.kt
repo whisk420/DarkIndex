@@ -612,7 +612,6 @@ object KnowledgeBaseContent {
                 CONFIRMED,
                 "Your Apps page shows installed levels, (+N) bonuses, and LOCKED copies waiting for a key.",
                 "A victim's Apps page shows each app's LVL and a badge comparing it to your installed level (=, +2, −6, DEVICE-BOUND).",
-                "The Store shows the NEXT level of each app: subtract 1 for what you have.",
             ),
         ),
         related = listOf("keygen", "proxy", "antivirus")
