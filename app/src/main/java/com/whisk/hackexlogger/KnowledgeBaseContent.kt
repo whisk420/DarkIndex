@@ -179,7 +179,7 @@ object KnowledgeBaseContent {
                 },
                 "Every slot at the 100/hr cap, day 1. (The guide's own example uses 62/hr, its too-low Lv 15 figure; the fee maths matches it.)"
             ),
-            tip("Going from 44 to 64 Spam raises the fee from 21% to 30% on everything, so the last 20 slots add far less than 20 × your rate."),
+            tip("Every extra Spam raises the fee on all your Spam income, so each new slot adds less than the one before."),
             calc(KbCalculators.BOTNET),
             h("Crew-server RAM"),
             p("Each RAM level adds 1 Spam slot (max +5) on top of your botnet. Spam in those slots pauses if the server goes offline.", GUIDE),
