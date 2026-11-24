@@ -404,35 +404,40 @@ object KnowledgeBaseContent {
 
     private fun antivirus() = KbTopic(
         "antivirus", "🛡", "Antivirus",
-        "Removal chance depends on your AV level against each virus; scan speed depends on your device. Matched or better AV is the target: one level behind drops you from 50% to 20%.",
+        "Every scan has a chance to remove each virus on you. Your Antivirus level against the virus's level sets that chance; your device sets how long the scan takes. Keep your Antivirus at least level with the viruses: one level behind drops the chance from 50% to 20%.",
         listOf(
-            h("Removal chance per virus per scan"),
+            h("Chance to remove a virus, per scan"),
             table(
-                GUIDE, listOf("AV − virus", "Removal"),
+                GUIDE, listOf("Your AV vs the virus", "Chance"),
                 listOf(5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9).map { d ->
-                    listOf((if (d > 0) "+$d" else "$d") + (if (d == 5) " or more" else if (d == -9) " or less" else ""), "${GameFormulas.avRemovalChance(d, 0)}%")
+                    val label = when {
+                        d == 0 -> "Same level"
+                        d > 0 -> "$d above" + if (d == 5) " or more" else ""
+                        else -> "${-d} below" + if (d == -9) " or more" else ""
+                    }
+                    listOf(label, "${GameFormulas.avRemovalChance(d, 0)}%")
                 }
             ),
             facts(
-                f("Scan report", "Lists every virus found: what was removed and what wasn't. One scan shows everything on you", CONFIRMED),
-                f("Harvest Node attackers", "Their viruses count +2 levels against your AV", GUIDE),
-                f("Rep", "Each removal restores 90% of the rep that virus cost you", GUIDE),
-                f("System Purge", "Removes every virus instantly and restores most rep", GUIDE),
+                f("Scan report", "Lists every virus on you and whether each one was removed", CONFIRMED),
+                f("Harvest Node attackers", "Their viruses count as 2 levels higher against your Antivirus", GUIDE),
+                f("Rep", "Removing a virus gives back 90% of the rep it cost you", GUIDE),
+                f("System Purge", "Removes every virus at once, without a scan, and gives back 90% of the rep", CONFIRMED),
             ),
             h("Scan time"),
             table(
-                GUIDE, listOf("Device", "Alone", "+1 hack", "+2 hacks"),
+                GUIDE, listOf("Device", "Nothing else running", "1 hack running", "2 hacks running"),
                 listOf(1, 3, 5, 8, 10, 12).map { lvl ->
                     val m = GameFormulas.avScanMinutes(lvl)
                     listOf(HardwareCatalog.STANDARD_DEVICES[lvl - 1], KbCalculators.duration(m * 60), KbCalculators.duration(m * 60 * 1.75), KbCalculators.duration(m * 60 * 2.5))
                 },
-                "Scans share the hack pool with bypasses and cracks"
+                "A scan shares your device with bypasses and cracks, so it slows down while they run"
             ),
-            warn("The guide's text says ~55 min at device Lv 10 and ~48 min at Lv 12, its table says 53 and 45. The table is used here (Q-06)."),
+            warn("The guide gives two times for device Lv 10 (55 or 53 min) and Lv 12 (48 or 45 min). This table uses the lower ones (Q-06)."),
             calc(KbCalculators.ANTIVIRUS),
-            tip("AV level decides removal, device level decides speed. Scan when you're not hacking to avoid the +75% pool penalty."),
-            tip("Behind on AV? A −2 AV still removes 18% per virus per scan: repeated scans clear infections over time."),
-            unknowns("Q-06" to "Scan time at device Lv 8, 10, 12"),
+            tip("Scan when you aren't hacking: one running bypass or crack makes the scan take 75% longer."),
+            tip("Behind on Antivirus? Two levels behind still gives an 18% chance per virus per scan, so repeated scans clear an infection eventually."),
+            unknowns("Q-06" to "Scan time at device Lv 8, 10 and 12"),
         ),
         related = listOf("virusRules", "hardware", "processes")
     )
