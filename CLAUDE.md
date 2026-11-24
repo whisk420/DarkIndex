@@ -1,6 +1,6 @@
 # CLAUDE.md — DarkIndex (HackExLogger)
 
-Context for Claude working in this repo. Last full review: **2026-11-19**, updated through **2026-11-22**. That review read every source, test, resource, build and CI file, ran the JVM test suite, ran a local corpus of 2,862 real screen captures (git-ignored, `local-data/`) through the parsers, and cross-checked hackex.net/guide.
+Context for Claude working in this repo. Last full review: **2026-11-19**, updated through **2026-11-24**. That review read every source, test, resource, build and CI file, ran the JVM test suite, ran a local corpus of 2,862 real screen captures (git-ignored, `local-data/`) through the parsers, and cross-checked hackex.net/guide.
 
 **DarkIndex** is an offline Android companion for the mobile game **HackEx 2**. The player taps a floating 📸 button, an AccessibilityService snapshots the visible text of the game screen, regex parsers turn it into target intel, and the app stores it locally for search, ranking, odds, upload-time and income estimates.
 
@@ -33,7 +33,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 Google Maven and services.gradle.org were reachable on 2026-11-22, so the real Gradle build works:
 - Android SDK: download `commandlinetools-linux-*_latest.zip` from dl.google.com into `/opt/android-sdk/cmdline-tools/latest`, then `yes | sdkmanager --sdk_root=/opt/android-sdk "platforms;android-35" "build-tools;35.0.0" "platform-tools"`, and write `sdk.dir=/opt/android-sdk` to `local.properties` (git-ignored).
 - The daemon toolchain (JVM 25) is fetched from api.foojay.io, which is blocked. Locally change `toolchainVersion=25` to `21` in `gradle/gradle-daemon-jvm.properties` and **never commit that change**.
-- Run `bash gradlew …` (the wrapper isn't executable in a fresh clone). Maven Central sometimes answers 429: wait 30 s and retry.
+- Run `bash gradlew …` (the wrapper isn't executable in a fresh clone). Maven Central sometimes answers 429, and the `foojay-resolver-convention` plugin sometimes fails to resolve from the plugin portal ("Plugin … was not found"): wait 30 s and retry. Run the tests with the local `toolchainVersion=21` edit, then `git checkout -- gradle/gradle-daemon-jvm.properties` before committing.
 - If Google Maven is blocked again, the pure-logic code can still be compiled with the Kotlin compiler in `/opt/gradle/lib` plus Java stubs for `android.content`/`android.os`/`android.util.Log` (the method used before 2026-11-22).
 
 ---
@@ -98,7 +98,7 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
 | `Marathon.kt` | Marathon Mode engine (pure, JVM-tested): phases, own-log steal collection, per-wallet income rows, chain, `marathon_history.jsonl` (§3.11) |
 | `MarathonOverlay.kt` | Marathon UI owned by `OverlayService`: draggable 🏃 bar (timer / big red `0` + 400 ms buzz / prompts / buttons) and the draggable, scrollable results panel |
 | `KnowledgeBase.kt` | KB model (`KbTopic`, `KbBlock`, `KbSource` badges: MEASURED, CALCULATED, GUIDE, CONFIRMED, EMPIRICAL, UNKNOWN; developer renamed OWNER→CONFIRMED and EXACT FIT→CALCULATED 2026-11-22), search, and `KbCalculators` (9 calculators as pure input specs + compute functions; defaults from the player profile via `KbPlayerDefaults`) |
-| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-13, minus answered or dropped ones, which are deleted) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks |
+| `KnowledgeBaseContent.kt` | The 25 topics, in Kotlin (developer choice). Tables are generated from `GameFormulas` where a formula exists. Open questions carry Q-ids (Q-01…Q-13, minus answered or dropped ones, which are deleted) listed in `docs/knowledge-base-prep.md`, the developer's human-readable review tracker (rewritten 2026-11-22: review progress by topic + open questions numbered in topic order; covered items are deleted, not struck through). When a question is answered, delete it from the doc and the topic; don't renumber again unless the developer asks. Answered or dropped so far: Q-02 (Siphon skims theft only), Q-08 (Keygen fee, Raw Dump #33), Q-14 (missions are RNG). **Writing rules (developer, 2026-11-24):** the KB is for players. Plain English; no parser or screen-text details (Store NEXT − 1, MAX TIER, raw log footers, quoted screen strings, file names, "DarkIndex reads…"); keep wording generic rather than worked number examples where a table already shows the numbers; state developer-confirmed facts plainly, with at most one small disclaimer at the bottom of a topic, not hedges everywhere. Parser and screen facts belong in `docs/game.md` §4 |
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
 ### 3.1 Classifier (first match wins, case-insensitive substring)
@@ -135,6 +135,7 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
   - `interp`: per parser; **`Log` is `{cols, rows}`, rows `[rawLineNo, ip, wallet, amount, ownTheft, software, ownedSoftware]`** where rawLineNo indexes `rawText.split("\n")`, and **trailing null/false columns are omitted** (`[12,"1.2.3.4"]`). An extra 8th column holds the line itself if it couldn't be mapped.
   - `rawText`: exact
   - `nodes`: `{cols:[d,cls,id,desc,text,x1,y1,x2,y2], total, rows}`, only nodes with text/id/desc, short class names, text/desc clipped to 60 chars.
+- **Builds before 2026-11-24** (e.g. 1.8 (1147), Raw Dumps #33, #34) classify your own Apps page as `SIPHON` and save nothing; the current classifier tags it `APPS`. Check the dump's `app` version before calling a misclassification a bug.
 - **When the developer sends dumps:** read `detectedType`/`fallbackUsed`, `parsersMatched`, `interpretation`, `discardedLogLines`, `dbEffects`, then `rawText`; use `nodeTree` for layout questions. Turn interesting dumps into fixture tests (CLAUDE.md §5 rule 6).
 
 ### 3.3 Log parser rules (`LogScreenParser`)
