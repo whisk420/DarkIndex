@@ -713,7 +713,7 @@ object KnowledgeBaseContent {
                 f("Uplink in practice", "A crew Uplink giving +2 shows 12 targets per scan", CONFIRMED),
                 f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
-            p("The list starts with the target count (\"12 targets\") and each row shows the IP and Firewall, e.g. \"1.2.3.4 FW Lv.23 >\"; on an Apex reboot it adds \"ENC Lv.24\". Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
+            p("Each result shows the target's IP and Firewall level; with the Apex reboot you also see their Encryptor level. Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
             unknowns("Q-12" to "Exact level window of a scan at your level"),
         ),
