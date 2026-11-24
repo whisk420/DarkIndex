@@ -20,6 +20,9 @@ on:
 
 permissions:
   contents: write
+  # Build provenance: lets anyone prove a release APK was built by this workflow from this repo's source.
+  id-token: write
+  attestations: write
 
 jobs:
   build-and-release:
@@ -161,6 +164,34 @@ jobs:
           echo "Certificate matches SIGNING_CERT_SHA256 ✔"
         fi
 
+    # Privacy guard on the real APK (merged manifest, including every library): no network permission,
+    # no Android cloud backup. Fails the release if either ever changes.
+    - name: Verify No Network Permission And No Cloud Backup
+      run: |
+        AAPT2="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt2"
+        "$AAPT2" dump permissions build-outputs/DarkIndex.apk | tee permissions.txt
+        if grep -E "android.permission.(INTERNET|ACCESS_NETWORK_STATE|ACCESS_WIFI_STATE)" permissions.txt; then
+          echo "::error::The APK requests a network permission. DarkIndex must stay offline."
+          exit 1
+        fi
+        "$AAPT2" dump xmltree build-outputs/DarkIndex.apk --file AndroidManifest.xml > manifest.txt
+        if ! grep -qE 'android:allowBackup\(0x[0-9a-f]+\)=false' manifest.txt; then
+          echo "::error::android:allowBackup is not false in the APK manifest."
+          exit 1
+        fi
+        echo "No network permission, cloud backup off ✔"
+
+    - name: APK Checksum
+      run: |
+        APK_SHA256=$(sha256sum build-outputs/DarkIndex.apk | cut -d' ' -f1)
+        echo "APK SHA-256: $APK_SHA256"
+        echo "APK_SHA256=$APK_SHA256" >> "$GITHUB_ENV"
+
+    - name: Attest Build Provenance
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: build-outputs/DarkIndex.apk
+
     - name: Remove Decoded Keystore
       if: always()
       run: rm -f "$RUNNER_TEMP/darkindex-release.jks"
@@ -180,10 +211,10 @@ jobs:
         body: |
           ### DarkIndex ${{ env.RELEASE_VERSION }}
 
-          100% offline standalone release.
-
-          - **`DarkIndex.apk`**: Single, 100% offline APK with zero internet permissions. Auto-mirrors database backups directly to your device's `Downloads/DarkIndex/` folder.
+          - **`DarkIndex.apk`**: offline APK. No internet permission (checked on this APK by the release workflow), Android cloud backup off, reads only the HackEx 2 screen. Keeps a backup copy in your phone's `Downloads/DarkIndex/` folder. See [SECURITY.md](https://github.com/${{ github.repository }}/blob/${{ env.RELEASE_VERSION }}/SECURITY.md).
           - Signed with the permanent DarkIndex key: installs over previous releases and Android Studio builds without uninstalling.
+          - Built by GitHub Actions from commit `${{ github.sha }}`, with a signed build-provenance attestation.
+          - APK SHA-256: `${{ env.APK_SHA256 }}`. Verify: `gh attestation verify DarkIndex.apk --repo ${{ github.repository }}`
         files: |
           build-outputs/DarkIndex.apk
       env:

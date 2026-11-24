@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DarkIndex</string>
+    <string name="accessibility_service_description">Reads the text on the HackEx 2 screen, only when you tap the 📸 button. Other apps are never read. DarkIndex has no internet permission: everything stays on this phone.</string>
 </resources>
