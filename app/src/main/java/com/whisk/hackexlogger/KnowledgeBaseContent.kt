@@ -487,7 +487,7 @@ object KnowledgeBaseContent {
             ),
             p("Logs can show partial masks (123.45.xxx.xxx), full masks, or [UNKNOWN] for a Ghost-loadout attacker. A victim's Trace can append [TRACED] with the real IP.", CONFIRMED),
             h("Activation cost"),
-            p("Paid up front in Crypto for 2, 6, 12 or 24 hours. Calculated from the guide's table: ceil(10 × √level × hours × (1 − discount)).", CALCULATED),
+            p("Paid up front in Crypto for 2, 6, 12 or 24 hours: ceil(10 × √level × hours × (1 − discount)). Matches the game at Lv 27: 104 / 297 / 562 / 1,061.", MEASURED),
             table(
                 CALCULATED, listOf("Level", "2 h", "6 h (−5%)", "12 h (−10%)", "24 h (−15%)"),
                 listOf(1, 5, 10, 15, 19, 20, 25, 30).map { lvl ->
@@ -495,9 +495,9 @@ object KnowledgeBaseContent {
                 }
             ),
             calc(KbCalculators.PROXY),
+            p("Activations stack with no cap: buy another while one is running to extend the timer past 24 h.", CONFIRMED),
             bullets(
                 GUIDE,
-                "Activations at the same level stack with no cap (two 24 h buys = 48 h).",
                 "An activation keeps the level it started with. Upgrading Proxy mid-activation doesn't apply until you re-activate, which forfeits the time left.",
                 "Successful hack chains (download/upload) while proxied give +10 rep, once per victim per process type per 24 h.",
                 "Ghost Link network: Proxy lasts twice as long and counts +5 vs Trace.",
@@ -505,10 +505,11 @@ object KnowledgeBaseContent {
             h("Stealth (Proxy 20+)"),
             facts(
                 f("Effect", "Hidden from random scans; people with your IP can still look you up", GUIDE),
-                f("Reserve", "Up to 170 h banked; drains 1:1 while on", GUIDE),
-                f("Refill", "1 h per 1.5 h off (Ghost Link: 1 h per hour), so sustained use ≈ 40% of the time", GUIDE),
+                f("Reserve", "Up to 170 h banked; drains 1:1 while on", CONFIRMED),
+                f("Refill", "1 h per 1.5 h with Stealth off, so sustained use ≈ 40% of the time", CONFIRMED),
+                f("Ghost Link refill", "1 h per hour", GUIDE),
                 f("Minimum", "15 min banked to switch on", GUIDE),
-                f("Cost", "Free toggle; only uses reserve. Running out keeps your Proxy masking", GUIDE),
+                f("Cost", "Free toggle; only uses reserve. With Stealth off your Proxy still masks your IP", CONFIRMED),
                 f("Logs", "Crack/download/upload still log with your IP as xxx.xxx.xxx.xxx; Backdoor/Exploit leave no entry", GUIDE),
             ),
             h("Trace"),
@@ -549,11 +550,10 @@ object KnowledgeBaseContent {
                 "Activation writes no log line.",
             ),
             h("Key fee"),
-            p("15% of the target level's Store price for a 1-level jump, rising linearly to 50% at a 20+ level jump.", GUIDE),
+            p("15% of the target level's Store price for a 1-level jump, rising linearly to 50% at a 20+ level jump, rounded up. All 9 LOCKED prices on a real Apps page fit it.", MEASURED),
             table(
-                GUIDE, listOf("Jump", "Fee"),
+                CALCULATED, listOf("Jump", "Fee"),
                 listOf(1, 2, 3, 5, 8, 10, 15, 20, 25).map { j -> listOf("+$j", String.format(Locale.US, "%.1f%%", GameFormulas.keygenFeeRatio(j)!! * 100)) },
-                "Exact interpolation and rounding are unconfirmed (Q-08)"
             ),
             tip("A single big jump is far cheaper than stepping: each step pays 15% of its own level's price. Download the highest copy you can find and key it directly."),
             h("Store prices"),
@@ -565,7 +565,7 @@ object KnowledgeBaseContent {
                         listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
                 }
             ),
-            warn("Below about Lv 15 the curve drifts from the guide (guide Keygen Lv 5 = 4,862 and Lv 10 = 11,972; curve 4,568 and 11,938). Q-09."),
+            warn("The curve is exact from about Lv 15 to 25. Below that it drifts from the guide (guide Keygen Lv 5 = 4,862; curve 4,568), and above it real prices run slightly higher (about +0.1% at Lv 33, +0.6% at Lv 42). Q-09."),
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
@@ -575,8 +575,7 @@ object KnowledgeBaseContent {
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling changes who your scans find. Upgrade what you use."),
             unknowns(
-                "Q-08" to "Exact key fee by jump (Apps page LOCKED rows)",
-                "Q-09" to "Store prices below Lv 15",
+                "Q-09" to "Store prices below Lv 15 and above Lv 25",
             ),
         ),
         related = listOf("software", "leveling")

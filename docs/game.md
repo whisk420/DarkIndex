@@ -41,7 +41,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (CLAUDE.md §3.7). Full rate for 21 days, decays to a 10% floor around day 100 |
 | Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-02) |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
-| Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump. Full XP. +5 rep |
+| Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump, rounded up (all 9 LOCKED rows of Raw Dump #33 fit; Rootkit 6 → 25 = 44,272 exactly). Full XP. +5 rep |
 
 - **You choose the upload level of a virus** (any level up to your installed one). Lower uploads faster, so the goal is the **minimum Spam level that hits the 100/hr cap**, not your max level (developer uploads Lv17 Spam with Lv20 installed).
 - At most **2 virus slots per victim per attacker** (`+ UPLOAD VIRUS 2 / 2 slots`). Many attackers can infect one device.
@@ -98,7 +98,7 @@ Price(app, L) = Cubic(L) × base(app)/600 × (0.85 if defensive)
 base: Keygen 600, Firewall 800, Bypasser 800, Cracker 1100, Encryptor 1100,
       Antivirus 1000, Spam 1800, Siphon 1600, Rootkit 1400, Proxy 900, Trace 900
 ```
-The cubic is only valid at higher levels (verified L19–25). It goes **negative at L1**, so don't use it below roughly L5 without data. It is the Keygen price, not a general "offensive" price.
+The cubic is only valid at higher levels (verified L19–25). **Above L25 it runs slightly low:** the Keygen fees in Raw Dump #33 imply curve values +0.04% (L30), +0.1% (L33, two apps agree), +0.26% (L37), +0.45% (L40), +0.6% (L42) above it (Q-09). It goes **negative at L1**, so don't use it below roughly L5 without data. It is the Keygen price, not a general "offensive" price.
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
@@ -107,7 +107,7 @@ The cubic is only valid at higher levels (verified L19–25). It goes **negative
 **Hack (bypass/crack) success — measured from the developer's logged attempts, in code (`TargetRecord.calculateSuccessProbability`):** modifiers (Apex +3, Rootkit −N, Cipher +3) just add up, order doesn't matter.
 `delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
 
-**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, CLAUDE.md §3.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
+**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%; matches the game at Lv 27: 104/297/562/1,061, Raw Dump #34, which also shows Stealth reserve `90h / 170h`, refill +1 h per 1.5 h off, activations stack with no cap); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, CLAUDE.md §3.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. The Store cubic misses the guide's low-level prices (Keygen L5 4,862 vs 4,568).
 
 **Siphon % (measured 2026-11-22, Raw Dump #16, all 122 deployments):** `0.75 + 0.25 × L` fits Lv1/2/5/6/13/17/20; Lv25 = 6% (not 7%), so `GameFormulas.siphonPercent` caps at 6% from Lv21 (the line reaches 6% at Lv21; developer-accepted). **Max 700 siphon deployments** (developer). A siphon removed by the victim's AV vanishes from SIPHON EARNINGS with all its info; the game keeps no history.
 

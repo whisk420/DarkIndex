@@ -90,11 +90,10 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* every `[TRACED]` vs masked line in your victim log, with your Trace level.
 
 ### Keygen & Store prices
-- **Q-08 ⭐ Exact Keygen fee.** 15% of the Store price for a 1-level jump, rising to 50% at 20+ levels. The steps
-  in between and the rounding aren't known.
-  *To measure:* dump your own Apps page when it shows `LOCKED LVL N available <price>`.
-- **Q-09 Low-level Store prices.** The price formula is exact from about Lv 15 up but drifts below that.
-  *To measure:* Store screen at low levels during a reboot run.
+- **Q-09 Store prices outside Lv 15–25.** The price formula is exact from about Lv 15 to 25. It drifts below the
+  guide's low-level prices, and above Lv 25 real prices run slightly higher (Keygen unlock fees on your Apps page imply
+  +0.04% at Lv 30, +0.1% at Lv 33, +0.6% at Lv 42).
+  *To measure:* Store screen at low levels during a reboot run; any Store price above Lv 25.
 
 ### Wallet
 - **Q-10 Cold storage cap at every level.** Known at Lv 1, 5, 10, 20 and 30.
@@ -116,7 +115,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 
 - It contradicts itself on what Siphon skims (Q-02) and on Antivirus scan times (Q-06).
 - Its Spam earnings table has the wrong shape. The app uses our own measured model instead (17 real uploads).
-- Its Store prices for low levels don't match the formula that's exact at higher levels (Q-09).
+- Its Store prices for low levels don't match the formula that's exact at Lv 15–25 (Q-09).
 - It says rep falls off with the **software** gap (your offence against their defence), not the player level gap.
 
 **Idea (not built):** many of these numbers (XP table, cold cap, Keygen fees) are on screens the app already
