@@ -199,7 +199,7 @@ object KnowledgeBaseContent {
                 f("Combined cap", "30% per victim, across all attackers", GUIDE),
                 f("Decay", "None", CONFIRMED),
                 f("Deployment cap", "700 siphons in total (each also takes one of your 2 virus slots on that victim)", CONFIRMED),
-                f("Wallet Shield", "Does not stop siphons", GUIDE),
+                f("Wallet Shield", "Doesn't stop siphons: they keep skimming while it's up", GUIDE),
             ),
             table(
                 MEASURED, listOf("Siphon Lv", "Skim %"),
@@ -448,7 +448,7 @@ object KnowledgeBaseContent {
                     listOf("Exploit Kit", "Instant password crack", "—", "50 Cr, Common"),
                     listOf("IP Scrambler", "New IP; cancels all pending processes against you; wipes bypass records", "—", "200 Cr, Common"),
                     listOf("Log Lock", "Your log can't be edited for 8 h", "12 h", "12 Cr, Uncommon"),
-                    listOf("Wallet Shield", "Blocks manual theft for 24 h (siphons still work)", "48 h", "150 Cr, Uncommon"),
+                    listOf("Wallet Shield", "Nobody can steal from your hot wallet for 24 h (siphons on you keep skimming)", "48 h", "150 Cr, Uncommon"),
                     listOf("System Purge", "Removes all viruses, restores most rep", "—", "85 Cr, Rare"),
                     listOf("EMP Pulse", "Cancels pending processes and blocks new ones for 1 h", "2 h", "80 Cr, Rare"),
                 )
@@ -620,16 +620,16 @@ object KnowledgeBaseContent {
 
     private fun wallet() = KbTopic(
         "wallet", "👛", "Wallet, theft & gas",
-        "Hot wallet is stealable and siphonable; cold storage is safe but capped by level. Thieves receive 90% of what victims lose.",
+        "Hot wallet is stealable and siphonable; cold storage is safe but capped by level. 10% of every steal is burned as gas.",
         listOf(
             facts(
                 f("Hot wallet", "Spending balance; stealable by anyone who cracked you", GUIDE),
                 f("Cold storage", "Can't be stolen or siphoned; capped by level", GUIDE),
-                f("Gas fee", "Victim loses 100%, thief receives 90%", GUIDE),
+                f("Gas fee", "10% of the steal, rounded down. The victim loses the full amount; you receive the rest", MEASURED, "All 10 thefts in a wallet history: e.g. 993 stolen = 99 gas + 894 received"),
                 f("\"Stole N\" in your log", "What the victim lost (before gas)", CONFIRMED),
-                f("Address", "hx + 30 hex characters; logs show hx1a2b...9f0e", GUIDE),
-                f("New address", "50 Credits; old transactions keep the old one", GUIDE),
-                f("Wallet Shield", "Blocks manual theft 24 h, 48 h cooldown; siphons still earn", GUIDE),
+                f("Transaction history", "Your Wallet page lists each theft with the victim's wallet (shortened), the gas and what you received", CONFIRMED),
+                f("Changing address", "The regen button gives you a new address for 50 Credits. Old log lines keep showing the old one", GUIDE),
+                f("Wallet Shield", "Nobody can steal from your hot wallet for 24 h (48 h cooldown). Siphons installed on you keep skimming", GUIDE),
             ),
             h("Cold storage cap"),
             table(
@@ -639,9 +639,9 @@ object KnowledgeBaseContent {
             ),
             h("Crypto → Credits"),
             facts(
-                f("Rate", "250 Crypto per Credit", GUIDE),
+                f("Rate", "250 Crypto per Credit", CONFIRMED),
                 f("Minimum", "5 Credits (1,250 Crypto)", GUIDE),
-                f("Monthly cap", "750 Credits, resets on the 1st (UTC)", GUIDE),
+                f("Monthly cap", "750 Credits, resets on the 1st", CONFIRMED),
                 f("Drains", "Hot wallet first, then cold storage", GUIDE),
             ),
             facts(
