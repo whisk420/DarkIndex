@@ -371,6 +371,15 @@ class RawDumpStore(val dir: File) {
         return written
     }
 
+    /** Every dump (oldest first) in the compact text format ([RawDumpCompact]). */
+    fun exportCompact(out: Writer): Int {
+        val ids = (dir.listFiles { f -> f.name.endsWith(".meta.json") } ?: emptyArray())
+            .mapNotNull { it.name.removeSuffix(".meta.json").toLongOrNull() }
+            .sorted()
+        val utc = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
+        return RawDumpCompact.export(ids.mapNotNull { readJson(it) }, out, utc.format(Date()))
+    }
+
     private fun nextId(): Long {
         val counter = File(dir, "next_id")
         val fromFile = if (counter.exists()) counter.readText().trim().toLongOrNull() else null

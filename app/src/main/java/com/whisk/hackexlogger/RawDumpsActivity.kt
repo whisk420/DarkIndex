@@ -36,15 +36,17 @@ import java.util.TimeZone
 /**
  * Raw Dump Mode browser (debug). One card per recorded 📸 scrape.
  * Tap = copy that dump's lean JSON (paste-sized) · ▸ = expand (full stored JSON) · long-press = DELETE · top bar: EXPORT ALL / DELETE ALL.
+ * EXPORT ALL writes the compact text format ([RawDumpCompact]); long-press it for the full JSON (node trees included).
  */
 class RawDumpsActivity : AppCompatActivity() {
 
     private lateinit var store: RawDumpStore
     private lateinit var adapter: RawDumpAdapter
 
+    private var exportFull = false
     private val exportLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val uri = result.data?.data
-        if (result.resultCode == RESULT_OK && uri != null) exportAllTo(uri)
+        if (result.resultCode == RESULT_OK && uri != null) exportAllTo(uri, exportFull)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +68,10 @@ class RawDumpsActivity : AppCompatActivity() {
         findViewById<RecyclerView>(R.id.dumpsRecycler).adapter = adapter
 
         findViewById<ImageButton>(R.id.backBtn).setOnClickListener { finish() }
-        findViewById<Button>(R.id.exportAllBtn).setOnClickListener { openExportPicker() }
+        findViewById<Button>(R.id.exportAllBtn).apply {
+            setOnClickListener { openExportPicker(full = false) }
+            setOnLongClickListener { openExportPicker(full = true); true }
+        }
         findViewById<Button>(R.id.deleteAllBtn).setOnClickListener { confirmDeleteAll() }
     }
 
@@ -135,16 +140,17 @@ class RawDumpsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun openExportPicker() {
+    private fun openExportPicker(full: Boolean) {
         if (adapter.itemCount == 0) {
             Toast.makeText(this, "No dumps to export", Toast.LENGTH_SHORT).show()
             return
         }
         val stamp = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(Date())
+        exportFull = full
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/json"
-            putExtra(Intent.EXTRA_TITLE, "darkindex_dumps_$stamp.json")
+            type = if (full) "application/json" else "text/plain"
+            putExtra(Intent.EXTRA_TITLE, if (full) "darkindex_dumps_full_$stamp.json" else "darkindex_dumps_$stamp.txt")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 putExtra(
                     android.provider.DocumentsContract.EXTRA_INITIAL_URI,
@@ -155,12 +161,12 @@ class RawDumpsActivity : AppCompatActivity() {
         exportLauncher.launch(intent)
     }
 
-    private fun exportAllTo(uri: Uri) {
+    private fun exportAllTo(uri: Uri, full: Boolean) {
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 try {
-                    val n = contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { store.exportAll(it) }
-                    if (n == null) "Export failed: could not open file" else "Exported $n dumps"
+                    val n = contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { if (full) store.exportAll(it) else store.exportCompact(it) }
+                    if (n == null) "Export failed: could not open file" else "Exported $n dumps${if (full) " (full)" else ""}"
                 } catch (e: Exception) {
                     "Export failed: ${e.message}"
                 }
