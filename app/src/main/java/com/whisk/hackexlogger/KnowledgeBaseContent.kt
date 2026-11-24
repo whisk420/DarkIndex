@@ -818,11 +818,11 @@ object KnowledgeBaseContent {
         listOf(
             h("Daily missions"),
             table(
-                GUIDE, listOf("Difficulty", "XP", "Rep", "Crypto / OC", "Spawn"),
+                GUIDE, listOf("Difficulty", "XP", "Rep", "Crypto / OC"),
                 listOf(
-                    listOf("Easy", "100", "30", "250 / 3", "80%"),
-                    listOf("Medium", "150", "55", "500 / 7", "50%"),
-                    listOf("Hard", "200", "90", "1,000 / 15", "20%"),
+                    listOf("Easy", "100", "30", "250 / 3"),
+                    listOf("Medium", "150", "55", "500 / 7"),
+                    listOf("Hard", "200", "90", "1,000 / 15"),
                 )
             ),
             bullets(
@@ -853,7 +853,6 @@ object KnowledgeBaseContent {
                 f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", GUIDE),
                 f("Overclocks", "5 × 4 per day = 20", GUIDE),
             ),
-            unknowns("Q-14" to "Mission spawn rates (they don't add to 100%, so probably separate rolls)"),
         ),
         related = listOf("leveling", "premium")
     )

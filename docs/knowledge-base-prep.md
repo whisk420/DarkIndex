@@ -110,11 +110,6 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 - **Q-13 XP needed for every level.** Known at Lv 1, 5, 10, 20, 30, 35, 38 and 44.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
-### Missions
-- **Q-14 Mission odds.** The guide's spawn rates (80% / 50% / 20%) don't add up to 100%, so each slot probably
-  rolls separately.
-  *To measure:* tally mission difficulties for a couple of weeks.
-
 ---
 
 ## Things to watch for in the guide
