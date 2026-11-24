@@ -624,7 +624,9 @@ data class OwnAppsScreen(
     /** The `(+N)` bonus shown next to an app's level (Apex: Bypasser and Password Cracker). */
     val bonuses: Map<String, Int>,
     /** Downloaded but not activated: the level waiting to be unlocked. Not stored. */
-    val lockedLevels: Map<String, Int>
+    val lockedLevels: Map<String, Int>,
+    /** The Keygen fee shown on each LOCKED row (`available<price> Crypto`). Not stored. */
+    val lockedPrices: Map<String, Int> = emptyMap()
 )
 
 object OwnAppsParser {
@@ -634,7 +636,7 @@ object OwnAppsParser {
     )
     private val LEVEL = Regex("""^LVL\s+(\d+)$""")
     private val BONUS = Regex("""^\(\+(\d+)\)$""")
-    private val LOCKED = Regex("""^LOCKEDLVL\s+(\d+)\s+available""")
+    private val LOCKED = Regex("""^LOCKEDLVL\s+(\d+)\s+available\s*([\d,]+)?""")
 
     fun isAppsPage(lines: List<String>): Boolean =
         lines.any { it.trim() == "// APPS" } && lines.any { it.contains("Installed Applications") }
@@ -645,6 +647,7 @@ object OwnAppsParser {
         val installed = linkedMapOf<String, Int>()
         val bonuses = linkedMapOf<String, Int>()
         val locked = linkedMapOf<String, Int>()
+        val lockedPrices = linkedMapOf<String, Int>()
         var app: String? = null
         for (raw in lines.drop(start + 1)) {
             val line = raw.trim()
@@ -653,9 +656,12 @@ object OwnAppsParser {
             val current = app ?: continue
             LEVEL.find(line)?.let { if (current !in installed) installed[current] = it.groupValues[1].toInt(); return@let }
             BONUS.find(line)?.let { if (current in installed) bonuses[current] = it.groupValues[1].toInt() }
-            LOCKED.find(line)?.let { locked[current] = it.groupValues[1].toInt() }
+            LOCKED.find(line)?.let { m ->
+                locked[current] = m.groupValues[1].toInt()
+                m.groupValues[2].replace(",", "").toIntOrNull()?.let { lockedPrices[current] = it }
+            }
         }
-        return if (installed.isEmpty()) null else OwnAppsScreen(installed, bonuses, locked)
+        return if (installed.isEmpty()) null else OwnAppsScreen(installed, bonuses, locked, lockedPrices)
     }
 }
 

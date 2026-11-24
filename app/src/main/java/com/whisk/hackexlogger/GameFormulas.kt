@@ -179,7 +179,11 @@ object GameFormulas {
         return if (app.defensive) ceil(raw - 1e-9).toInt() else raw.roundToInt()
     }
 
-    /** Keygen fee as a fraction of the target level's Store price: 15% at a 1-level jump, linear to 50% at 20+ (guide). */
+    /**
+     * Keygen fee as a fraction of the target level's Store price: 15% at a 1-level jump, linear to 50% at 20+ (guide).
+     * Confirmed by 9 LOCKED rows on the developer's Apps page (Raw Dump #33): every row fits these steps, and the two
+     * Lv 33 unlocks (+2 and +3 jumps) imply the same Store curve value.
+     */
     fun keygenFeeRatio(jump: Int): Double? {
         if (jump < 1) return null // can't key at or below your level
         return (0.15 + (jump - 1) * (0.35 / 19.0)).coerceAtMost(0.50)
@@ -188,7 +192,7 @@ object GameFormulas {
     fun keygenFee(app: App, fromLevel: Int, toLevel: Int): Int? {
         val ratio = keygenFeeRatio(toLevel - fromLevel) ?: return null
         val price = storePrice(app, toLevel) ?: return null
-        return (price * ratio).roundToInt() // rounding unconfirmed (Q-08)
+        return ceil(price * ratio - 1e-9).toInt() // rounds up: Rootkit 6 → 25 = 44,271.07 → 44,272 (Raw Dump #33)
     }
 
     /** XP per Store crypto for software (older measurements 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */

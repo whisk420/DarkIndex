@@ -93,6 +93,28 @@ class KnowledgeBaseTest {
         assertTrue(Math.abs(GameFormulas.storePrice(GameFormulas.App.KEYGEN, 15)!! - 20_281) <= 3)
     }
 
+    @Test
+    fun proxyActivationMatchesTheGame() {
+        // Raw Dump #34: Proxy Lv 27 "Select Duration" panel
+        assertEquals(listOf(104, 297, 562, 1_061), listOf(2, 6, 12, 24).map { GameFormulas.proxyActivationCost(27, it) })
+    }
+
+    @Test
+    fun keygenFeesMatchLockedRowsOnOwnAppsPage() {
+        // Raw Dump #33: 9 LOCKED copies with their unlock price
+        val apps = OwnAppsParser.parse(TestEnv.fixture("own_apps_locked_2026-11-24.txt").split("\n"))!!
+        assertEquals(9, apps.lockedPrices.size)
+        for ((name, price) in apps.lockedPrices) {
+            val app = GameFormulas.App.values().first { it.displayName == name }
+            val fee = GameFormulas.keygenFee(app, apps.installedLevels.getValue(name), apps.lockedLevels.getValue(name))!!
+            // The Store curve runs slightly low above Lv 25 (+0.6% by Lv 42), so the real fee is never below the model
+            assertTrue("$name: $price vs $fee", price >= fee && price <= fee * 1.007)
+        }
+        // At Lv 25, where the curve is exact, the fee matches to the crypto and rounds up (44,271.07)
+        assertEquals(44_272, apps.lockedPrices["Rootkit"])
+        assertEquals(44_272, GameFormulas.keygenFee(GameFormulas.App.ROOTKIT, 6, 25))
+    }
+
     // ── Content & calculators ──────────────────────────────────────────────────────────────────────────────
 
     @Test
