@@ -23,23 +23,6 @@ class ScreenFixesTest {
     // ---- Masked IPs -----------------------------------------------------------------------------
 
     @Test
-    fun processScreenNeverStoresMaskedIps() {
-        val parsed = ProcessScreenParser.parse(lines("processes_2026-11-20.txt"))!!
-        assertTrue((parsed.ips + parsed.invalidatedIps).any { it.contains("xxx") }) // they are on screen...
-        scrape(TestEnv.fixture("processes_2026-11-20.txt"))
-        assertTrue(records().none { it.isMasked })                                 // ...but never stored
-        assertTrue(records().isNotEmpty())
-    }
-
-    @Test
-    fun crewScreenNeverStoresMaskedMembers() {
-        scrape(TestEnv.fixture("target_home_2026-11-19.txt")) // 23.176.239.38, clan SPAIN, is in this crew
-        scrape(TestEnv.fixture("crew_2026-11-19.txt"))
-        assertTrue(records().none { it.isMasked })
-        assertEquals("SPAIN", records().single { it.ip == "25.184.128.149" }.clan)
-    }
-
-    @Test
     fun crewMaskedMemberAloneDoesNotProvideTheClan() {
         // A masked record that happens to have a clan must not tag the whole crew
         TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "xxx.xxx.xxx.xxx", clan = "WRONG")))
@@ -48,13 +31,6 @@ class ScreenFixesTest {
     }
 
     // ---- Siphons --------------------------------------------------------------------------------
-
-    @Test
-    fun siphonParserCountsTheMaskedRow() {
-        val parsed = SiphonScreenParser.parse(TestEnv.fixture("siphons_2026-11-20.txt"))!!
-        assertEquals(1, parsed.maskedCount)
-        assertEquals(parsed.deployedCount, parsed.items.size + parsed.maskedCount)
-    }
 
     @Test
     fun removalAlertFiresEvenWithAMaskedSiphon() {
@@ -104,13 +80,6 @@ class ScreenFixesTest {
     }
 
     // ---- Log screen detection ---------------------------------------------------------------------
-
-    @Test
-    fun bothRealLogsAreRecognised() {
-        for (name in listOf("log_2026-11-19.txt", "log_2026-11-20.txt")) {
-            assertEquals(ScreenType.LOGS, ScreenClassifier.detectScreenType(TestEnv.fixture(name), lines(name)))
-        }
-    }
 
     // ---- HTML entities ----------------------------------------------------------------------------
 

@@ -26,27 +26,15 @@ class UnmaskingTest {
     }
 
     @Test
-    fun testUnknownIpIsClassifiedAsMasked() {
-        val extractedIp = CommonParserUtil.extractIp("Device accessed from [UNKNOWN]")
-        assertEquals("[UNKNOWN]", extractedIp)
-
-        val target = TargetRecord(ip = "[UNKNOWN]")
-        assertTrue(target.isMasked)
-        assertFalse(target.isTemporary)
-    }
-
-    @Test
-    fun testMaskedIpIsClassifiedAsMasked() {
-        val target = TargetRecord(ip = "10.20.xxx.xxx")
-        assertTrue(target.isMasked)
-        assertFalse(target.isTemporary)
-    }
-
-    @Test
-    fun testTemporaryRecordIsClassifiedAsTemporary() {
-        val target = TargetRecord(ip = "unknown:jaywat2550", username = "jaywat2550")
-        assertFalse(target.isMasked)
-        assertTrue(target.isTemporary)
+    fun maskedUnknownAndPlaceholderIpsAreToldApart() {
+        assertEquals("[UNKNOWN]", CommonParserUtil.extractIp("Device accessed from [UNKNOWN]"))
+        for (masked in listOf("[UNKNOWN]", "10.20.xxx.xxx")) {
+            assertTrue(masked, TargetRecord(ip = masked).isMasked)
+            assertFalse(masked, TargetRecord(ip = masked).isTemporary)
+        }
+        val placeholder = TargetRecord(ip = "unknown:jaywat2550", username = "jaywat2550")
+        assertFalse(placeholder.isMasked)
+        assertTrue(placeholder.isTemporary)
     }
 
     @Test
@@ -118,23 +106,27 @@ class UnmaskingTest {
 
         // No record anywhere may receive software from a masked log line
         assertTrue(TargetRepository.getAllRecords().all { it.downloads.isEmpty() })
+
+        // Control: the same line with a real IP is stored
+        DatabaseManager.processUpdates(listOf(update.copy(ip = "4.226.131.111", raw = "Downloaded Lv10 Spam from 4.226.131.111")))
+        assertEquals(10, TargetRepository.getAllRecords().single { it.ip == "4.226.131.111" }.downloads["Spam"]?.level)
     }
 
     @Test
-    fun testLogSoftwareRecordedForRealIp() {
-        // Control for the test above: the same line with a real IP is stored
-        val update = ParsedUpdate(
-            ip = "4.226.131.111",
-            time = "11-19 12:00",
-            software = Software("downloaded", 10, "Spam"),
-            isOwnedSoftware = true,
-            raw = "Downloaded Lv10 Spam from 4.226.131.111"
-        )
+    fun walletScreenJoinsTheUsernameAndWalletPlaceholders() {
+        // Software screen → unknown:Pizaaparty; unattributed steal → unknown:wallet_hx9999
+        DatabaseManager.processSoftwareScreen(SoftwareScreen("Pizaaparty", mapOf("Spam" to SoftwareScreenItem(10, "installed"))))
+        DatabaseManager.processUpdates(listOf(ParsedUpdate(ip = "", time = "10-16 12:00", wallet = "hx9999", stolenAmount = 500,
+            raw = "Stole 500 Crypto from hx9999", isOwnLogTheft = true)))
+        assertEquals(2, TargetRepository.getAllRecords().size)
 
-        DatabaseManager.processUpdates(listOf(update))
+        DatabaseManager.processWalletScreen(WalletScreen(username = "Pizaaparty", wallet = "hx9999"))
 
-        val record = TargetRepository.getAllRecords().single { it.ip == "4.226.131.111" }
-        assertEquals(10, record.downloads["Spam"]?.level)
+        val target = TargetRepository.getAllRecords().single()
+        assertEquals("Pizaaparty", target.username)
+        assertEquals(listOf("hx9999"), target.wallets)
+        assertEquals(1, target.downloads.size)
+        assertNotNull(target.walletThefts["hx9999"])
     }
 
     @Test

@@ -215,17 +215,14 @@ class SaveQueueAndBackupTest {
 
     @Test
     fun exportIncludesYourProfile() {
+        // Nothing scraped yet: no empty profile in the file
+        assertNull(TargetRepository.gson.fromJson(DatabaseBackup.exportDataBundle(), ConsoleBundle::class.java).playerProfile)
+
         PlayerProfileRepository.updateOwnProfile("Seamus", 40)
         val export = DatabaseBackup.exportDataBundle()
         val bundle = TargetRepository.gson.fromJson(export, ConsoleBundle::class.java)
         assertEquals(40, bundle.playerProfile?.playerLevel)
         assertEquals("Seamus", bundle.playerProfile?.username)
-    }
-
-    @Test
-    fun emptyProfileIsLeftOutOfTheExport() {
-        val bundle = TargetRepository.gson.fromJson(DatabaseBackup.exportDataBundle(), ConsoleBundle::class.java)
-        assertNull(bundle.playerProfile)
     }
 
     @Test

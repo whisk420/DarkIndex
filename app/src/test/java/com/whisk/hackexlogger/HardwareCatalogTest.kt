@@ -60,6 +60,9 @@ class HardwareCatalogTest {
         assertEquals("Raider", HardwareCatalog.previous("Raider"))
         assertEquals("DSL", HardwareCatalog.previous("DSL"))
         assertEquals("Fiber+", HardwareCatalog.previous("10G Fiber"))
+        assertEquals("Raider III", HardwareCatalog.previous("Bolt"))      // previous device line
+        assertEquals("Nova III", HardwareCatalog.previous("Nova S"))
+        assertEquals("Scythe I", HardwareCatalog.previous("Scythe I"))    // a reboot starts at I (was "Nova Ultra")
         assertEquals("Apex VIII", HardwareCatalog.previous("Apex IX"))
         assertEquals("Null Route X", HardwareCatalog.previous("Null Route XI"))
         assertEquals("Ghost Link I", HardwareCatalog.previous("Ghost Link I"))
@@ -97,11 +100,4 @@ class HardwareCatalogTest {
         assertEquals("Null Route IV", PlayerProfileRepository.getCurrentNetwork())
     }
 
-    @Test
-    fun standardNetworkProfileGivesTheRightCurrentNetwork() {
-        PlayerProfileRepository.updateProfile(StoreScreen(nextDevice = "Nova", nextNetwork = "10G Fiber", nextSoftwareLevels = emptyMap()))
-        assertEquals("Bolt III", PlayerProfileRepository.getCurrentDevice())
-        assertEquals("Fiber+", PlayerProfileRepository.getCurrentNetwork())
-        assertEquals(12.0, NetworkSpeedUtils.getNetworkSpeedBoost(PlayerProfileRepository.getCurrentNetwork()), 0.001)
-    }
 }

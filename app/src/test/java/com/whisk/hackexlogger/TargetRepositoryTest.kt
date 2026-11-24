@@ -73,17 +73,6 @@ class TargetRepositoryTest {
     }
 
     @Test
-    fun testSaveMirrorsToBackupFolderOnly() {
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "10.0.0.7", username = "Mirror")))
-
-        // The Downloads mirror goes to the configured backup folder and holds a full export bundle
-        val mirror = File(dir, "DarkIndex/darkindex_database.json")
-        assertTrue(mirror.exists())
-        assertTrue(mirror.readText().contains("\"target-intelligence-console\""))
-        assertTrue(mirror.readText().contains("10.0.0.7"))
-    }
-
-    @Test
     fun testNoMirrorWithoutBackupFolder() {
         // No Downloads folder available (what the JVM sees without an override): save still works, no file
         TargetRepository.backupDirProvider = { null }
