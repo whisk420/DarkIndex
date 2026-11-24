@@ -9,6 +9,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 - `compileSdk/targetSdk 35`, `minSdk 26`.
 - Deps: Gson 2.10.1, kotlinx-datetime 0.6.1, Flexbox 3.0.0, RecyclerView 1.3.2, AppCompat, Material, ConstraintLayout, activity-ktx, core-ktx.
 - **No INTERNET permission. Never add networking, analytics or cloud SDKs.**
+- **Privacy guarantees (2026-11-24, `SECURITY.md`, enforced by `PrivacyGuardTest` + the release workflow's `aapt2` check):** reads only HackEx 2 (`ScrapeGate`, checked before any node is read; accessibility config limited to `net.cncapps.hackex2`, no `flagRetrieveInteractiveWindows`); screen text never goes to Logcat (release strips `Log.v/d/i`); `allowBackup=false` with every domain excluded from cloud backup (device-to-device transfer still allowed). Keep `SECURITY.md` true when changing any of these.
 - **Work tracking:** `TODO.md` (in the repo, owned by the user) holds the open items **and their implementation plans**. Add new ideas there and don't execute them unless asked. Keep it short: when an item is done, move it to the one-line Done log and record any lasting facts here in CLAUDE.md. `docs/plans/` is the developer's local-only scratch folder (not committed); don't reference it from committed files.
 - **Developer preference:** queue work as to-do items first. Implement only when explicitly asked.
 - **Bugs found while working (developer, 2026-11-20): fix them on the fly**, don't add them to TODO.md. If unsure it's really a bug, ask for context first: the game is dynamic, so a "bug" may be a screen, layout or player you haven't seen before. Only **new ideas** go on the to-do list.
@@ -20,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 203 tests, all passing as of 2026-11-23
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 209 tests, all passing as of 2026-11-24
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -68,7 +69,8 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
 |---|---|
 | `ScreenParsers.kt` | `SharedRegex`, `ScreenClassifier`, `CommonParserUtil` (`isMaskedIp`, `stripNavBar`, `decodeEntities`), `LogTime` (UTC log times), plus parsers: Home, OwnHome, Log, Software, Wallet, Siphon, SpamEarnings, Crew, Process, Store, Bypass |
 | `HardwareCatalog.kt` | Single source of truth for device/network names, levels, network boost and upload-defence tier (§3.10) |
-| `ScraperAccessibilityService.kt` | On-demand only (`onAccessibilityEvent` is a no-op). Main thread: text snapshot (+ node tree in dump mode). Background: `ScrapePipeline.run`. Pipeline exceptions are caught and toasted ("Scrape error: …") instead of killing the coroutine. Logs `DOSSIER_RAW` / `DOSSIER_BENCHMARK` |
+| `ScraperAccessibilityService.kt` | On-demand only (`onAccessibilityEvent` is a no-op). Main thread: text snapshot (+ node tree in dump mode). Background: `ScrapePipeline.run`. Pipeline exceptions are caught and toasted ("Scrape error: …") instead of killing the coroutine. Refuses any window that isn't HackEx 2 (`ScrapeGate`) before reading text or starting a dump. Logs `DOSSIER_BENCHMARK` timings only (screen text is never logged since 2026-11-24) |
+| `ScrapeGate.kt` | `GAME_PACKAGE = net.cncapps.hackex2`, `isGameWindow(pkg)`: the privacy gate for every scrape |
 | `ScrapePipeline.kt` | Classify → parse → `DatabaseManager.process*` for one snapshot (moved verbatim out of the service; JVM-testable). `UNKNOWN` runs all 10 parsers in the original order. Takes an optional `DumpSession` |
 | `RawDump.kt` | Raw Dump Mode (JVM-testable): `RawDumpSettings` (`HackExSettings`/`pref_raw_dump_mode`), `RawDump` model (JSON field order = declaration order), `RawDumpSummary`, `DumpSession` (installs `DatabaseManager.activeDiscardSink` + `WalletConflictLog.listener`, diffs DB, profile and siphons before/after; serialized by `DumpSession.LOCK`), `RawDumpStore` (`filesDir/raw_dumps/<id>.json` + `<id>.meta.json` + `next_id`; ids are never reused; `exportAll` streams `{format:"darkindex-raw-dumps",…,dumps:[…]}`; Gson with `disableHtmlEscaping` so `&#39;` survives) |
 | `RawDumpCapture.kt` | Android-only: app version (`PackageInfoCompat`) and the flattened accessibility node tree (`d, cls, id, text, desc, bounds`; cap 20k nodes) |
@@ -212,7 +214,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - Prefs `AppPrefs`: `hide_permission_warning`.
 - `filesDir`: `siphon_history.jsonl`, `wallet_conflicts.jsonl`, `maintenance_backup_<ts>.json`, `marathon_history.jsonl` (one finished Marathon run per line).
 - `Downloads/DarkIndex/darkindex_database.json` (pretty-printed full export + player profile) is rewritten `mirrorDelayMs` (30 s) after a save, once per burst, and right away when MainActivity stops, OverlayService is destroyed, or `flushPendingWrites()` runs. An empty DB never overwrites it. The SAF pickers open in `Download/DarkIndex`.
-- The manifest has `allowBackup=true`.
+- The manifest has `allowBackup=false` (since 2026-11-24): nothing goes to Google cloud backup. Device-to-device transfer is still allowed. The user's backups are the Downloads copy and Export.
 
 ### 3.10 Added 2026-11-20
 - **`HardwareCatalog`** — single source of truth for device/network names (standard + 5 prestige lines; devices I–XII, networks I–XI; bare line name = I). `parse/device/network/previous/networkBoost/uploadDefenceTier`. Unknown names → null; consumers keep their old fallbacks (tier 3 / 1.0×), the card marks the name with " ?", and `noteUnknown` logs each new name once.
@@ -231,7 +233,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 4. Test suite (203 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
+## 4. Test suite (209 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 Every test now calls production code. The 2026-11-20 audit found and fixed these "can't fail" tests:
@@ -251,6 +253,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 | RawDumpTest, PlayerHardwareAndSpamLevelTest | Raw Dump Mode; maxed Store, current hardware, Spam levels |
 | **MarathonTest** (new 2026-11-21) | Full run on a real own log: mid-run grabs, End early, wiped log, first target, Back, results order/rates, history file; timer expiry; start-minute filter; chain hint + no recount; own-log detection; DB owner IP for masked steals |
 | **KnowledgeBaseTest** (new 2026-11-21) | Real data only: Spam against every in-game upload (+ Lv17 cap), Siphon % against Raw Dump #16, the 5 verified Store prices, rootkit debuff by level, crew server prices, upkeep and surges (Raw Dumps #25, #27, incl. the treasury balance); KB content integrity (ids, related links, calculator ids, Q-ids, table widths); every calculator at defaults and extremes; profile defaults; search |
+| **PrivacyGuardTest** (new 2026-11-24) | The `SECURITY.md` promises: only HackEx 2 passes `ScrapeGate`, the gate comes before any text read or dump, accessibility config stays narrow, no network permission or networking code, cloud backup off, no screen text logged |
 | **TargetSearchTest** (new 2026-11-22) | `sw 20` ranking (one-stop FW1 target first), tie-breaks, app aliases + ±1/±2 fallback, Home-screen firewall, level exact/range, plain text not mistaken for a software query |
 | ScreenClassifierTest, GoodSpamTest (firewall filter, Spam priority order), PlayerIntelligenceTest (Apex bonus, bypass parser), SiphonTrackerTest, ConsoleBundleTest, TargetIncomeTest, RecordMergingTest, PlayerProfileRepositoryTest (+ profile cache), OwnHome/Store/SpecialChars parser tests | As named |
 | androidTest | Package name; a stored record with missing fields loads through `TargetStore.parse` on ART (read-only) |
@@ -271,7 +274,7 @@ Test infrastructure (`TestSupport.kt`):
 3. Filter `0.0.*` wherever IPs are collected.
 4. Masked and victim-log data must never write wallets, downloads or thefts onto real targets.
 5. Large lists (4,000+): keep the `forceFastSwap` (`submitList(null)`) pattern for re-sorts.
-6. For any parser change, get a raw `DOSSIER_RAW` dump or a real ingest, add it as a fixture test, then change the regex. Put new fixtures in `app/src/test/resources/fixtures/` as `.txt` and load them with `TestEnv.fixture()`. The older 2,862-capture corpus `target_console_2026-09-19.json` (`ingests[]`) is local-only research data in `local-data/` (git-ignored).
+6. For any parser change, get a Raw Dump (Raw Dump Mode) or a real ingest, add it as a fixture test, then change the regex. Put new fixtures in `app/src/test/resources/fixtures/` as `.txt` and load them with `TestEnv.fixture()`. The older 2,862-capture corpus `target_console_2026-09-19.json` (`ingests[]`) is local-only research data in `local-data/` (git-ignored).
 7. Keep the app 100% offline.
 8. Store-derived player levels are **next** levels. Subtract 1.
 9. **Versioning is automatic** (2026-11-20): versionCode = 1000 + `git rev-list --count HEAD`, versionName = latest `v*` tag + `-dev.<commits>`; CI passes the release name and the same code rule. Don't hand-edit version numbers.

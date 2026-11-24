@@ -36,10 +36,16 @@ deployments and alert when one disappears, reusing `SiphonTracker`'s full-scroll
 Unknown hardware names fall back to upload tier 3 and a 1.0× network (B7, marked " ?" on cards). Plan: add each
 newly logged name to `HardwareCatalog` from real dumps; consider showing "unknown" instead of an estimate.
 
+### Optional Downloads auto-backup
+The `Downloads/DarkIndex/` copy is readable by any app with storage access (flagged by an external privacy review,
+2026-11-24). Plan: a Settings switch (default ON, so nothing changes for existing users) that skips the mirror;
+SECURITY.md already documents the file.
+
 ### Thin out MainActivity and OverlayService
 Both are about 650 lines. Plan: move menu actions (export, import, maintenance, wipe) and the toolbars into small
 helpers. Readability only; needs on-device testing.
 
 ## Done
+- 2026-11-24: Privacy hardening: HackEx 2 only (`ScrapeGate`), no screen text in Logcat, cloud backup off, `SECURITY.md`, `PrivacyGuardTest`, release APK permission check + provenance attestation.
 - 2026-11-22: Database moved to `targets.json`, immutable records, repository split (scrape thread 28 ms → 5 ms).
 - 2026-11-22: CLAUDE.md split into CLAUDE.md, docs/game.md and docs/history.md; GEMINI.md retired.

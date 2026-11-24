@@ -3,12 +3,13 @@
 # proguardFiles setting in build.gradle.
 
 # --- Production Logging Configuration ---
-# Strips verbose and debug log statements in production release builds for privacy and performance.
-# Debug builds (isMinifyEnabled = false) ignore this rule and retain all logs.
+# Strips verbose, debug and info log statements from release builds for privacy and performance.
+# Only warnings and errors (no screen text) remain. Debug builds (isMinifyEnabled = false) keep all logs.
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
     public static int v(...);
     public static int d(...);
+    public static int i(...);
 }
 
 # --- Preserve Generic Signatures & Gson Reflections ---

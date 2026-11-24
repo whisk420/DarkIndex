@@ -94,7 +94,7 @@ DarkIndex requires specific Android permissions to provide overlay controls and 
 | `SYSTEM_ALERT_WINDOW` ("Display over other apps") | Renders the floating quick-action overlay camera button and validation toolbar over the HackEx game window. |
 | `FOREGROUND_SERVICE` | Keeps the floating overlay service active during gameplay sessions. |
 | `FOREGROUND_SERVICE_SPECIAL_USE` | The foreground-service type Android 14+ requires for an overlay like this one. |
-| `BIND_ACCESSIBILITY_SERVICE` | Used strictly as an **on-demand UI screen reader** to read visible text node elements on screen when the user manually taps the floating overlay button while playing HackEx. |
+| `BIND_ACCESSIBILITY_SERVICE` | Used strictly as an **on-demand UI screen reader**: reads the visible text of the HackEx 2 screen when you tap the floating button. Limited to the HackEx 2 package; any other app is refused before anything is read. |
 | `VIBRATE` | One short buzz when a Marathon Mode timer runs out. |
 
 ---
@@ -136,11 +136,14 @@ com.whisk.hackexlogger
 
 ## Privacy & Storage
 
-Your data is **100% under your exclusive control and 100% offline**.
+Short version: **DarkIndex reads only the HackEx 2 screen, only when you tap 📸, and has no internet access.** The full details, and how to verify them, are in [SECURITY.md](SECURITY.md).
 
-- **No Internet Permission:** DarkIndex excludes internet permissions completely. Zero network calls or cloud connections are made.
-- **Durable Storage:** A full backup is automatically kept in your phone's public `Downloads/DarkIndex/` folder (refreshed about 30 seconds after you scrape, and whenever you leave the app). Files stored here persist through app uninstalls and data wipes.
+- **HackEx 2 only:** tapping 📸 over any other app reads nothing and shows "Not HackEx 2 — nothing was read".
+- **No Internet Permission:** Android blocks every network connection. No analytics, ads or cloud SDKs.
+- **No Android cloud backup:** the app's data is excluded from Google cloud backup.
+- **Durable Storage:** A full backup is automatically kept in your phone's public `Downloads/DarkIndex/` folder (refreshed about 30 seconds after you scrape, and whenever you leave the app). Files stored here persist through app uninstalls and data wipes. Like any file in Downloads, apps you've given storage access can read it.
 - **Smart Import/Export:** Import and export file pickers launch directly inside `Downloads/DarkIndex/` for instant one-tap backup management.
+- **Verifiable releases:** every release APK is built by GitHub Actions with a signed provenance attestation and its SHA-256 in the release notes.
 
 ---
 

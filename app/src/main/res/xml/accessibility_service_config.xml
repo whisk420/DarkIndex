@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  DarkIndex's screen reader, kept as narrow as Android allows:
+  - packageNames: only HackEx 2. ScrapeGate also refuses any other window in code, before reading a single node.
+  - No flagRetrieveInteractiveWindows: the service can only see the one active window, never other apps' windows.
+  - Events are not used (onAccessibilityEvent is empty). A scrape happens only when you tap the 📸 button.
+  - Never writes, types, clicks or performs gestures; it only reads text.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows|flagReportViewIds"
+    android:accessibilityFlags="flagDefault|flagReportViewIds"
     android:canRetrieveWindowContent="true"
-    android:description="@string/app_name"
+    android:packageNames="net.cncapps.hackex2"
+    android:description="@string/accessibility_service_description"
     android:notificationTimeout="100" />

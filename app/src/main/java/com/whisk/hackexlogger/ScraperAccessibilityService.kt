@@ -16,7 +16,8 @@ import java.util.Locale
 /**
  * On-demand UI screen reader service utilizing Android's Accessibility APIs.
  *
- * This service is used strictly as a helper tool for the HackEx game. When explicit scraping
+ * This service is used strictly as a helper tool for the HackEx game, and reads nothing from any other app
+ * ([ScrapeGate]: the active window must be HackEx 2, checked before any text is read). When explicit scraping
  * is requested by the user (via the floating overlay button), it reads the current on-screen text
  * nodes from the active window, parses HackEx game elements (such as target IPs, software levels,
  * and game logs), updates the local on-device database, and notifies the UI.
@@ -65,14 +66,20 @@ class ScraperAccessibilityService : AccessibilityService() {
 
     /**
      * Inspects the active window node hierarchy, extracts visible text, and parses game entity details.
-     * When Raw Dump Mode is on, the same scrape is also recorded as a dump (see docs/plans/raw-dump-mode.md).
+     * When Raw Dump Mode is on, the same scrape is also recorded as a dump (see `RawDump.kt`).
      */
     fun scrapeAndParse() {
         val totalStartNanos = System.nanoTime()
-        val dump: RawDump? = if (RawDumpSettings.isEnabled(this)) RawDump.create(app = RawDumpCapture.appInfo(this)) else null
 
         Log.d("DOSSIER", "scrapeAndParse() called. Attempting to get root window...")
         val rootNode = rootInActiveWindow
+        // Privacy gate: read nothing unless the active window is HackEx 2. Checked before any text is read,
+        // and before a Raw Dump is started, so another app's screen is never parsed, logged or stored.
+        if (rootNode != null && !ScrapeGate.isGameWindow(rootNode.packageName)) {
+            sendToast(ScrapeGate.NOT_GAME_MESSAGE)
+            return
+        }
+        val dump: RawDump? = if (RawDumpSettings.isEnabled(this)) RawDump.create(app = RawDumpCapture.appInfo(this)) else null
         if (rootNode == null) {
             Log.e("DOSSIER", "ERROR: rootInActiveWindow is null. Cannot scrape.")
             if (dump != null) {
@@ -116,8 +123,8 @@ class ScraperAccessibilityService : AccessibilityService() {
             return
         }
 
+        // The screen text is never written to Logcat. Raw Dump Mode (opt-in, app-private storage) records it instead.
         val combinedText = extractedTextList.joinToString("\n")
-        Log.i("DOSSIER_RAW", "--- RAW SCRAPED TEXT START ---\n$combinedText\n--- RAW SCRAPED TEXT END ---")
         dump?.rawText = combinedText
 
         // Split extracted UI text into discrete lines for log parsing
