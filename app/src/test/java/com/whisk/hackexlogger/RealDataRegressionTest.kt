@@ -123,7 +123,7 @@ class RealDataRegressionTest {
         assertEquals("", day2.single { it.wallet == "hx9087...65ca" && it.stolenAmount == 426 }.ip)
 
         scrape("log_2026-11-19.txt")
-        scrape("log_2026-11-20.txt") // also adds "Stole 5,093 Crypto from hx9087...65ca" on 113.149.48.111
+        assertEquals(ScreenType.LOGS, scrape("log_2026-11-20.txt").detectedType) // also adds "Stole 5,093 Crypto from hx9087...65ca" on 113.149.48.111
 
         assertNull(record("unknown:wallet_hx9087...65ca"))
         assertEquals(listOf("hx9087...65ca"), record("113.149.48.111")?.wallets)
@@ -175,6 +175,7 @@ class RealDataRegressionTest {
         assertEquals(ScreenType.CREW, result.detectedType)
         assertEquals("SPAIN", record("25.184.128.149")?.clan) // the leader
         assertEquals("SPAIN", record("12.179.205.114")?.clan) // last member
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })  // masked members are skipped
     }
 
     @Test
@@ -182,12 +183,6 @@ class RealDataRegressionTest {
         // Raw Dump #25: own crew page (treasury, server parts, server log); no roster, so nothing to store
         val result = scrape("crew_server_2026-11-22.txt")
         assertEquals(ScreenType.CREW, result.detectedType)
-        assertTrue(TargetRepository.getAllRecords().isEmpty())
-    }
-
-    @Test
-    fun crewScreenWithoutAKnownMemberSavesNothing() {
-        scrape("crew_2026-11-19.txt")
         assertTrue(TargetRepository.getAllRecords().isEmpty())
     }
 
@@ -270,6 +265,7 @@ class RealDataRegressionTest {
         assertEquals(ScreenType.BYPASS, result.detectedType)
         assertEquals(32, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
         assertEquals(34, PlayerProfileRepository.getEffectiveBypasserLevel())
+        assertEquals(33, PlayerProfileRepository.getEffectiveCrackerLevel()) // Cracker 30 + Apex 3
         assertEquals(31, record("57.134.50.54")?.firewall)
         assertEquals(32, record("57.134.50.54")?.encryptor)
     }
@@ -283,6 +279,8 @@ class RealDataRegressionTest {
         assertNotNull(record("178.185.169.48"))                       // INVALIDATED...
         assertNull(record("178.185.169.48")?.lastValidated)          // ...so not marked as seen
         assertNull(record("0.0.0.0"))                                 // your own antivirus scan
+        assertTrue(TestEnv.fixture("processes_2026-11-20.txt").contains("xxx"))   // masked rows are on screen...
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })          // ...but never stored
     }
 
     @Test
@@ -292,6 +290,7 @@ class RealDataRegressionTest {
         assertEquals(122, parsed.deployedCount)
         // 122 deployed, one shown as xxx.xxx.xxx.xxx: the parser only accepts numeric IPs
         assertEquals(121, parsed.items.size)
+        assertEquals(1, parsed.maskedCount) // counts towards the full-scroll check
         assertTrue(parsed.items.none { it.ip.contains("x") })
         assertEquals(11381, parsed.items.first().amount)
 

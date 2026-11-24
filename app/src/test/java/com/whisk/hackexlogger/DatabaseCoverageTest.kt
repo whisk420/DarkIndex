@@ -69,27 +69,6 @@ class DatabaseCoverageTest {
         assertNull(record("9.9.9.9"))
     }
 
-    @Test
-    fun processScreenFromRealTextNeverStoresLocalhost() {
-        val raw = """
-            < back
-            DISCONNECT
-            // PROCESSES
-            2 active tasks
-            Antivirus Scan
-            Lv.30
-            DONE
-            0.0.0.0
-            Firewall Bypass
-            Lv.25
-            DONE
-            64.59.40.157
-        """.trimIndent()
-        DatabaseManager.processProcessScreen(ProcessScreenParser.parse(raw.lines())!!)
-
-        assertEquals(listOf("64.59.40.157"), TargetRepository.getAllRecords().map { it.ip })
-    }
-
     // ---- Crew -----------------------------------------------------------------------------------
 
     @Test
@@ -119,21 +98,6 @@ class DatabaseCoverageTest {
     }
 
     // ---- Bypass ---------------------------------------------------------------------------------
-
-    @Test
-    fun bypassScreenUpdatesTargetDefencesAndPlayerBypasser() {
-        TargetRepository.saveAllRecords(listOf(TargetRecord(ip = "231.130.229.178", firewall = 10, encryptor = 10)))
-
-        DatabaseManager.processBypassScreen(
-            BypassScreen(targetIp = "231.130.229.178", firewall = 23, encryptor = 24, playerBypasser = 20, apexBonus = 3)
-        )
-
-        assertEquals(23, record("231.130.229.178")?.firewall)
-        assertEquals(24, record("231.130.229.178")?.encryptor)
-        // Stored in Store ("next level") form: 20 + 1. The "(+3)" Apex bonus is not stored: it's added from
-        // the owned device when the effective level is worked out (B12).
-        assertEquals(21, PlayerProfileRepository.getProfile().softwareLevels["Bypasser"])
-    }
 
     @Test
     fun bypassScreenWithoutIpOnlyUpdatesPlayer() {

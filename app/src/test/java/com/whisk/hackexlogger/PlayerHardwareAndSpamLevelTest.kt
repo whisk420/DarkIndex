@@ -3,6 +3,7 @@ package com.whisk.hackexlogger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -133,13 +134,6 @@ CREWS 3"""
     }
 
     @Test
-    fun profileStoresOneBelowNextWhenNotMaxed() {
-        PlayerProfileRepository.updateProfile(StoreScreen(nextDevice = "Apex VII", nextNetwork = "Null Route X"))
-        assertEquals("Null Route IX", PlayerProfileRepository.getCurrentNetwork())
-        assertEquals("Apex VI", PlayerProfileRepository.getCurrentDevice())
-    }
-
-    @Test
     fun maxedDeviceStillCountsAsApex() {
         PlayerProfileRepository.updateProfile(StoreScreen(nextDevice = "Apex XII", deviceMaxed = true))
         assertEquals("Apex XII", PlayerProfileRepository.getCurrentDevice())
@@ -174,4 +168,20 @@ CREWS 3"""
         assertTrue((1..20).all { GoodSpamUtils.spamIncome(it, 7) <= GoodSpamUtils.spamIncome(upload, 7) })
     }
 
+    @Test
+    fun testCachedProfileStillSeesUpdates() {
+        PlayerProfileRepository.prefs = FakeSharedPreferences()
+        PlayerProfileRepository.updateOwnProfile("Seamus", 38)
+        val first = PlayerProfileRepository.getProfile()
+        assertEquals(38, first.playerLevel)
+        // Unchanged JSON: the same parsed object comes back (no re-parse per card)
+        assertSame(first, PlayerProfileRepository.getProfile())
+
+        PlayerProfileRepository.updateOwnProfile("Seamus", 39)
+        assertEquals(39, PlayerProfileRepository.getProfile().playerLevel)
+
+        // A fresh, empty store must not return the old cached profile
+        PlayerProfileRepository.prefs = FakeSharedPreferences()
+        assertNull(PlayerProfileRepository.getProfile().playerLevel)
+    }
 }

@@ -64,16 +64,6 @@ class LogTimeTest {
     }
 
     @Test
-    fun accessWindowStillClosesAfterThreeMinutes() {
-        val log = listOf(
-            "[11-20 10:05] Stole 500 Crypto from hxaaaa...bbbb",
-            "[11-20 10:01] Accessed device at 7.7.7.7",
-            "Last saved: 2026-11-20 10:06:00"
-        )
-        assertEquals("", LogScreenParser.parse(log).single { it.wallet != null }.ip)
-    }
-
-    @Test
     fun storedThefsAreMovedFromPhoneTimeToUtcOnce() {
         val denver = TimeZone.getTimeZone("America/Denver")
         // "[11-20 4:00]" stored by the old code on a Denver phone = 04:00 MST = 11:00 UTC

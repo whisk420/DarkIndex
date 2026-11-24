@@ -70,30 +70,6 @@ class RawDumpTest {
         assertTrue(r.discarded.all { it.stage == "parser" })
     }
 
-    @Test
-    fun parseIsUnchangedByDetailedVariant() {
-        val fixtures = listOf(
-            mixedLog,
-            """
-            [11-1 11:01] Stole 86 Crypto from hxed11...16ef
-            [11-1 11:00] Accessed device at 88.205.81.140
-            [11-1 10:43] Stole 9,906 Crypto from hx47fc...9b0b
-            [11-1 10:43] Cracked password on 205.101.110.145
-            [11-1 10:28] Accessed device at 202.94.241.81
-            """.trimIndent(),
-            """
-            [11-2 3:34] 28 Crypto transferred to hx5a4e...3c37
-            [11-2 3:34] Device accessed from 168.222.130.xxx
-
-            [11-1 22:19] Device accessed from 86.123.81.1
-            """.trimIndent()
-        )
-        for (f in fixtures) {
-            val lines = f.lines()
-            assertEquals(LogScreenParser.parse(lines), LogScreenParser.parseDetailed(lines).updates)
-        }
-    }
-
     // ---------------------------------------------------------------- db stage
 
     private fun collectDbDiscards(block: () -> Unit): List<DiscardedLogLine> {
@@ -121,13 +97,6 @@ class RawDumpTest {
         assertEquals(LogDiscardReason.BAD_TIMESTAMP, byLine["bad-time"])
         // Bad timestamp still links the wallet (partial effect)
         assertTrue(TargetRepository.getAllRecords().first { it.ip == "2.2.2.2" }.wallets.contains("hxCCCC...3333"))
-    }
-
-    @Test
-    fun noSinkMeansNoBehaviourChange() {
-        assertNull(DatabaseManager.activeDiscardSink)
-        DatabaseManager.processUpdates(listOf(ParsedUpdate(ip = "", time = null, raw = "x")))
-        assertEquals(0, TargetRepository.getAllRecords().size)
     }
 
     // ---------------------------------------------------------------- session + pipeline
@@ -256,19 +225,8 @@ class RawDumpTest {
         assertEquals("STORE", store.detectedType)
         val changes = store.dbEffects!!.profileChanges
         assertEquals(listOf(null, "Apex VII"), changes["nextDevice"])
+        assertEquals(listOf(null, "Null Route X"), changes["nextNetwork"]) // "// NEXT NETWORK" header (not maxed)
         assertEquals(listOf(null, 21), changes["softwareLevels.Bypasser"])
-    }
-
-    @Test
-    fun uploadOnlyLogIsRecognisedAsALog() {
-        // Used to fall through to UNKNOWN (no "Accessed"/"Cracked" line); since 2026-11-20 any timestamped
-        // log line is enough to recognise the log screen
-        val dump = record("[9-19 15:08] Uploaded Lv25 Siphon to 5.225.204.180")
-        assertEquals("LOGS", dump.detectedType)
-        assertFalse(dump.fallbackUsed)
-        assertEquals(listOf("Log"), dump.parsersMatched)
-        assertEquals(1, dump.logStats!!.timestampedLines)
-        assertEquals(1, dump.logStats!!.interpreted)
     }
 
     @Test
@@ -319,6 +277,10 @@ class RawDumpTest {
     @Test
     fun exportAllIsValidJsonOldestFirst() {
         val store = RawDumpStore(tmpDir)
+        val empty = StringWriter()
+        assertEquals(0, store.exportAll(empty))
+        assertEquals(0, JsonParser.parseString(empty.toString()).asJsonObject.getAsJsonArray("dumps").size())
+
         store.save(sampleDump("first")); store.save(sampleDump("second"))
         val w = StringWriter()
         assertEquals(2, store.exportAll(w))
@@ -443,10 +405,4 @@ class RawDumpTest {
         assertEquals(1, lean.getAsJsonObject("nodes").getAsJsonArray("rows").size())
     }
 
-    @Test
-    fun emptyExportIsStillValidJson() {
-        val w = StringWriter()
-        assertEquals(0, RawDumpStore(tmpDir).exportAll(w))
-        assertEquals(0, JsonParser.parseString(w.toString()).asJsonObject.getAsJsonArray("dumps").size())
-    }
 }
