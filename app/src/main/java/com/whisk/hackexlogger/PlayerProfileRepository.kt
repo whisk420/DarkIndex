@@ -116,6 +116,18 @@ object PlayerProfileRepository {
         save(updated)
     }
 
+    /**
+     * Installed levels from your own Apps page. Stored as installed + 1, the Store's NEXT convention, so every
+     * reader keeps subtracting 1. The newest scrape wins, Store or Apps (levels only drop after a reboot).
+     */
+    fun updateInstalledSoftware(installedLevels: Map<String, Int>) {
+        if (installedLevels.isEmpty()) return
+        val current = getProfile()
+        val merged = current.softwareLevels.toMutableMap()
+        installedLevels.forEach { (name, level) -> merged[name] = level + 1 }
+        save(current.copy(softwareLevels = merged))
+    }
+
     fun updateBypasserLevel(effectiveBypasserLevel: Int) {
         val current = getProfile()
         val mergedSoftware = current.softwareLevels.toMutableMap()

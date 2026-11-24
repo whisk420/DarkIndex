@@ -33,8 +33,9 @@ object ScrapePipeline {
             ScreenType.SOFTWARE -> software(combinedText, savedItems, session)
             ScreenType.WALLET -> wallet(combinedText, savedItems, session)
             ScreenType.LOGS -> logs(allLines, savedItems, session)
-            ScreenType.SIPHON -> siphon(combinedText, savedItems, session)
-            ScreenType.SPAM_EARNINGS -> spamEarnings(combinedText, savedItems, session)
+            ScreenType.SIPHON -> { siphon(combinedText, savedItems, session); apps(allLines, savedItems, session) }
+            ScreenType.SPAM_EARNINGS -> { spamEarnings(combinedText, savedItems, session); apps(allLines, savedItems, session) }
+            ScreenType.APPS -> apps(allLines, savedItems, session)
             ScreenType.CREW -> crew(allLines, savedItems, session)
             ScreenType.OWN_PROFILE -> ownHome(combinedText, savedItems, session)
             ScreenType.STORE -> store(allLines, savedItems, session)
@@ -52,6 +53,7 @@ object ScrapePipeline {
                 ownHome(combinedText, savedItems, session)
                 bypass(combinedText, savedItems, session)
                 process(allLines, savedItems, session)
+                apps(allLines, savedItems, session)
             }
         }
         val parseMs = (System.nanoTime() - parseStart) / 1_000_000.0
@@ -113,6 +115,14 @@ object ScrapePipeline {
         s?.matched("SpamEarnings", parsed)
         saved.add("Spam earnings (${parsed.items.size + parsed.maskedCount}/${parsed.deployedCount} read, not stored yet)")
     }
+    /** Your installed levels from the Apps page (also present under the Spam and Siphon earnings pages). */
+    private fun apps(lines: List<String>, saved: MutableList<String>, s: DumpSession?) {
+        val parsed = OwnAppsParser.parse(lines) ?: return
+        s?.matched("Apps", parsed)
+        DatabaseManager.processOwnAppsScreen(parsed)
+        saved.add("My Apps (${parsed.installedLevels.size} levels)")
+    }
+
     private fun crew(lines: List<String>, saved: MutableList<String>, s: DumpSession?) {
         val parsed = CrewScreenParser.parse(lines) ?: return
         s?.matched("Crew", parsed)

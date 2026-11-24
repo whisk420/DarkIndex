@@ -243,6 +243,10 @@ object DatabaseManager {
         PlayerProfileRepository.updateProfile(storeScreen)
     }
 
+    fun processOwnAppsScreen(appsScreen: OwnAppsScreen) {
+        PlayerProfileRepository.updateInstalledSoftware(appsScreen.installedLevels)
+    }
+
     fun processOwnHomeScreen(ownHomeScreen: OwnHomeScreen) {
         PlayerProfileRepository.updateOwnProfile(ownHomeScreen.username, ownHomeScreen.level)
     }
