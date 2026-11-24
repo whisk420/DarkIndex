@@ -66,11 +66,6 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 - **Q-01 Spam fee.** Is the fee taken on collection really 0.5% per active Spam beyond 2?
   *To measure:* compare a collection amount with the earnings shown before collecting.
 
-### Siphon
-- **Q-02 What gets skimmed.** Probably theft only: you've never seen a siphon loss when Spam income comes in, and
-  the other rewards go straight to cold storage.
-  *To check:* next time you're siphoned, compare your transaction history around a Spam collection and a steal.
-
 ### Uploads & downloads
 - **Q-03 ⭐ Download times.** How long a download takes by software level and network.
   *To measure:* software and level, your network, and the duration shown.
@@ -113,7 +108,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 
 ## Things to watch for in the guide
 
-- It contradicts itself on what Siphon skims (Q-02) and on Antivirus scan times (Q-06).
+- It says Siphon skims Spam collections and other income; in play only theft is skimmed (developer). It also contradicts itself on Antivirus scan times (Q-06).
 - Its Spam earnings table has the wrong shape. The app uses our own measured model instead (17 real uploads).
 - Its Store prices for low levels don't match the formula that's exact at Lv 15–25 (Q-09).
 - It says rep falls off with the **software** gap (your offence against their defence), not the player level gap.

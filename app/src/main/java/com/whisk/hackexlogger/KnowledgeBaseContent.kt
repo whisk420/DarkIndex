@@ -189,7 +189,7 @@ object KnowledgeBaseContent {
 
     private fun siphon() = KbTopic(
         "siphon", "🩸", "Siphon virus",
-        "Skims a percentage of Crypto flowing into a victim's hot wallet: 1% at Lv 1, +0.25% per level, 6% at most. Never decays; up to 700 deployments; combined cap 30% per victim.",
+        "Skims a percentage of what the victim steals from other players: 1% at Lv 1, +0.25% per level, 6% at most. Never decays; up to 700 deployments; combined cap 30% per victim.",
         listOf(
             facts(
                 f("Rate at Lv 1", "1% of each incoming amount", MEASURED),
@@ -209,21 +209,18 @@ object KnowledgeBaseContent {
             ),
             tip("Lv 20 skims about 2.6× what Lv 6 does (5.75% vs 2.25%) but takes much longer to upload. Weigh that against how long the victim is likely to stay infected."),
             h("What gets skimmed"),
-            p("Theft proceeds: Crypto the victim steals from other players' hot wallets. Spam collections don't seem to be skimmed: no siphon loss shows up when Spam income comes in. Still to be re-checked with a fresh siphon on you.", CONFIRMED),
+            p("Only theft: the Crypto the victim steals from other players. Spam collections are not skimmed.", CONFIRMED),
             bullets(
                 GUIDE,
                 "Never skimmed (lands straight in cold storage): subscription daily Crypto, Black Market Crypto Stash, login-streak Crypto (days 3 and 5), daily mission Crypto, Watch & Earn Crypto, and the victim's own hot → cold transfers.",
                 "Outbound spending (Store, OC packs, proxy activations) doesn't trigger it either.",
             ),
-            warn("The guide contradicts itself here: its Viruses section adds Spam collections, its Software section adds incoming transfers, mission and login rewards too. Play suggests theft only (Q-02)."),
             h("Strategy"),
             tip("Quantity is king: siphons on dozens of active, high-level victims compound. A siphon on a whale who hacks a lot earns far more than one on a casual player."),
             tip("Siphons stack with Spam on the same victim (2 slots: Spam + Siphon is the income pair)."),
             h("Detection"),
             p("After the victim runs AV, a removed siphon disappears from your SIPHON EARNINGS immediately, with all its info: the row and its siphoned total are gone, and the game keeps no history of it. DarkIndex's Siphon Tracker alerts you when a known siphon vanishes after a full scroll.", CONFIRMED),
-            unknowns(
-                "Q-02" to "Is theft the only flow skimmed? (Spam collections look untouched)",
-            ),
+            p("The guide says Spam collections and other income are skimmed too. In play only theft has been, though that could still turn out wrong.", null),
         ),
         related = listOf("virusRules", "spam", "antivirus", "darkindex")
     )
@@ -603,7 +600,7 @@ object KnowledgeBaseContent {
                     listOf("Bypasser", "Offence", "Breaks firewalls"),
                     listOf("Password Cracker", "Offence", "Breaks encryptors"),
                     listOf("Spam", "Virus", "Passive income up to 100/hr per victim"),
-                    listOf("Siphon", "Virus", "Skims the victim's theft and Spam income"),
+                    listOf("Siphon", "Virus", "Skims what the victim steals"),
                     listOf("Rootkit", "Virus", "−3 effective defence for you and your crew"),
                     listOf("Keygen", "Utility", "Unlocks downloaded software cheaply; device-bound"),
                 )

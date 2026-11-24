@@ -39,7 +39,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (CLAUDE.md §3.7). Full rate for 21 days, decays to a 10% floor around day 100 |
-| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer: theft is likely the only flow skimmed (no siphon loss seen on Spam income; to re-check, Q-02) |
+| Siphon | virus, skims victim's flow | 1600 | **0.75% + 0.25% × level** (Lv1 1%, Lv20 5.75%, 6% from Lv21; measured, Raw Dump #16). Max 700 deployments. Combined cap 30% per victim. No decay. Cold-storage deposits bypass it. Developer (2026-11-24): **only theft is skimmed**, not Spam collections; the guide is wrong here. A small disclaimer stays in the KB |
 | Rootkit | virus, debuff | 1400 | Victim's defences −1 (Lv1–2), −2 (Lv3–5), −3 (Lv6+, cap) effective levels for you and your crew (measured 2026-11-22; Lv4–5 by elimination; `GameFormulas.rootkitDebuff`). Only the highest rootkit applies |
 | Keygen | device-bound unlocker | 600 | Never downloadable. Key fee is 15% of target-level Store price at jump 1, rising linearly to 50% at a 20+ jump, rounded up (all 9 LOCKED rows of Raw Dump #33 fit; Rootkit 6 → 25 = 44,272 exactly). Full XP. +5 rep |
 
