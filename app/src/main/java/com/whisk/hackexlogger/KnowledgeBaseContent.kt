@@ -878,8 +878,6 @@ object KnowledgeBaseContent {
                 }
             ),
             facts(
-                f("Maxed", "The Store drops NEXT from the header and shows MAX TIER instead of a price", MEASURED),
-                f("Each device level", "Unlocks 2 wallpapers", GUIDE),
                 f("Device XP", "0.25 XP per crypto", GUIDE),
                 f("Virus penalty", "−1% per virus on your device, max −40%", GUIDE),
             ),
