@@ -162,7 +162,6 @@ object KnowledgeBaseContent {
                         String.format(Locale.US, "%.1f%%", GameFormulas.spamFeeRate(t.slots) * 100))
                 }
             ),
-            p("The Store shows your tier as e.g. \"Botnet - Nexus / 64 slots / MAX TIER\".", CONFIRMED),
             h("The scaling fee"),
             facts(
                 f("Fee rate", "0.5% × (active Spam − 2), max 30%", GUIDE),
@@ -194,7 +193,7 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Rate at Lv 1", "1% of each incoming amount", MEASURED),
-                f("Rate per level", "0.75% + 0.25% × level up to Lv 20 (5.75%)", MEASURED, "All 122 rows of a SIPHON EARNINGS dump, Lv 1–20"),
+                f("Rate per level", "0.75% + 0.25% × level up to Lv 20 (5.75%)", MEASURED, "Checked on all 122 of the developer's siphons, Lv 1–20"),
                 f("Top rate", "6% from Lv 21 (a Lv 25 siphon shows 6%, not 7%)", MEASURED),
                 f("Combined cap", "30% per victim, across all attackers", GUIDE),
                 f("Decay", "None", CONFIRMED),
@@ -261,7 +260,7 @@ object KnowledgeBaseContent {
                 f("Slots per victim", "2 per attacker (any 2 of the 3 types). Many attackers can infect one victim", CONFIRMED),
                 f("Upload level", "Any level up to your installed one", CONFIRMED),
                 f("Upgrading", "Locked at upload level; uninstall and re-upload", CONFIRMED),
-                f("UPLOAD VIRUS x / 2 slots", "Your viruses on that victim; 0 after their AV wiped yours", CONFIRMED),
+                f("Checking your viruses", "A victim's Apps page shows how many of your 2 slots you're using. 0 means their Antivirus removed yours", CONFIRMED),
             ),
             h("Damage to the victim"),
             table(
@@ -402,7 +401,6 @@ object KnowledgeBaseContent {
                 "Long-press to select several rows and delete them together.",
                 "Completed bypass and crack rows show your Spam, Siphon and Rootkit levels on that victim (– if none). The \"My viruses\" filter lists victims missing one.",
             ),
-            p("Processes are also a scrape source for DarkIndex: it creates bare records for new IPs it sees there.", CONFIRMED),
         ),
         related = listOf("hacking", "transfers", "antivirus")
     )
@@ -477,7 +475,6 @@ object KnowledgeBaseContent {
                 "Backdoor still triggers the offensive Trace roll at bypass.",
                 "Vector device: 50% chance to keep a consumable when you use it.",
             ),
-            p("Game log: \"Backdoor blocked by <ip>'s firewall\" appears when hardening wins.", CONFIRMED),
             tip("Backdoors are 40 Credits and lose to hardening at high levels: against a Lv 30 firewall, 84% of them are wasted. Save them for low-firewall targets."),
         ),
         related = listOf("hacking", "proxy", "premium")
@@ -553,7 +550,7 @@ object KnowledgeBaseContent {
             bullets(
                 GUIDE,
                 "Download software from a bypassed victim. It arrives locked.",
-                "Your Apps page shows it as LOCKED, \"LVL N available <price> Crypto\".",
+                "Your Apps page lists it as LOCKED, with the price to unlock it.",
                 "Pay the key fee with your Keygen to unlock: you get the full XP of that level and +5 rep.",
                 "You can't key a level at or below your current one (no XP farming).",
                 "Keygen itself is device-bound and can't be downloaded; it's bought in the Store.",
@@ -619,8 +616,8 @@ object KnowledgeBaseContent {
             h("Reading the Apps page"),
             bullets(
                 CONFIRMED,
-                "Your Apps page shows installed levels, (+N) bonuses, and LOCKED copies waiting for a key.",
-                "A victim's Apps page shows each app's LVL and a badge comparing it to your installed level (=, +2, −6, DEVICE-BOUND).",
+                "Your Apps page shows your installed levels, any loadout bonus (Apex +3), and downloaded copies waiting for a key.",
+                "A victim's Apps page shows each app's level and how it compares to yours (=, +2, −6). Keygen shows DEVICE-BOUND: it can't be downloaded.",
             ),
         ),
         related = listOf("keygen", "proxy", "antivirus")
@@ -656,7 +653,7 @@ object KnowledgeBaseContent {
                 f("Per steal", "No minimum or maximum: take any amount, up to the whole hot wallet", CONFIRMED),
                 f("Per day", "There seems to be a daily maximum; the amount is unknown", UNKNOWN),
             ),
-            tip("Stash right after every steal: tap the Wallet: badge at the top of any page, then transfer to cold."),
+            tip("Stash right after every steal: tap your Wallet balance at the top of any page, then transfer to cold storage."),
             tip("Your theft log shows the thief's wallet, not their IP. Match timestamps against \"Device accessed from\" lines to find them."),
             unknowns(
                 "Q-10" to "Cold storage cap at every level",
@@ -672,9 +669,8 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Length", "Last 100 lines, including non-entry text such as graffiti or messages", CONFIRMED),
-                f("Time zone", "UTC+0, format [M-D H:MM]", CONFIRMED),
+                f("Time zone", "UTC, not your local time", CONFIRMED),
                 f("Order", "Newest first, but not strictly chronological", MEASURED),
-                f("Footer", "\"Last saved: YYYY-MM-DD HH:MM:SS\" in UTC, which dates the lines", MEASURED),
                 f("Timestamp", "Set when the device is accessed, so a session's actions can share one time", CONFIRMED),
                 f("Editing", "Anyone who bypassed you can edit your log; Log Lock blocks it for 8 h", GUIDE),
             ),
@@ -720,7 +716,6 @@ object KnowledgeBaseContent {
                 f("Proxied players", "Still listed, with their IP masked (fully or partly) as their Proxy dictates", CONFIRMED),
                 f("Crew-server Uplink", "+1 target per level (15 at Lv 5, 17 with a surge) and reaches a little higher", GUIDE),
                 f("Uplink in practice", "A crew Uplink giving +2 shows 12 targets per scan", CONFIRMED),
-                f("Own device", "0.0.0.0 is your localhost (AV scans); never a target", CONFIRMED),
             ),
             p("Each result shows the target's IP and Firewall level; with the Apex reboot you also see their Encryptor level. Your level decides who you see: over-levelling shows you tougher targets.", CONFIRMED),
             tip("Look for low firewalls and levels at or above yours for full rep. For Spam, any victim Lv ${GameFormulas.spamBestCap().second}+ caps with Lv ${GameFormulas.spamBestCap().first}."),
@@ -735,7 +730,7 @@ object KnowledgeBaseContent {
         listOf(
             h("Score"),
             facts(
-                f("Formula", "floor(Level × Rep^0.75)", MEASURED, "Verified on 6 profiles and 2 own-Home scrapes"),
+                f("Formula", "floor(Level × Rep^0.75)", MEASURED, "Verified on 6 profiles"),
                 f("Doubling level", "Doubles score", CALCULATED),
                 f("Doubling rep", "×1.68 score", CALCULATED),
                 f("Leaderboards", "Rank score growth in the period: current month, previous month, rolling 3 months", GUIDE),
@@ -888,7 +883,7 @@ object KnowledgeBaseContent {
                 f("Virus penalty", "−1% per virus on your device, max −40%", GUIDE),
             ),
             h("Prestige hardware"),
-            p("After a reboot: <Line> I to XII for devices, I to XI for networks. Each level is as fast as the standard item at the same position.", MEASURED),
+            p("After a reboot, each loadout has its own device line (I to XII) and network line (I to XI). Each level is as fast as the standard item at the same position.", MEASURED),
             table(
                 MEASURED, listOf("Loadout", "Device line", "Network line"),
                 HardwareCatalog.Line.values().map { listOf(it.name.lowercase(Locale.ROOT).replaceFirstChar { c -> c.uppercase() }, it.deviceName, it.networkName) }
@@ -918,7 +913,6 @@ object KnowledgeBaseContent {
                 "Trace never rolls on crew screens: an IP that shows masked there stays masked.",
             ),
             tip("Join a crew as soon as you're active: crewmates' rootkits help you too, and the crew server buffs everyone."),
-            p("The roster screen lists every member's IP and role, including off-screen rows. DarkIndex only uses it when one member's clan tag is already known.", CONFIRMED),
             h("Crew server"),
             table(
                 CONFIRMED, listOf("Part", "Per level", "Max (Lv 5)"),
@@ -945,7 +939,6 @@ object KnowledgeBaseContent {
             ),
             facts(
                 f("Upkeep billing", "Charged about once a day for the hours since the last charge, so single charges vary", MEASURED),
-                f("Price display", "Rounded down to one decimal: RAM Lv 3 (1.08M) shows as \"1M\"", MEASURED),
             ),
             h("Surges"),
             table(
@@ -967,7 +960,7 @@ object KnowledgeBaseContent {
                 "Server level = sum of the 5 parts (max 25).",
                 "Leaders can switch parts off; an unpowered part costs no upkeep.",
                 "Treasury: one-way contributions, up to 2,000 × your level per day (max 50,000). Members top up to exactly 50,000 a day (confirmed in the log).",
-                "New members wait 24 h (\"24H TENURE GATE\") before they get buffs (confirmed in the log).",
+                "New members wait 24 h before they get buffs (confirmed in the log).",
                 "Treasury at 0: server offline, buffs pause, RAM Spam pauses; Storage keeps working and levels are never lost.",
                 "Surge: CPU, NIC or Uplink +2 levels for 6/12/24 h (up to +21% or 17 targets), paid up front.",
                 "Every contribution, upgrade and upkeep day shows in the Server Log.",
@@ -982,7 +975,7 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Unlock", "Lv 50; optional forever; entry in My Device settings", GUIDE),
-                f("Tier", "R1, R2, R3… with no cap; shown as R<n> above LVL", GUIDE),
+                f("Tier", "R1, R2, R3… with no cap; shown next to your level", GUIDE),
                 f("R1–R5", "A different loadout each time", GUIDE),
                 f("R6+", "Any device line with any network line (25 combinations)", GUIDE),
                 f("Passives", "Only your current loadout's; they never stack", GUIDE),
@@ -1002,7 +995,7 @@ object KnowledgeBaseContent {
                     listOf("Apex", "Overreach: your Bypasser and Cracker +3", "Deep Link (Null Route): scans show ENC, downloads −40%"),
                 )
             ),
-            p("Prestige hardware is as fast as standard hardware at the same level; the perk is the reward. DarkIndex reads names like Apex VII and Null Route X.", MEASURED),
+            p("Prestige hardware is as fast as standard hardware at the same level; the perk is the reward.", MEASURED),
             tip("Scythe is the income loadout: half decay plus double siphon plus 50% faster uploads."),
         ),
         related = listOf("hardware", "reputation")
@@ -1036,7 +1029,7 @@ object KnowledgeBaseContent {
             bullets(
                 CONFIRMED,
                 "Tap 📸 on any game screen: DarkIndex reads its text (offline, nothing leaves your phone) and saves what it recognises.",
-                "Target Home: level, FW, ENC, device, network, clan. Software: downloads. Wallet: proves the wallet address. Logs: steals, wallets, software. Bypass: FW/ENC. Processes: new IPs. Crew: clan tags. Your Home and Store: your own profile.",
+                "Target Home: level, FW, ENC, device, network, clan. Software: downloads. Wallet: proves the wallet address. Logs: steals, wallets, software. Bypass: FW/ENC. Processes: new IPs. Crew: clan tags. Your Home, Apps page and Store: your own profile.",
                 "Masked IPs and your own 0.0.0.0 are never stored as targets.",
             ),
             h("Wallets"),
@@ -1044,7 +1037,6 @@ object KnowledgeBaseContent {
                 CONFIRMED,
                 "A target's Wallet screen is proof: it replaces every other wallet on that target.",
                 "Wallets from logs are only suggestions; a target may hold several until you scrape its wallet page.",
-                "Every wallet change is logged to wallet_conflicts.jsonl.",
             ),
             h("Income estimate"),
             p("Your own Stole lines are grouped into sessions split at gaps over 1 hour. Each session's rate (all steals except the first, divided by hours) is averaged and shown as ₵/hr.", CONFIRMED),
