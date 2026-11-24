@@ -265,6 +265,12 @@ object TargetRepository {
             val file = getDownloadsBackupFile() ?: return
             if (records.isEmpty()) return
             file.bufferedWriter().use { DatabaseBackup.writeDataBundle(it) }
+            // Re-index the file so apps that list Downloads from Android's media index (e.g. the Files app) show it.
+            // Writing through the file path alone doesn't always refresh that index (developer, 2026-11-24: the backup
+            // was visible in the app's own picker but missing from Files).
+            contextOrNull()?.let { ctx ->
+                runCatching { android.media.MediaScannerConnection.scanFile(ctx, arrayOf(file.absolutePath), arrayOf("application/json"), null) }
+            }
         } catch (e: Exception) {
             android.util.Log.e("TargetRepository", "Writing the Downloads backup failed: ${e.message}", e)
         }
