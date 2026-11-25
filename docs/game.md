@@ -111,7 +111,7 @@ Price(app, L) = Cubic(L) × base(app)/600 × (0.85 if defensive)
 base: Keygen 600, Firewall 800, Bypasser 800, Cracker 1100, Encryptor 1100,
       Antivirus 1000, Spam 1800, Siphon 1600, Rootkit 1400, Proxy 900, Trace 900
 ```
-The cubic is only valid at higher levels (verified L19–25). **Above L25 it runs slightly low:** the Keygen fees in Raw Dump #33 imply curve values +0.04% (L30), +0.1% (L33, two apps agree), +0.26% (L37), +0.45% (L40), +0.6% (L42) above it (Q-09). It goes **negative at L1**, so don't use it below roughly L5 without data. It is the Keygen price, not a general "offensive" price.
+The cubic is only valid at higher levels (verified L19–25). **Above L25 it runs slightly low:** the Keygen fees in Raw Dump #33 imply curve values +0.04% (L30), +0.1% (L33, two apps agree), +0.26% (L37), +0.45% (L40), +0.6% (L42) above it (Q-09). **Real Store prices, Raw Dump #38 (2026-11-24), real vs formula:** Firewall 32 61,547 (+45, +0.07%), Bypasser 34 78,346 (+103, +0.13%), Encryptor 34 91,567 (+120, +0.13%), Cracker 35 111,862 (+188, +0.17%), Spam 21 94,224 (exact), Siphon 26 110,557 (+2), Rootkit 7 17,570 (+324, +1.9%), Antivirus 31 73,824 (+39), Proxy 28 58,207 (+8), Trace 30 63,669 (+23), Keygen 35 61,016 (+103, +0.17%). Same drift the Keygen fees showed. The LOCKED Lv 34 Bypasser (Raw Dump #35, jump 1) costs 11,752 = ceil(15% × the real Store price 78,346), so the fee is taken from the real price and rounds up. It goes **negative at L1**, so don't use it below roughly L5 without data. It is the Keygen price, not a general "offensive" price.
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
