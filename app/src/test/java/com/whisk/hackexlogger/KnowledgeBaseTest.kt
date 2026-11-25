@@ -6,8 +6,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * [GameFormulas] against every number hackex.net/guide publishes (read 2026-11-21) and the verified Store prices
- * in docs/game.md §3, plus integrity checks on the Knowledge Base content and calculators.
+ * [GameFormulas] against real in-game numbers only (measurements, Raw Dumps, verified Store prices in docs/game.md §3),
+ * plus integrity checks on the Knowledge Base content and calculators.
  */
 class KnowledgeBaseTest {
 
@@ -89,8 +89,12 @@ class KnowledgeBaseTest {
         assertEquals(31_408, GameFormulas.storePrice(GameFormulas.App.KEYGEN, 21))
         assertEquals(39_398, GameFormulas.storePrice(GameFormulas.App.KEYGEN, 25))
         assertEquals(40_046, GameFormulas.storePrice(GameFormulas.App.PROXY, 21))
-        // Guide Lv15 Keygen 20,281: the curve is within a few crypto from Lv15 up
-        assertTrue(Math.abs(GameFormulas.storePrice(GameFormulas.App.KEYGEN, 15)!! - 20_281) <= 3)
+        // The real Store screen of Raw Dump #6 (PlayerHardwareAndSpamLevelTest): every price the curve should hit exactly
+        assertEquals(40_065, GameFormulas.storePrice(GameFormulas.App.FIREWALL, 23))
+        assertEquals(57_581, GameFormulas.storePrice(GameFormulas.App.PASSWORD_CRACKER, 21))
+        assertEquals(94_224, GameFormulas.storePrice(GameFormulas.App.SPAM, 21))
+        assertEquals(44_495, GameFormulas.storePrice(GameFormulas.App.ANTIVIRUS, 21))
+        assertEquals(40_046, GameFormulas.storePrice(GameFormulas.App.TRACE, 21))
     }
 
     @Test
@@ -113,6 +117,8 @@ class KnowledgeBaseTest {
         // At Lv 25, where the curve is exact, the fee matches to the crypto and rounds up (44,271.07)
         assertEquals(44_272, apps.lockedPrices["Rootkit"])
         assertEquals(44_272, GameFormulas.keygenFee(GameFormulas.App.ROOTKIT, 6, 25))
+        // Raw Dumps #35 + #38: a +1 key on Bypasser 34 costs 11,752 = ceil(15% of its real Store price 78,346)
+        assertEquals(11_752, Math.ceil(GameFormulas.keygenFeeRatio(1)!! * 78_346 - 1e-9).toInt())
     }
 
     // ── Content & calculators ──────────────────────────────────────────────────────────────────────────────

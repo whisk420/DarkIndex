@@ -329,7 +329,7 @@ object GameFormulas {
     }
 
     /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-13). */
-    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
+    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888, 48 to 44_765)
 
     /** Cold storage cap, known points only (guide). Q-10. */
     val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)

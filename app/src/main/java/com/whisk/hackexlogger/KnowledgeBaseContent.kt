@@ -786,7 +786,7 @@ object KnowledgeBaseContent {
             table(
                 GUIDE, listOf("Level", "XP to next"),
                 GameFormulas.XP_TO_NEXT_KNOWN.entries.map { listOf("Lv ${it.key}", n(it.value)) },
-                "Cumulative: Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940 (guide). Lv 35/38/44 confirmed in-game."
+                "Cumulative: Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940 (guide). Lv 35/38/44/48 confirmed in-game."
             ),
             h("Level-up rewards"),
             facts(

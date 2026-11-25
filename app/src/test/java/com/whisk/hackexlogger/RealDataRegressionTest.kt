@@ -236,6 +236,13 @@ class RealDataRegressionTest {
         assertEquals(31, PlayerProfileRepository.getEffectiveBypasserLevel()) // no Apex device in this profile
         assertEquals(20, PlayerProfileRepository.getInstalledSpamLevel())
         assertTrue(TargetRepository.getAllRecords().isEmpty())
+
+        // Raw Dump #35: Proxy shows STEALTH + a timer instead of ACTIVE, and Encryptor has no LOCKED row
+        scrape("own_apps_stealth_2026-11-24.txt")
+        val levels = PlayerProfileRepository.getProfile().softwareLevels
+        assertEquals(28, levels["Proxy"])
+        assertEquals(34, levels["Password Encryptor"])
+        assertEquals(34, levels["Bypasser"]) // installed 33; the LOCKED Lv 34 copy isn't installed
     }
 
     @Test

@@ -36,6 +36,9 @@ Both are about 650 lines. Plan: move menu actions (export, import, maintenance, 
 helpers. Readability only; needs on-device testing.
 
 ## Done
+- 2026-11-24: Downloads backup re-indexed after each write so the Files app shows it.
+- 2026-11-24: Raw Dump EXPORT ALL writes the compact `.txt` (long-press for full JSON); `tools/dumps.py` reads it back.
+- 2026-11-24: Knowledge Base cleanup for players (plain wording, no parser notes); Keygen fee rounds up (Raw Dump #33); Siphon skims theft only.
 - 2026-11-24: B12 fixed: the Bypass screen no longer stores the Apex `(+3)` (Raw Dump #30), so it isn't counted twice.
 - 2026-11-24: Your own Apps page feeds your installed software levels (`OwnAppsParser`, Raw Dump #29), also read from the Spam/Siphon earnings pages.
 - 2026-11-24: Privacy hardening: HackEx 2 only (`ScrapeGate`), no screen text in Logcat, cloud backup off, `SECURITY.md`, `PrivacyGuardTest`, release APK permission check + provenance attestation.
