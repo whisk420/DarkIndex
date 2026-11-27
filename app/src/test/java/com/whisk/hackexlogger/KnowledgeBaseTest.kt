@@ -22,6 +22,7 @@ class KnowledgeBaseTest {
             (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42,
             (7 to 13) to 38, (7 to 20) to 30, (19 to 10) to 58,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
+            (3 to 1) to 13, (4 to 1) to 14, (6 to 1) to 15, (12 to 1) to 18, // 2026-11-27, Raw Dumps #83–#148 (R4 run)
         )
         measured.forEach { (key, v) ->
             val (victim, spam) = key
@@ -83,14 +84,42 @@ class KnowledgeBaseTest {
     }
 
     @Test
-    fun storePricesMatchVerifiedNumbers() {
-        assertEquals(35_596, GameFormulas.storePrice(GameFormulas.App.FIREWALL, 21))
-        assertEquals(41_877, GameFormulas.storePrice(GameFormulas.App.BYPASSER, 21))
-        assertEquals(31_408, GameFormulas.storePrice(GameFormulas.App.KEYGEN, 21))
-        assertEquals(39_398, GameFormulas.storePrice(GameFormulas.App.KEYGEN, 25))
-        assertEquals(40_046, GameFormulas.storePrice(GameFormulas.App.PROXY, 21))
-        // Guide Lv15 Keygen 20,281: the curve is within a few crypto from Lv15 up
-        assertTrue(Math.abs(GameFormulas.storePrice(GameFormulas.App.KEYGEN, 15)!! - 20_281) <= 3)
+    fun storePricesMatchEveryRealStorePrice() {
+        // Every real Store price recorded: Raw Dumps #6 and #38 (Lv 19–35) and the R4 reboot run #41–#134 (Lv 1–7)
+        val real = listOf(
+            "Keygen" to listOf(1 to 600, 2 to 1_478, 3 to 2_503, 4 to 3_638, 5 to 4_862, 6 to 6_163, 21 to 31_408, 25 to 39_398, 35 to 61_016),
+            "Bypasser" to listOf(2 to 1_970, 3 to 3_337, 21 to 41_877, 34 to 78_346),
+            "Password Cracker" to listOf(2 to 2_709, 3 to 4_589, 35 to 111_862),
+            "Firewall" to listOf(2 to 1_675, 3 to 2_837, 21 to 35_596, 32 to 61_547),
+            "Password Encryptor" to listOf(2 to 2_303, 19 to 42_973, 34 to 91_567),
+            "Spam" to listOf(1 to 1_800, 2 to 4_433, 21 to 94_224),
+            "Siphon" to listOf(1 to 1_600, 2 to 3_940, 26 to 110_557),
+            "Rootkit" to listOf(1 to 1_400, 2 to 3_448, 7 to 17_570),
+            "Antivirus" to listOf(1 to 850, 2 to 2_094, 31 to 73_824),
+            "Proxy" to listOf(1 to 765, 2 to 1_885, 21 to 40_046, 28 to 58_207),
+            "Trace" to listOf(1 to 765, 2 to 1_885, 30 to 63_669),
+        )
+        for ((name, rows) in real) {
+            val app = GameFormulas.App.values().first { it.displayName == name }
+            for ((level, price) in rows) assertEquals("$name Lv$level", price, GameFormulas.storePrice(app, level))
+        }
+    }
+
+    @Test
+    fun softwareXpMatchesRealPurchasesAndUnlocks() {
+        // 2026-11-27 own-Home XP readings around each purchase/unlock (Raw Dumps #43–#120), plus Keygen 26 (older log)
+        val seen = listOf(
+            Triple("Keygen", 1, 120), Triple("Keygen", 2, 285), Triple("Keygen", 3, 473), Triple("Keygen", 4, 679),
+            Triple("Keygen", 5, 897), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
+            Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
+            Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
+            Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
+        )
+        for ((name, level, xp) in seen) {
+            val app = GameFormulas.App.values().first { it.displayName == name }
+            // The game keeps XP fractions, so a reading is within 1 of the exact value
+            assertEquals("$name Lv$level", xp.toDouble(), GameFormulas.softwareXp(app, level), 1.0)
+        }
     }
 
     @Test
@@ -107,12 +136,8 @@ class KnowledgeBaseTest {
         for ((name, price) in apps.lockedPrices) {
             val app = GameFormulas.App.values().first { it.displayName == name }
             val fee = GameFormulas.keygenFee(app, apps.installedLevels.getValue(name), apps.lockedLevels.getValue(name))!!
-            // The Store curve runs slightly low above Lv 25 (+0.6% by Lv 42), so the real fee is never below the model
-            assertTrue("$name: $price vs $fee", price >= fee && price <= fee * 1.007)
+            assertEquals(name, price, fee)
         }
-        // At Lv 25, where the curve is exact, the fee matches to the crypto and rounds up (44,271.07)
-        assertEquals(44_272, apps.lockedPrices["Rootkit"])
-        assertEquals(44_272, GameFormulas.keygenFee(GameFormulas.App.ROOTKIT, 6, 25))
     }
 
     // ── Content & calculators ──────────────────────────────────────────────────────────────────────────────

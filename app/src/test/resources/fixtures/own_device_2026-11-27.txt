@@ -1,0 +1,94 @@
+// MY DEVICE
+Notepad
+Wallet:
+5,857
+Credits:
+1,307
+> IP Address
+IP
+10.20.30.40
+PROXY
+ACTIVE
+47h 8m Remaining
+> System
+DEVICE
+Ghost II
+Lv 
+2
+5.0 GHz 16 Core
+Ghost Strike
+IP shown as [UNKNOWN] & immune to Trace in victim logs + last IP octet obfuscated in scanners without Proxy
+NETWORK
+Ghost Link III
+Lv 
+3
+50 gbps / 10 gbps
+Dark Routing
+Proxy treated as +5 levels vs Trace detection + 2x Proxy duration
+> Reboot Protocol
+STATUS
+R4
+LIFETIME SCORE
+565,954
+SELECT BADGE
+ghost Ghost
+scythe Scythe
+cipher Cipher
+apex Apex
+> Wallpaper
+▾ REBOOT (4)
+Ghost
+Scythe
+Cipher
+Apex
+▾ DEVICE (4)
+Terminal
+Blackout
+Cyber
+Blood
+GET PREMIUM WALLPAPERS
+> Preferences
+Scan Lines
+Haptic Vibration
+Tag Color Stripe
+Language
+System ▾
+> Notifications
+▸ Processes Notifications
+▸ Protection Notifications
+▸ Crew Notifications
+▸ Other Notifications
+> Account
+Player
+Change Username
+(email redacted)
+Change Email
+> Subscription
+PLAN
+Elite Pass
+Manage in Google Play settings
+VIEW REWARD HISTORY >
+RESTORE PURCHASE
+> Guide / Help
+OFFICIAL GUIDE/WIKI
+Open Guide
+TIPS
+Reset Tooltips
+> Send Feedback
+Billing, purchases, refunds, or account access issues? Please use our contact page — we can reply to those faster there: 
+hackex.net/contact
+SEND FEEDBACK
+LEAVE A REVIEW
+v1.10.3 (026f261)
+© CNC Apps · 
+Terms
+ · 
+Privacy
+LOGOUT
+Delete Account
+HOME
+SCAN
+PROCESSES
+APPS
+STORE !
+CREWS

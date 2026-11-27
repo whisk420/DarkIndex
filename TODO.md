@@ -8,11 +8,6 @@ Rebuilt on 2026-11-22 from the open items recorded in the docs and code (the ear
 
 ## Open
 
-### Scan screen: store every row
-`BypassScreenParser` stores only the first unmasked row of `// SCAN RESULTS` (docs/game.md §4, fixture
-`scan_2026-11-22.txt`). Plan: parse every `<ip> FW Lv.N [ENC Lv.N] >` row, skip masked rows, upsert each IP's
-FW (and ENC when shown, Apex/Null Route only). Needs a real dump of a scan without ENC to confirm the default row.
-
 ### Your profile from own-log lines
 `Purchased Keygen LvN` and `Upgraded network to <name>` are parsed but ignored. Plan: in `ScrapePipeline`, when the
 log is your own, feed them to `PlayerProfileRepository` (Store stores NEXT levels, so store N + 1; network via
@@ -36,6 +31,7 @@ Both are about 650 lines. Plan: move menu actions (export, import, maintenance, 
 helpers. Readability only; needs on-device testing.
 
 ## Done
+- 2026-11-27: The Scan screen stores every unmasked row (FW, and ENC when shown), Raw Dumps #24 and #153.
 - 2026-11-24: B12 fixed: the Bypass screen no longer stores the Apex `(+3)` (Raw Dump #30), so it isn't counted twice.
 - 2026-11-24: Your own Apps page feeds your installed software levels (`OwnAppsParser`, Raw Dump #29), also read from the Spam/Siphon earnings pages.
 - 2026-11-24: Privacy hardening: HackEx 2 only (`ScrapeGate`), no screen text in Logcat, cloud backup off, `SECURITY.md`, `PrivacyGuardTest`, release APK permission check + provenance attestation.

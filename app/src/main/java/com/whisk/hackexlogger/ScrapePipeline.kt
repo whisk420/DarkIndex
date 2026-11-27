@@ -41,6 +41,8 @@ object ScrapePipeline {
             ScreenType.STORE -> store(allLines, savedItems, session)
             ScreenType.BYPASS -> bypass(combinedText, savedItems, session)
             ScreenType.PROCESS -> process(allLines, savedItems, session)
+            ScreenType.OWN_DEVICE -> {} // your own device/settings page: nothing to save
+            ScreenType.STORE_OTHER -> {} // the Store's Black Market and Credits tabs: nothing to save
             ScreenType.UNKNOWN -> {
                 // Fallback: evaluate every parser (same order as the original service code)
                 home(combinedText, savedItems, session)
@@ -148,7 +150,7 @@ object ScrapePipeline {
         val parsed = BypassScreenParser.parse(text) ?: return
         s?.matched("Bypass", parsed)
         DatabaseManager.processBypassScreen(parsed)
-        saved.add("Bypass / Target Info")
+        saved.add(if (parsed.scanRows.isNotEmpty()) "Scan (${parsed.scanRows.size} targets)" else "Bypass / Target Info")
     }
 
     private fun process(lines: List<String>, saved: MutableList<String>, s: DumpSession?) {

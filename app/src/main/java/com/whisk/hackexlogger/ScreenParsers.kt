@@ -7,7 +7,7 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, OWN_DEVICE, STORE_OTHER, UNKNOWN
 }
 
 object ScreenClassifier {
@@ -22,6 +22,12 @@ object ScreenClassifier {
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
         if (lowerText.contains("my device") && (lowerText.contains("daily missions") || lowerText.contains("login streak"))) return ScreenType.OWN_PROFILE
+        // Your own device/settings page (Raw Dump #146): saves nothing. It has an IP, hardware and "> IP Address", so the
+        // UNKNOWN fallback used to save it as a target named "IP Address" and rename your profile.
+        if (lines.any { it.trim().equals("// MY DEVICE", ignoreCase = true) }) return ScreenType.OWN_DEVICE
+        // The Store's Black Market and Credits tabs (Raw Dumps #156, #157): save nothing. Item descriptions mention
+        // "firewall" and "device", which made the Black Market look like a target's Home; the Credits tab fell to UNKNOWN.
+        if (lines.any { val t = it.trim().uppercase(); t.startsWith("// BLACK MARKET") || t == "// CREDITS PACKS" }) return ScreenType.STORE_OTHER
         if (lowerText.contains("using bypasser") || lowerText.contains("// bypass firewall") || (lowerText.contains("// scan results") && lowerText.contains("fw lv"))) return ScreenType.BYPASS
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE
@@ -99,7 +105,8 @@ object CommonParserUtil {
     fun extractIp(text: String): String? {
         val ipMatch = SharedRegex.REGEX_IP.find(text)
         if (ipMatch != null) return ipMatch.value
-        val maskedIpMatch = SharedRegex.REGEX_MASKED_IP.find(text)
+        // A masked IP has at least one "xxx" octet; an all-digit match here is an invalid address (205.79.204.429)
+        val maskedIpMatch = SharedRegex.REGEX_MASKED_IP.findAll(text).firstOrNull { it.value.contains('x', ignoreCase = true) }
         if (maskedIpMatch != null) return maskedIpMatch.value
         val unknownMatch = SharedRegex.REGEX_UNKNOWN_IP.find(text)
         if (unknownMatch != null) return "[UNKNOWN]"
@@ -590,6 +597,8 @@ object ProcessScreenParser {
                 }
             }
 
+            // The filter header glues the IP to the row count ("205.79.204.42" + "9 PROCESSES"): never an IP to save
+            if (trimmed.endsWith("PROCESSES", ignoreCase = true) && trimmed.length > "PROCESSES".length) continue
             val ip = CommonParserUtil.extractIp(trimmed)
             if (ip != null && !ip.startsWith("0.0.")) {
                 if (isInvalidated) {
@@ -681,6 +690,8 @@ data class StoreScreen(
 
 object StoreScreenParser {
     private enum class Section { DEVICE, NETWORK, BOTNET, SOFTWARE, OTHER }
+    private val BOTNET_SLOTS = Regex("""\d+\s+slots""", RegexOption.IGNORE_CASE)
+    private val PRICE_LINE = Regex("""[\d,]+\s+Crypto""", RegexOption.IGNORE_CASE)
 
     /**
      * Section headers differ by state: `// NEXT DEVICE` / `// NEXT NETWORK` normally, but once maxed the game shows
@@ -703,7 +714,10 @@ object StoreScreenParser {
 
         var nextDevice: String? = null
         var nextNetwork: String? = null
-        var botnetStatus: String? = null
+        var botnetName: String? = null
+        var botnetSlots: String? = null
+        var botnetMaxed = false
+        var botnetForSale = false
         var deviceMaxed = false
         var networkMaxed = false
         val softwareLevels = mutableMapOf<String, Int>()
@@ -733,12 +747,17 @@ object StoreScreenParser {
                     else if (nextNetwork == null && line.isNotEmpty()) nextNetwork = line
                 }
                 Section.BOTNET -> {
-                    if (botnetStatus == null && line.isNotEmpty()) {
-                        botnetStatus = line // e.g. "Botnet - Nexus"
-                    } else if (botnetStatus != null && line.contains("slots")) {
-                        botnetStatus = "$botnetStatus ($line)"
-                    } else if (botnetStatus != null && line.contains("MAX TIER")) {
-                        botnetStatus = "$botnetStatus [MAX]"
+                    // Maxed: "Botnet - Nexus" / "64 slots" / "MAX TIER" (the tier you own).
+                    // Otherwise the NEXT tier: "Botnet - Node" / "4 SLOTS" / requirement / description /
+                    // "800 Crypto" / "BUY" (reboot, Raw Dump #41), so the tier you own is the one before it.
+                    if (botnetName == null && line.isNotEmpty()) {
+                        botnetName = line
+                    } else if (botnetName != null && botnetSlots == null && BOTNET_SLOTS.matches(line)) {
+                        botnetSlots = line.lowercase()
+                    } else if (line.equals("MAX TIER", ignoreCase = true)) {
+                        botnetMaxed = true
+                    } else if (line.equals("BUY", ignoreCase = true) || PRICE_LINE.matches(line)) {
+                        botnetForSale = true
                     }
                 }
                 Section.SOFTWARE -> {
@@ -756,6 +775,19 @@ object StoreScreenParser {
             }
         }
 
+        val botnetStatus = botnetName?.let { name ->
+            val shown = if (botnetSlots != null) "$name ($botnetSlots)" else name
+            when {
+                botnetMaxed -> "$shown [MAX]"
+                botnetForSale -> {
+                    val tiers = GameFormulas.BOTNET_TIERS
+                    val idx = tiers.indexOfFirst { name.endsWith(it.name, ignoreCase = true) }
+                    val owned = if (idx > 0) tiers[idx - 1] else null
+                    if (owned != null) "Botnet - ${owned.name} (${owned.slots} slots), next: $shown" else "Next: $shown"
+                }
+                else -> shown
+            }
+        }
         return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels, deviceMaxed, networkMaxed)
     }
 }
@@ -763,12 +795,17 @@ object StoreScreenParser {
 // ----------------------------------------
 // BypassScreen
 // ----------------------------------------
+/** One `// SCAN RESULTS` row: `1.2.3.4 FW Lv.5 >`, plus `ENC Lv.N` only on an Apex reboot (Null Route perk). */
+data class ScanRow(val ip: String, val firewall: Int, val encryptor: Int?)
+
 data class BypassScreen(
     val targetIp: String?,
     val firewall: Int?,
     val encryptor: Int?,
     val playerBypasser: Int?,
-    val apexBonus: Int?
+    val apexBonus: Int?,
+    /** Every unmasked scan row, in screen order (empty on the Bypass screen itself). */
+    val scanRows: List<ScanRow> = emptyList()
 )
 
 object BypassScreenParser {
@@ -782,19 +819,27 @@ object BypassScreenParser {
         val lower = text.lowercase()
         if (!lower.contains("using bypasser") && !lower.contains("// bypass firewall") && !lower.contains("// scan results")) return null
 
-        // Scan list: one row per target ("1.2.3.4 FW Lv.32 ENC Lv.40 >"), masked rows included. Take the IP and
-        // its levels from the same row, so a masked row above can't lend its FW/ENC to the next real IP.
-        val scanRow = if (lower.contains("// scan results")) {
+        // Scan list: one row per target ("1.2.3.4 FW Lv.32 ENC Lv.40 >"), masked rows included. Each row's IP and
+        // levels come from that row, so a masked row can't lend its FW/ENC to the next real IP. Masked rows are skipped.
+        // The row count ("12 targets") includes the crew Uplink bonus rows, so it isn't assumed to be 10.
+        val scanRows = if (lower.contains("// scan results")) {
             text.lineSequence().mapNotNull { REGEX_SCAN_ROW.find(it.trim()) }
-                .firstOrNull { !CommonParserUtil.isMaskedIp(it.groupValues[1]) && !it.groupValues[1].startsWith("0.0.") }
-        } else null
+                .filter { !CommonParserUtil.isMaskedIp(it.groupValues[1]) && !it.groupValues[1].startsWith("0.0.") }
+                .mapNotNull { m ->
+                    val fw = m.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                    ScanRow(m.groupValues[1], fw, m.groupValues[3].toIntOrNull()) // ENC only on an Apex reboot
+                }
+                .distinctBy { it.ip }
+                .toList()
+        } else emptyList()
+        val scanRow = scanRows.firstOrNull()
         val ip: String?
         val firewall: Int?
         val encryptor: Int?
         if (scanRow != null) {
-            ip = scanRow.groupValues[1]
-            firewall = scanRow.groupValues[2].toIntOrNull()
-            encryptor = scanRow.groupValues[3].toIntOrNull() // ENC shows only on an Apex reboot, not by default
+            ip = scanRow.ip
+            firewall = scanRow.firewall
+            encryptor = scanRow.encryptor
         } else {
             ip = CommonParserUtil.extractIp(text)
             firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
@@ -805,7 +850,7 @@ object BypassScreenParser {
 
         if (ip == null && firewall == null && playerBypasser == null) return null
 
-        return BypassScreen(ip, firewall, encryptor, playerBypasser, apexBonus)
+        return BypassScreen(ip, firewall, encryptor, playerBypasser, apexBonus, scanRows)
     }
 }
 

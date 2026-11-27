@@ -142,10 +142,7 @@ object KnowledgeBaseContent {
             ),
             tip("Every few Spam levels, sweep your biggest earners and swap deployments that are 3+ levels below your current Spam."),
             h("Fees"),
-            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
-            unknowns(
-                "Q-01" to "Is the fee on collection exactly 0.5% per Spam?",
-            ),
+            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", MEASURED),
         ),
         related = listOf("botnet", "transfers", "virusRules", "siphon")
     )
@@ -164,11 +161,11 @@ object KnowledgeBaseContent {
             ),
             h("The scaling fee"),
             facts(
-                f("Fee rate", "0.5% × (active Spam − 2), max 30%", GUIDE),
-                f("Counted by", "Active Spam, not tier size: empty slots cost nothing", GUIDE),
+                f("Fee rate", "0.5% × (active Spam − 2), max 30%", MEASURED),
+                f("Counted by", "Active Spam, not tier size: empty slots cost nothing", MEASURED),
                 f("When", "Deducted on collection", GUIDE),
                 f("Hacker Pass", "−25% fee", GUIDE),
-                f("Elite Pass", "−50% fee", GUIDE),
+                f("Elite Pass", "−50% fee", MEASURED),
             ),
             table(
                 CALCULATED, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
@@ -288,7 +285,7 @@ object KnowledgeBaseContent {
                 f("Upload: victim device", "Slower on better devices; 10 tiers, Raider I–III all tier 0", CONFIRMED),
                 f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", MEASURED),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
-                f("Concurrency", "+75% per extra process", GUIDE),
+                f("Concurrency", "+75% per extra process", MEASURED),
                 f("Shared slowdown", "Uploads and downloads slow each other down. Bypasses and cracks don't affect them", CONFIRMED),
                 f("Virus penalty", "−1% speed per virus on your device (max −40%)", GUIDE),
                 f("Harvest Node network", "Uploads −50%", GUIDE),
@@ -374,7 +371,7 @@ object KnowledgeBaseContent {
             ),
             facts(
                 f("Statuses", "Pending, Completed, Failed, Invalidated, EMP Killed", GUIDE),
-                f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", GUIDE),
+                f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", MEASURED),
                 f("Two pools", "Network (uploads, downloads) and processor (bypasses, cracks) slow down only their own kind. A bypass doesn't slow an upload", CONFIRMED),
                 f("Overclock", "Skips 90 s each", GUIDE),
                 f("Ads", "Up to 4 per process: −10%, −9%, −8%, −7% (34% total)", GUIDE),
@@ -473,6 +470,7 @@ object KnowledgeBaseContent {
                 "Vector device: 50% chance to keep a consumable when you use it.",
             ),
             tip("Backdoors are 40 Credits and lose to hardening at high levels: against a Lv 30 firewall, 84% of them are wasted. Save them for low-firewall targets."),
+            warn("Ghost players: a Backdoor still puts your IP in the victim's log. Everything else you do there shows as unknown, but the Backdoor line shows your address, hidden only as far as your Proxy hides it. Turn your Proxy on before you Backdoor."),
         ),
         related = listOf("hacking", "proxy", "premium")
     )
@@ -561,26 +559,22 @@ object KnowledgeBaseContent {
             ),
             tip("A single big jump is far cheaper than stepping: each step pays 15% of its own level's price. Download the highest copy you can find and key it directly."),
             h("Store prices"),
-            p("Price = Keygen curve × base/600, × 0.85 for defensive apps. Offensive prices round to the nearest crypto, defensive ones round up. Keygen curve = (−L³ + 147L² + 6814L − 10212) / 6. Verified to the crypto on 5 real prices (L19–25).", MEASURED),
+            p("Price = base × level^1.3, rounded up. Defensive apps then cost 85% of that, rounded up again. Exact on every real Store price seen, from Lv 1 to 35.", MEASURED),
             table(
-                CALCULATED, listOf("App", "Base", "Lv 15", "Lv 20", "Lv 25", "Lv 30"),
+                CALCULATED, listOf("App", "Base", "Lv 5", "Lv 10", "Lv 20", "Lv 30"),
                 GameFormulas.App.values().map { app ->
                     listOf(app.displayName, n(app.basePrice) + if (app.defensive) " ×0.85" else "") +
-                        listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
+                        listOf(5, 10, 20, 30).map { n(GameFormulas.storePrice(app, it)!!) }
                 }
             ),
-            warn("The curve is exact from about Lv 15 to 25. Below that it drifts from the guide (guide Keygen Lv 5 = 4,862; curve 4,568), and above it real prices run slightly higher (about +0.1% at Lv 33, +0.6% at Lv 42). Q-09."),
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
-                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", MEASURED, "e.g. Keygen Lv 26 (41,459) → +7,045 XP"),
+                f("Software", "0.2 × base × level^1.25 (× 0.85 defensive), the same for buying and Keygen unlocks", MEASURED, "0.20 XP per crypto at Lv 1, falling slowly: about 0.17 by Lv 26"),
                 f("Device upgrades", "0.25 XP per crypto (best ratio)", MEASURED),
                 f("Older hardware / network", "0.20 XP per crypto", MEASURED),
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling changes who your scans find. Upgrade what you use."),
-            unknowns(
-                "Q-09" to "Store prices below Lv 15 and above Lv 25",
-            ),
         ),
         related = listOf("software", "leveling")
     )
@@ -847,10 +841,10 @@ object KnowledgeBaseContent {
             ),
             h("Watch & Earn"),
             facts(
-                f("Where", "Store → Credits tab, bottom", GUIDE),
-                f("Credits", "3 × 4 per day = 12", GUIDE),
-                f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", GUIDE),
-                f("Overclocks", "5 × 4 per day = 20", GUIDE),
+                f("Where", "Store → Credits tab, bottom", MEASURED),
+                f("Credits", "3 × 4 per day = 12", MEASURED),
+                f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", MEASURED),
+                f("Overclocks", "5 × 4 per day = 20", MEASURED),
             ),
         ),
         related = listOf("leveling", "premium")
@@ -1004,11 +998,11 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Free Credits", "+10 per level, streak days 4 and 7, 12/day from ads, Crypto exchange (750/month)", GUIDE),
-                f("Black Market", "5–6 random items a day; per-item daily limits; flash sales", GUIDE),
-                f("Crypto Stash", "10K for 100 Cr, 40K for 400 Cr; 1/day each; straight to cold storage", GUIDE),
-                f("OC packs (Store)", "50 for 55 Cr · 150 for 125 · 400 for 250 · 1,000 for 500", GUIDE),
+                f("Black Market", "A daily rotation with per-item daily limits (4 of most items) and flash sales; a sale can show the full stock", MEASURED),
+                f("Crypto Stash", "10K for 100 Cr, 40K for 400 Cr, straight to cold storage; daily limits vary (2 × 10K and 1 × 40K seen)", GUIDE),
+                f("OC packs (Store)", "50 for 55 Cr · 150 for 125 · 400 for 250 · 1,000 for 500", MEASURED),
                 f("Username change", "First free, then 200 Cr with a 30-day cooldown", GUIDE),
-                f("Credit packs", "$0.99 = 100 Cr up to $49.99 = 6,000 Cr (+20%)", GUIDE),
+                f("Credit packs", "$0.99 = 100 Cr up to $49.99 = 6,000 Cr (+20%)", MEASURED),
                 f("Starter Kit", "$2.99 one-off, 48 h after first disconnect at Lv 2+", GUIDE),
                 f("Hacker Pass", "$4.99/mo: 5 Cr + 5 OC + 500 Crypto daily, weekly consumables, −25% Spam fee, 2× streak", GUIDE),
                 f("Elite Pass", "$9.99/mo: 10 Cr + 10 OC + 1,000 Crypto daily, more drops, −50% Spam fee, pause any process", GUIDE),

@@ -1,0 +1,29 @@
+// SCAN
+Notepad
+Wallet:
+5,206
+Credits:
+1,307
+Locate target devices on the network
+SCAN
+REFRESH SCAN
+// SCAN RESULTS
+12 targets
+134.42.179.100 FW Lv.1 >
+112.29.184.10 FW Lv.2 >
+78.4.246.30 FW Lv.5 >
+118.19.104.192 FW Lv.1 >
+66.216.103.229 FW Lv.2 >
+47.158.48.251 FW Lv.5 >
+177.103.240.191 FW Lv.3 >
+224.147.89.204 FW Lv.3 >
+84.161.233.248 FW Lv.1 >
+68.150.90.226 FW Lv.2 >
+74.54.114.13 FW Lv.1 >
+17.160.202.19 FW Lv.3 >
+HOME
+SCAN
+PROCESSES
+APPS
+STORE !
+CREWS

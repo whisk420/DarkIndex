@@ -187,12 +187,17 @@ class RealDataRegressionTest {
     }
 
     @Test
-    fun scanListStoresTheFirstRealRowWithItsOwnLevels() {
-        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked
+    fun scanListStoresEveryRealRowWithItsOwnLevels() {
+        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked, Apex (ENC shown)
         assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertTrue(result.savedItems.contains("Scan (7 targets)"))
+        assertEquals(7, TargetRepository.getAllRecords().size)
         assertEquals(32, record("241.118.225.244")?.firewall)
         assertEquals(40, record("241.118.225.244")?.encryptor)
-        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })
+        assertEquals(25, record("140.199.238.221")?.firewall)
+        assertEquals(27, record("140.199.238.221")?.encryptor)
+        assertEquals(33, record("148.130.96.85")?.firewall) // last row
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked }) // incl. the partly masked 226.217.xxx.xxx
     }
 
     @Test
@@ -206,7 +211,36 @@ class RealDataRegressionTest {
 
         assertEquals(32, record("241.118.225.244")?.firewall)
         assertEquals(40, record("241.118.225.244")?.encryptor)
-        assertEquals(1, TargetRepository.getAllRecords().size)
+        assertEquals(7, TargetRepository.getAllRecords().size)
+    }
+
+    @Test
+    fun defaultScanRowsUpdateFirewallAndKeepKnownEncryptor() {
+        // Raw Dump #153: a Ghost reboot's scan, no ENC column (the default row format), 12 rows with the crew Uplink
+        TargetRepository.update { listOf(TargetRecord(ip = "84.161.233.248", username = "Known", firewall = 4, encryptor = 6)) }
+        val result = scrape("scan_ghost_2026-11-27.txt")
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(12, TargetRepository.getAllRecords().size)
+        assertEquals(5, record("78.4.246.30")?.firewall)
+        assertNull(record("78.4.246.30")?.encryptor)
+        assertNull(record("78.4.246.30")?.lastValidated) // new scan IPs go to the front of the VALIDATE queue
+        // A known target: FW updated from the scan, the rest kept
+        assertEquals(1, record("84.161.233.248")?.firewall)
+        assertEquals(6, record("84.161.233.248")?.encryptor)
+        assertEquals("Known", record("84.161.233.248")?.username)
+    }
+
+    @Test
+    fun filteredProcessesHeaderIsNotAnIp() {
+        // Raw Dump #166: the Processes page filtered to one target shows "205.79.204.429 PROCESSES" (the IP glued to
+        // the count "9"). The masked-IP fallback used to accept it and create a record 205.79.204.429.
+        val result = scrape("processes_running_2026-11-27.txt")
+        assertEquals(ScreenType.PROCESS, result.detectedType)
+        assertEquals(listOf("205.79.204.42"), TargetRepository.getAllRecords().map { it.ip })
+        // The 8 running downloads (new two-line layout: "Download" / app name / level) are read
+        assertEquals(8, record("205.79.204.42")?.downloads?.size)
+        assertEquals(5, record("205.79.204.42")?.downloads?.get("Trace")?.level)
+        assertEquals(4, record("205.79.204.42")?.downloads?.get("Firewall")?.level)
     }
 
     // ---- Own screens ----------------------------------------------------------------------------
@@ -219,6 +253,32 @@ class RealDataRegressionTest {
         assertEquals(39, profile.playerLevel)
         assertEquals("Seamus", profile.username)
         assertTrue(TargetRepository.getAllRecords().isEmpty()) // never a target record
+    }
+
+    @Test
+    fun ownDevicePageSavesNothing() {
+        // Raw Dump #146 (email and IP redacted): the own My Device / settings page. As UNKNOWN it ran every parser,
+        // saved a target named "IP Address" and renamed the player profile.
+        scrape("own_home_2026-11-20.txt")
+        val result = scrape("own_device_2026-11-27.txt")
+        assertEquals(ScreenType.OWN_DEVICE, result.detectedType)
+        assertTrue(result.savedItems.isEmpty())
+        assertEquals("Seamus", PlayerProfileRepository.getProfile().username)
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
+    fun storeBlackMarketAndCreditsTabsSaveNothing() {
+        // Raw Dumps #156 (Black Market, was classified HOME) and #157 (Credits tab, was UNKNOWN: every parser ran)
+        scrape("own_home_2026-11-20.txt")
+        val before = PlayerProfileRepository.getProfile()
+        for (fixture in listOf("store_black_market_2026-11-27.txt", "store_credits_2026-11-27.txt")) {
+            val result = scrape(fixture)
+            assertEquals(fixture, ScreenType.STORE_OTHER, result.detectedType)
+            assertTrue(fixture, result.savedItems.isEmpty())
+        }
+        assertEquals(before, PlayerProfileRepository.getProfile())
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
     }
 
     @Test
