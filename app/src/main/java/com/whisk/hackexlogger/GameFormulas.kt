@@ -329,10 +329,10 @@ object GameFormulas {
     }
 
     /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-13). */
-    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 2 to 1_019, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
+    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 2 to 1_019, 3 to 1_504, 5 to 2_605, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
     /** Cold storage cap, known points only (guide). Q-10. */
-    val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 2 to 3_714, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
+    val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 2 to 3_714, 3 to 4_899, 5 to 8_841, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */
     const val CRYPTO_PER_CREDIT = 250
