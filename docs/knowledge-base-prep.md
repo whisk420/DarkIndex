@@ -62,10 +62,6 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 Numbered in the order the topics appear in the app. ⭐ marks the ones that feed the app's own maths (upload
 times, prices), so they're worth the most. A 📼 Raw Dump of the screen is always the best evidence.
 
-### Spam
-- **Q-01 Spam fee.** Is the fee taken on collection really 0.5% per active Spam beyond 2?
-  *To measure:* compare a collection amount with the earnings shown before collecting. The developer has the Elite Pass (guide: −50% fee), so expect half the base fee. The Store's botnet text (2026-11-27) states 1/3/7/13% at max slots for Node/Cluster/Grid/Farm, matching the formula; SPAM EARNINGS with 3 active (Raw Dump #91) shows 0.3% fee −50% and 2/day on 936/day, matching 0.5% × 1 halved by Elite. Only the collection itself is unmeasured.
-
 ### Uploads & downloads
 - **Q-03 ⭐ Download times.** How long a download takes by software level and network.
   *To measure:* software and level, your network, and the duration shown.

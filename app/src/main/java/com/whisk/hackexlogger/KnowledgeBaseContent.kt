@@ -142,10 +142,7 @@ object KnowledgeBaseContent {
             ),
             tip("Every few Spam levels, sweep your biggest earners and swap deployments that are 3+ levels below your current Spam."),
             h("Fees"),
-            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", GUIDE),
-            unknowns(
-                "Q-01" to "Is the fee on collection exactly 0.5% per Spam?",
-            ),
+            p("Collections lose 0.5% per active Spam beyond 2, up to 30% at 62+. See Botnet.", MEASURED),
         ),
         related = listOf("botnet", "transfers", "virusRules", "siphon")
     )
@@ -165,10 +162,10 @@ object KnowledgeBaseContent {
             h("The scaling fee"),
             facts(
                 f("Fee rate", "0.5% × (active Spam − 2), max 30%", MEASURED),
-                f("Counted by", "Active Spam, not tier size: empty slots cost nothing", GUIDE),
+                f("Counted by", "Active Spam, not tier size: empty slots cost nothing", MEASURED),
                 f("When", "Deducted on collection", GUIDE),
                 f("Hacker Pass", "−25% fee", GUIDE),
-                f("Elite Pass", "−50% fee", GUIDE),
+                f("Elite Pass", "−50% fee", MEASURED),
             ),
             table(
                 CALCULATED, listOf("Tier", "Gross/hr", "Fee/hr", "Net/hr", "Net/day"),
