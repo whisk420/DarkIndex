@@ -44,7 +44,7 @@ Google Maven and services.gradle.org were reachable on 2026-11-22, so the real G
 |---|---|
 | `CLAUDE.md` (this file) | The app: commands, pipeline and code map, storage, tests, rules |
 | `docs/game.md` | The game: mechanics, measured and verified numbers, formulas, screen text formats, the developer's answers. **Read it before touching parsers or game maths** |
-| `docs/history.md` | Fixed bugs (B1–B16) |
+| `docs/history.md` | Fixed bugs (B1–B17) |
 | `docs/knowledge-base-prep.md` | The developer's Knowledge Base review tracker and open questions (Q-ids) |
 
 Facts about the game go in `docs/game.md`, not here.

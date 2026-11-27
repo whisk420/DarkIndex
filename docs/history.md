@@ -24,3 +24,4 @@ Found in the 2026-11-19 review. All fixed except where noted; kept as history so
 | B14 | Fixed | Leftover ProGuard Google Identity rules removed; releases signed with the permanent key |
 | B15 | Fixed | Repo clutter removed; tests no longer write `DarkIndex/` |
 | B16 | Fixed | Prestiged targets' level read as null (`LVL` / `R1` / `48` on target Home); the level regex now skips the rank |
+| B17 | Fixed | Long-press opened the EDIT / SHARE / DELETE overlay on the wrong card, further off the more the list had changed (search, Spam priority). The open overlay was keyed by a bind-time adapter position that DiffUtil moves made stale; now keyed by IP (developer report, 2026-11-28) |
