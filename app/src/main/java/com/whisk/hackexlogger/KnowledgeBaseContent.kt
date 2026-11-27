@@ -164,7 +164,7 @@ object KnowledgeBaseContent {
             ),
             h("The scaling fee"),
             facts(
-                f("Fee rate", "0.5% × (active Spam − 2), max 30%", GUIDE),
+                f("Fee rate", "0.5% × (active Spam − 2), max 30%", MEASURED),
                 f("Counted by", "Active Spam, not tier size: empty slots cost nothing", GUIDE),
                 f("When", "Deducted on collection", GUIDE),
                 f("Hacker Pass", "−25% fee", GUIDE),
