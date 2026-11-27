@@ -116,7 +116,7 @@ The cubic is only valid at higher levels (verified L19–25). **Above L25 it run
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
-**Low-level XP (2026-11-27, Raw Dumps #43/#45):** Keygen Lv1 (600) → +120 XP, and the Keygen unlock of a downloaded Proxy Lv1 (fee 115 = ceil(15% × 765)) → +153 XP = 0.20 × the full Store price. So at Lv1 software XP is 0.20 XP/crypto, not 0.1717. Spam Lv1 unlock (fee 270 = ceil(15% × 1,800)) → +360 XP = 0.20 × 1,800 again (Raw Dump #48). The Rootkit Lv1 LOCKED fee is 210 = ceil(15% × 1,400) (#49).
+**Low-level XP (2026-11-27, Raw Dumps #43/#45):** Keygen Lv1 (600) → +120 XP, and the Keygen unlock of a downloaded Proxy Lv1 (fee 115 = ceil(15% × 765)) → +153 XP = 0.20 × the full Store price. So at Lv1 software XP is 0.20 XP/crypto, not 0.1717. Spam Lv1 unlock (fee 270 = ceil(15% × 1,800)) → +360 XP = 0.20 × 1,800 again (Raw Dump #48). The Rootkit Lv1 LOCKED fee is 210 = ceil(15% × 1,400) (#49). Rootkit Lv1 unlock → +280 XP (0.20 × 1,400), +5 rep. LOCKED Lv2 fees (#50): Bypasser 296 = ceil(15% × 1,970), Cracker 407 = ceil(15% × 2,709), so the fee uses the Lv2 Store price and confirms those prices.
 
 **Proxy activation on Ghost (Raw Dumps #45→#48):** 24 h at Proxy Lv1 cost 204 = ceil(10 × √1 × 24 × 0.85), so the price uses the real Proxy level, not Lv1 + the Ghost (+5). The Apps page then showed `ACTIVE` / `47h 58m`: the Ghost perk doubles the duration (guide's "lasts 2×" confirmed). Activation gave no XP. Reaching Lv2 coincided with +10 OC and +10 Credits (likely a level-up reward; one data point).
 
