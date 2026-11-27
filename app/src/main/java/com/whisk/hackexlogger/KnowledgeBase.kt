@@ -351,9 +351,9 @@ object KbCalculators {
         val fee = GameFormulas.keygenFee(app, from, to)
         val chainedStore = ((from + 1)..to).sumOf { GameFormulas.storePrice(app, it) ?: 0 }
         val chainedKeys = ((from + 1)..to).sumOf { GameFormulas.keygenFee(app, it - 1, it) ?: 0 }
-        val xp = (price * GameFormulas.SOFTWARE_XP_PER_CRYPTO).roundToInt()
+        val xp = GameFormulas.softwareXp(app, to).roundToInt()
         return buildString {
-            appendLine("${app.displayName} Lv $to Store price: ${n(price)}${if (to < GameFormulas.STORE_PRICE_RELIABLE_FROM) " (approx. below Lv 15)" else ""}")
+            appendLine("${app.displayName} Lv $to Store price: ${n(price)}")
             if (fee == null) {
                 appendLine("No Keygen key: you can't key a level at or below yours")
             } else {
@@ -363,7 +363,7 @@ object KbCalculators {
                     appendLine("Stepping up one level at a time: keys ${n(chainedKeys)} vs Store ${n(chainedStore)}")
                 }
             }
-            append("XP for unlocking Lv $to: ~${n(xp)} (≈0.17 XP per Store crypto)")
+            append("XP for unlocking Lv $to: ~${n(xp)}")
         }
     }
 

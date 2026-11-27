@@ -558,26 +558,22 @@ object KnowledgeBaseContent {
             ),
             tip("A single big jump is far cheaper than stepping: each step pays 15% of its own level's price. Download the highest copy you can find and key it directly."),
             h("Store prices"),
-            p("Price = Keygen curve × base/600, × 0.85 for defensive apps. Offensive prices round to the nearest crypto, defensive ones round up. Keygen curve = (−L³ + 147L² + 6814L − 10212) / 6. Verified to the crypto on 5 real prices (L19–25).", MEASURED),
+            p("Price = base × level^1.3, rounded up. Defensive apps then cost 85% of that, rounded up again. Exact on every real Store price seen, from Lv 1 to 35.", MEASURED),
             table(
-                CALCULATED, listOf("App", "Base", "Lv 15", "Lv 20", "Lv 25", "Lv 30"),
+                CALCULATED, listOf("App", "Base", "Lv 5", "Lv 10", "Lv 20", "Lv 30"),
                 GameFormulas.App.values().map { app ->
                     listOf(app.displayName, n(app.basePrice) + if (app.defensive) " ×0.85" else "") +
-                        listOf(15, 20, 25, 30).map { n(GameFormulas.storePrice(app, it)!!) }
+                        listOf(5, 10, 20, 30).map { n(GameFormulas.storePrice(app, it)!!) }
                 }
             ),
-            warn("The curve is exact from about Lv 15 to 25. Below that it drifts from the guide (guide Keygen Lv 5 = 4,862; curve 4,568), and above it real prices run slightly higher (about +0.1% at Lv 33, +0.6% at Lv 42). Q-09."),
             calc(KbCalculators.KEYGEN),
             h("XP"),
             facts(
-                f("Software", "≈0.17 XP per Store crypto, in full on Keygen unlocks", MEASURED, "e.g. Keygen Lv 26 (41,459) → +7,045 XP"),
+                f("Software", "0.2 × base × level^1.25 (× 0.85 defensive), the same for buying and Keygen unlocks", MEASURED, "0.20 XP per crypto at Lv 1, falling slowly: about 0.17 by Lv 26"),
                 f("Device upgrades", "0.25 XP per crypto (best ratio)", MEASURED),
                 f("Older hardware / network", "0.20 XP per crypto", MEASURED),
             ),
             tip("Keygen is a fast XP engine for active hackers, but XP raises your level, and over-levelling changes who your scans find. Upgrade what you use."),
-            unknowns(
-                "Q-09" to "Store prices below Lv 15 and above Lv 25",
-            ),
         ),
         related = listOf("software", "leveling")
     )

@@ -158,25 +158,15 @@ object GameFormulas {
         KEYGEN("Keygen", 600, false);
     }
 
-    /** The Keygen price curve, verified to the crypto at L19–25. Below ~L15 it drifts from the guide (L5: 4,568 vs 4,862). */
-    fun keygenCubic(level: Int): Double {
-        val l = level.toDouble()
-        return (-l * l * l + 147 * l * l + 6814 * l - 10212) / 6.0
-    }
-
-    /** Lowest level where the cubic matches the guide closely (L15: 20,283 vs 20,281). */
-    const val STORE_PRICE_RELIABLE_FROM = 15
-
     /**
-     * Store price of [app] at [level]. Offensive apps round to the nearest crypto (Bypasser 21: 41,877.33 → 41,877),
-     * defensive (×0.85) apps round up (Proxy 21: 40,045.2 → 40,046; Firewall 21: 35,595.7 → 35,596). This also fits
-     * the guide's Lv10 column. Encryptor 19 gives 42,975 against a recorded "42,973/4" (unresolved).
+     * Store price of [app] at [level]: ceil(base × level^1.3), then for defensive apps × 0.85 rounded up.
+     * Exact on all 42 real Store prices seen (Lv 1–35, every app; Raw Dumps #6, #38, #41–#134), including
+     * Encryptor 19 = 42,973. Replaced a cubic fit that was only right between Lv 15 and 25 (Q-09, 2026-11-27).
      */
     fun storePrice(app: App, level: Int): Int? {
-        if (level < 2) return null
-        val raw = keygenCubic(level) * app.basePrice / 600.0 * (if (app.defensive) 0.85 else 1.0)
-        if (raw <= 0) return null
-        return if (app.defensive) ceil(raw - 1e-9).toInt() else raw.roundToInt()
+        if (level < 1) return null
+        val full = ceil(app.basePrice * level.toDouble().pow(1.3) - 1e-9)
+        return if (app.defensive) ceil(full * 0.85 - 1e-9).toInt() else full.toInt()
     }
 
     /**
@@ -195,8 +185,13 @@ object GameFormulas {
         return ceil(price * ratio - 1e-9).toInt() // rounds up: Rootkit 6 → 25 = 44,271.07 → 44,272 (Raw Dump #33)
     }
 
-    /** XP per Store crypto for software (older measurements 0.1717; one developer data point 0.170). Keygen unlocks pay full XP. */
-    const val SOFTWARE_XP_PER_CRYPTO = 0.1717
+    /**
+     * XP for buying [app] at [level] in the Store, or unlocking a downloaded copy with Keygen (the same XP either way):
+     * 0.2 × base × level^1.25, × 0.85 for defensive apps. The game keeps the fraction (the bar shows it rounded down),
+     * so single readings can be 1 off. Fits every 2026-11-27 purchase and unlock (Lv 1–5) and Keygen 26 = 7,045.
+     */
+    fun softwareXp(app: App, level: Int): Double =
+        0.2 * app.basePrice * level.toDouble().pow(1.25) * (if (app.defensive) 0.85 else 1.0)
 
     // ── Proxy / Trace / hardening ───────────────────────────────────────────────────────────────────────────
 
@@ -329,10 +324,10 @@ object GameFormulas {
     }
 
     /** XP to the next level, known points only (guide + developer). Null = not measured yet (Q-13). */
-    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 2 to 1_019, 3 to 1_504, 4 to 2_035, 5 to 2_605, 6 to 3_209, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
+    val XP_TO_NEXT_KNOWN = mapOf(1 to 589, 2 to 1_019, 3 to 1_504, 4 to 2_035, 5 to 2_605, 6 to 3_209, 7 to 3_845, 10 to 5_919, 20 to 14_209, 30 to 24_079, 35 to 29_484, 38 to 32_860, 44 to 39_888)
 
     /** Cold storage cap, known points only (guide). Q-10. */
-    val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 2 to 3_714, 3 to 4_899, 5 to 8_841, 6 to 11_659, 10 to 29_124, 20 to 121_891, 30 to 294_147)
+    val COLD_STORAGE_KNOWN = mapOf(1 to 3_000, 2 to 3_714, 3 to 4_899, 5 to 8_841, 6 to 11_659, 7 to 15_075, 10 to 29_124, 20 to 121_891, 30 to 294_147)
 
     /** Crypto → Credits exchange: 250:1, min 5 Credits, max 750 Credits per calendar month (guide). */
     const val CRYPTO_PER_CREDIT = 250

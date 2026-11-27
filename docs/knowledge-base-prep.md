@@ -80,15 +80,8 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 - **Q-07 Trace vs Proxy odds.** How the unmask chance changes with the level gap. Equal levels are about 50%.
   *To measure:* every `[TRACED]` vs masked line in your victim log, with your Trace level.
 
-### Keygen & Store prices
-- **Q-09 Store prices outside Lv 15–25.** The price formula is exact from about Lv 15 to 25. It drifts below the
-  guide's low-level prices, and above Lv 25 real prices run slightly higher (Keygen unlock fees on your Apps page imply
-  +0.04% at Lv 30, +0.1% at Lv 33, +0.6% at Lv 42). Your Store on 2026-11-24 agrees: 11 real prices run +0.01% to
-  +0.17% above the formula from Lv 28 to 35, and Rootkit Lv 7 is +1.9%.
-  *To measure:* Store screen at low levels during the reboot run (one Store dump per few levels is enough).
-
 ### Wallet
-- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
+- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 7, 10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
 - **Q-11 Daily steal maximum.** A single steal has no limit, but there seems to be a cap per day. How much?
   Hard to pin down.
@@ -98,7 +91,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* your level and the levels of everyone in a few scans.
 
 ### Leveling
-- **Q-13 XP needed for every level.** Known at Lv 1, 2, 3, 4, 5, 6, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
+- **Q-13 XP needed for every level.** Known at Lv 1–7, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
 ---
@@ -107,7 +100,6 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 
 - It says Siphon skims Spam collections and other income; in play only theft is skimmed (developer). It also contradicts itself on Antivirus scan times (Q-06).
 - Its Spam earnings table has the wrong shape. The app uses our own measured model instead (17 real uploads).
-- Its Store prices for low levels don't match the formula that's exact at Lv 15–25 (Q-09).
 - It says rep falls off with the **software** gap (your offence against their defence), not the player level gap.
 
 **Idea (not built):** many of these numbers (XP table, cold cap, Keygen fees) are on screens the app already
