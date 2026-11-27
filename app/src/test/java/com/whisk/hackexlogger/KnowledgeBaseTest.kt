@@ -114,6 +114,7 @@ class KnowledgeBaseTest {
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
             Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
+            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), // Keygen unlocks, Raw Dumps #174–#177
         )
         for ((name, level, xp) in seen) {
             val app = GameFormulas.App.values().first { it.displayName == name }
@@ -130,13 +131,15 @@ class KnowledgeBaseTest {
 
     @Test
     fun keygenFeesMatchLockedRowsOnOwnAppsPage() {
-        // Raw Dump #33: 9 LOCKED copies with their unlock price
-        val apps = OwnAppsParser.parse(TestEnv.fixture("own_apps_locked_2026-11-24.txt").split("\n"))!!
-        assertEquals(9, apps.lockedPrices.size)
+        // Raw Dump #33: 9 LOCKED copies at Lv 25–42; Raw Dump #173 (R4 run): 8 at Lv 3–5, jumps of 2 to 4
+        for ((fixture, rows) in listOf("own_apps_locked_2026-11-24.txt" to 9, "own_apps_locked_r4_2026-11-27.txt" to 8)) {
+        val apps = OwnAppsParser.parse(TestEnv.fixture(fixture).split("\n"))!!
+        assertEquals(fixture, rows, apps.lockedPrices.size)
         for ((name, price) in apps.lockedPrices) {
             val app = GameFormulas.App.values().first { it.displayName == name }
             val fee = GameFormulas.keygenFee(app, apps.installedLevels.getValue(name), apps.lockedLevels.getValue(name))!!
             assertEquals(name, price, fee)
+        }
         }
     }
 
