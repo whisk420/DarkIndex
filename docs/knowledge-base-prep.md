@@ -88,7 +88,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* Store screen at low levels during the reboot run (one Store dump per few levels is enough).
 
 ### Wallet
-- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 10, 20 and 30.
+- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
 - **Q-11 Daily steal maximum.** A single steal has no limit, but there seems to be a cap per day. How much?
   Hard to pin down.
