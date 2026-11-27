@@ -1,0 +1,108 @@
+// PROCESSES
+Notepad
+Wallet:
+5,222
+Credits:
+1,247
+9 active tasks
+OC:
+2,031
+ALL
+205.79.204.429 PROCESSES
+Password Crack
+Lv.5
+RUNNING
+205.79.204.42
+26% chance
+42%
+8m 56s
+AD (4)
+OC (6)
+PAUSE
+Download
+Trace
+Lv.5
+RUNNING
+205.79.204.42
+50%
+17m 50s
+AD (4)
+OC (12)
+PAUSE
+Download
+Proxy
+Lv.4
+RUNNING
+205.79.204.42
+87%
+2m 35s
+AD (4)
+OC (2)
+PAUSE
+Download
+Password Encryptor
+Lv.5
+RUNNING
+205.79.204.42
+50%
+17m 48s
+AD (4)
+OC (12)
+PAUSE
+Download
+Password Cracker
+Lv.5
+RUNNING
+205.79.204.42
+50%
+17m 46s
+AD (4)
+OC (12)
+PAUSE
+Download
+Bypasser
+Lv.5
+RUNNING
+205.79.204.42
+50%
+17m 45s
+AD (4)
+OC (12)
+PAUSE
+Download
+Firewall
+Lv.4
+RUNNING
+205.79.204.42
+88%
+2m 28s
+AD (4)
+OC (2)
+PAUSE
+Download
+Spam
+Lv.5
+RUNNING
+205.79.204.42
+51%
+17m 37s
+AD (4)
+OC (12)
+PAUSE
+Download
+Antivirus
+Lv.5
+RUNNING
+205.79.204.42
+51%
+17m 32s
+AD (4)
+OC (12)
+PAUSE
+REMOVE 9 PROCESSES
+HOME
+SCAN
+PROCESSES
+APPS
+STORE !
+CREWS 1

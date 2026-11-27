@@ -105,7 +105,8 @@ object CommonParserUtil {
     fun extractIp(text: String): String? {
         val ipMatch = SharedRegex.REGEX_IP.find(text)
         if (ipMatch != null) return ipMatch.value
-        val maskedIpMatch = SharedRegex.REGEX_MASKED_IP.find(text)
+        // A masked IP has at least one "xxx" octet; an all-digit match here is an invalid address (205.79.204.429)
+        val maskedIpMatch = SharedRegex.REGEX_MASKED_IP.findAll(text).firstOrNull { it.value.contains('x', ignoreCase = true) }
         if (maskedIpMatch != null) return maskedIpMatch.value
         val unknownMatch = SharedRegex.REGEX_UNKNOWN_IP.find(text)
         if (unknownMatch != null) return "[UNKNOWN]"
@@ -596,6 +597,8 @@ object ProcessScreenParser {
                 }
             }
 
+            // The filter header glues the IP to the row count ("205.79.204.42" + "9 PROCESSES"): never an IP to save
+            if (trimmed.endsWith("PROCESSES", ignoreCase = true) && trimmed.length > "PROCESSES".length) continue
             val ip = CommonParserUtil.extractIp(trimmed)
             if (ip != null && !ip.startsWith("0.0.")) {
                 if (isInvalidated) {

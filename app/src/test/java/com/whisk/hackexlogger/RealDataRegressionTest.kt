@@ -230,6 +230,19 @@ class RealDataRegressionTest {
         assertEquals("Known", record("84.161.233.248")?.username)
     }
 
+    @Test
+    fun filteredProcessesHeaderIsNotAnIp() {
+        // Raw Dump #166: the Processes page filtered to one target shows "205.79.204.429 PROCESSES" (the IP glued to
+        // the count "9"). The masked-IP fallback used to accept it and create a record 205.79.204.429.
+        val result = scrape("processes_running_2026-11-27.txt")
+        assertEquals(ScreenType.PROCESS, result.detectedType)
+        assertEquals(listOf("205.79.204.42"), TargetRepository.getAllRecords().map { it.ip })
+        // The 8 running downloads (new two-line layout: "Download" / app name / level) are read
+        assertEquals(8, record("205.79.204.42")?.downloads?.size)
+        assertEquals(5, record("205.79.204.42")?.downloads?.get("Trace")?.level)
+        assertEquals(4, record("205.79.204.42")?.downloads?.get("Firewall")?.level)
+    }
+
     // ---- Own screens ----------------------------------------------------------------------------
 
     @Test

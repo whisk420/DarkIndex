@@ -63,7 +63,7 @@ Numbered in the order the topics appear in the app. ⭐ marks the ones that feed
 times, prices), so they're worth the most. A 📼 Raw Dump of the screen is always the best evidence.
 
 ### Uploads & downloads
-- **Q-03 ⭐ Download times.** How long a download takes by software level and network.
+- **Q-03 ⭐ Download times.** How long a download takes by software level and network. First reading (2026-11-27): Lv5 ≈ 343 s, Lv4 ≈ 194 s solo on Ghost Link III (from the Processes page's time left, divided by the measured +75% concurrency).
   *To measure:* software and level, your network, and the duration shown.
 
 ### Bypass & crack

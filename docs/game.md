@@ -190,6 +190,14 @@ Parser-facing descriptions of each game screen's accessibility text, mostly lear
 
 **Siphon:** `SIPHON EARNINGS`, `DEPLOYED 55`, rows `<ip> LV.10 5% 1,000 siphoned 1h ago`. Only about 6 rows are visible at once.
 
+**Process, running rows (Raw Dumps #166–#171, fixture `processes_running_2026-11-27.txt`, 2026-11-27 layout):** `// PROCESSES`, Notepad, Wallet/Credits, `9 active tasks` (or `13 of 49 match` when filtered), `OC:` / `<n>`, `ALL`, a filter header that glues the IP to the count (`205.79.204.429 PROCESSES` = `205.79.204.42` + `9 PROCESSES`; it once became a junk record, fixed 2026-11-27), then per row: type (`Password Crack`, `Download`, `Upload`), the app name on its own line for downloads/uploads, `Lv.5`, status (`RUNNING`, `PAUSED`, `SUCCESS`), the target IP, **for bypass/crack the game's own success chance** (`26% chance`), progress `50%`, time left `17m 50s` (or `Paused`, or `Completed 8m ago`), `AD (4)`, `OC (12)` (overclocks needed to finish), `PAUSE`/`RESUME`; footer `REMOVE 13 PROCESSES`.
+
+**Concurrency measured (developer paused/resumed downloads, Raw Dumps #166–#171):** the time left on every other running download changed exactly by the guide's `1 + 0.75 × (n − 1)` ratio (9→8→7→6 downloads... observed 0.878 / 0.865 / 0.841 vs 0.880 / 0.864 / 0.842; resuming 5→7→8: 1.378 / 1.137 vs 1.375 / 1.136). Equal sharing (time ∝ n) is ruled out. The running Password Crack's time left only ticked down by the seconds elapsed, so downloads and cracks are separate pools (already developer-confirmed).
+
+**Download times (Q-03, first measurement):** solo time = time left ÷ the concurrency multiplier ÷ the share still to do. Ghost Link III (50/10 gbps) from a Raider III • Cable victim, 8 downloads running (×6.25): Lv5 ≈ 343 s (Trace, Spam, Antivirus, Encryptor, Cracker, Bypasser all agree within ±3 s), Lv4 ≈ 194 s (Firewall, Proxy). Lv4→Lv5 = ×1.77, i.e. about level^2.6 at this range (uploads use level^2.25). Percentages are rounded, so Lv4 is ±8 s.
+
+**The crack's on-screen chance disagrees with our hack-odds table:** `Password Crack` `Lv.5` (H1k4run, Encryptor 5) with the developer's Cracker Lv2, no Rootkit on the target: `26% chance`. Our table gives 18% at a −3 gap (34% at −2). One reading; running bypass/crack rows show the game's own odds, so collecting them is the easiest way to check the table.
+
 **Process:** `// PROCESSES`, `109 active tasks`, then blocks `Password Crack `/`Lv.8`/`DONE|INVALIDATED`/`<ip>`; downloads are `Download `/`Lv.6`/`DONE`/`DL:`/`Rootkit`/`<ip>`.
 
 **Crew:** `// <Crew Name> Members`, then `<ip>` / `LEADER|OFFICER|MEMBER` pairs.

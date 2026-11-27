@@ -285,7 +285,7 @@ object KnowledgeBaseContent {
                 f("Upload: victim device", "Slower on better devices; 10 tiers, Raider I–III all tier 0", CONFIRMED),
                 f("Upload: virus level", "Higher uploads slower: time ∝ (level/20)^2.25", MEASURED),
                 f("Download: software level", "Higher downloads slower; formula unknown", UNKNOWN),
-                f("Concurrency", "+75% per extra process", GUIDE),
+                f("Concurrency", "+75% per extra process", MEASURED),
                 f("Shared slowdown", "Uploads and downloads slow each other down. Bypasses and cracks don't affect them", CONFIRMED),
                 f("Virus penalty", "−1% speed per virus on your device (max −40%)", GUIDE),
                 f("Harvest Node network", "Uploads −50%", GUIDE),
@@ -371,7 +371,7 @@ object KnowledgeBaseContent {
             ),
             facts(
                 f("Statuses", "Pending, Completed, Failed, Invalidated, EMP Killed", GUIDE),
-                f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", GUIDE),
+                f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", MEASURED),
                 f("Two pools", "Network (uploads, downloads) and processor (bypasses, cracks) slow down only their own kind. A bypass doesn't slow an upload", CONFIRMED),
                 f("Overclock", "Skips 90 s each", GUIDE),
                 f("Ads", "Up to 4 per process: −10%, −9%, −8%, −7% (34% total)", GUIDE),
