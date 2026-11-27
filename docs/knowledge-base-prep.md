@@ -81,7 +81,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* every `[TRACED]` vs masked line in your victim log, with your Trace level.
 
 ### Wallet
-- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 7, 8, 10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
+- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5–10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
 - **Q-11 Daily steal maximum.** A single steal has no limit, but there seems to be a cap per day. How much?
   Hard to pin down.
