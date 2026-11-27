@@ -67,6 +67,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **R1–R5** must use each of 5 loadouts once. **R6+** can mix any device line with any network line.
 - Loadouts and perks per the guide:
   - Ghost (Stealth): `[UNKNOWN]` in logs, Trace-immune. Proxy counts +5 vs Trace and lasts 2×.
+    - **Backdoor exception (developer, Raw Dump #141, 2026-11-27):** on a Ghost device every victim-log line shows `[UNKNOWN]` except the Backdoor one, `Firewall bypassed via backdoor from 78.78.xxx.xxx`, which carries the attacker's IP masked only by their Proxy. Without a Proxy it would show the full IP. The mask there was 2 octets from a Proxy Lv1 (+5), so the Ghost +5 also counts for masking (Lv6 = 2 octets), not only vs Trace. The parser ignores this line (`NO_PATTERN`).
   - Vector (Efficiency): 50% OC discounts and consumable perks.
   - Scythe (Economy): 2× siphon drain, half spam decay. Uploads 50% faster, viruses count +2 vs AV.
   - Cipher (Defense): FW/ENC count +3. 100% Backdoor/Exploit block.

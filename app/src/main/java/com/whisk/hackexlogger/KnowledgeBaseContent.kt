@@ -470,6 +470,7 @@ object KnowledgeBaseContent {
                 "Vector device: 50% chance to keep a consumable when you use it.",
             ),
             tip("Backdoors are 40 Credits and lose to hardening at high levels: against a Lv 30 firewall, 84% of them are wasted. Save them for low-firewall targets."),
+            warn("Ghost players: a Backdoor still puts your IP in the victim's log. Everything else you do there shows as unknown, but the Backdoor line shows your address, hidden only as far as your Proxy hides it. Turn your Proxy on before you Backdoor."),
         ),
         related = listOf("hacking", "proxy", "premium")
     )
