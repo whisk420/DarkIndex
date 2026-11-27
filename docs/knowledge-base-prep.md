@@ -64,7 +64,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 
 ### Spam
 - **Q-01 Spam fee.** Is the fee taken on collection really 0.5% per active Spam beyond 2?
-  *To measure:* compare a collection amount with the earnings shown before collecting.
+  *To measure:* compare a collection amount with the earnings shown before collecting. The developer has the Elite Pass (guide: −50% fee), so expect half the base fee.
 
 ### Uploads & downloads
 - **Q-03 ⭐ Download times.** How long a download takes by software level and network.

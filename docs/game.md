@@ -78,6 +78,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - `Dark Routing, Backchannel, Fast Deploy, Deep Link` are not hardware names (they look like perk names). All names now live in `HardwareCatalog` (CLAUDE.md §3.10).
 
 ### Economy & progression
+- **The developer has the Elite Pass** ($9.99/mo, developer 2026-11-27). Every measurement from their account includes its perks (guide: 10 Cr + 10 OC + 1,000 Crypto daily, more drops, −50% Spam fee, pause any process, doubled login-streak rewards). Don't read their Spam collections, streak rewards or daily Credits/OC as base values.
 - **Steal limits (developer, 2026-11-22):** no minimum or maximum per steal (the whole hot wallet can go in one transfer); there seems to be a daily maximum, amount unknown (Q-11).
 - **Crypto → Credits (confirmed, Raw Dump #32):** 250 Crypto = 1 Credit, 750 Credits per month, resets on the 1st. Minimum 5 Credits and "hot wallet drains first" are guide-only.
 - **Changing your wallet address** (`regen`) costs 50 Credits (guide); old log lines keep the old address.
