@@ -252,15 +252,23 @@ object DatabaseManager {
     }
 
     fun processBypassScreen(bypassScreen: BypassScreen) {
-        val ip = bypassScreen.targetIp
-        if (ip != null) {
+        // Scan list: every unmasked row; the Bypass screen itself: its one target
+        val rows: List<Triple<String, Int?, Int?>> = if (bypassScreen.scanRows.isNotEmpty()) {
+            bypassScreen.scanRows.map { Triple(it.ip, it.firewall, it.encryptor) }
+        } else {
+            listOfNotNull(bypassScreen.targetIp?.let { Triple(it, bypassScreen.firewall, bypassScreen.encryptor) })
+        }
+        if (rows.isNotEmpty()) {
             TargetRepository.update { list ->
                 val recordMap = recordMapOf(list)
-                val record = recordMap[ip] ?: TargetRecord(ip = ip)
-                recordMap[ip] = record.copy(
-                    firewall = bypassScreen.firewall ?: record.firewall,
-                    encryptor = bypassScreen.encryptor ?: record.encryptor
-                )
+                for ((ip, firewall, encryptor) in rows) {
+                    // New IPs stay never-validated (front of the VALIDATE queue); known ones keep everything but FW/ENC
+                    val record = recordMap[ip] ?: TargetRecord(ip = ip)
+                    recordMap[ip] = record.copy(
+                        firewall = firewall ?: record.firewall,
+                        encryptor = encryptor ?: record.encryptor // ENC is only on screen for Apex players
+                    )
+                }
                 recordMap.values.toList()
             }
         }

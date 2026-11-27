@@ -187,12 +187,17 @@ class RealDataRegressionTest {
     }
 
     @Test
-    fun scanListStoresTheFirstRealRowWithItsOwnLevels() {
-        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked
+    fun scanListStoresEveryRealRowWithItsOwnLevels() {
+        val result = scrape("scan_2026-11-22.txt") // Raw Dump #24: 12 rows (crew Uplink +2), 5 masked, Apex (ENC shown)
         assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertTrue(result.savedItems.contains("Scan (7 targets)"))
+        assertEquals(7, TargetRepository.getAllRecords().size)
         assertEquals(32, record("241.118.225.244")?.firewall)
         assertEquals(40, record("241.118.225.244")?.encryptor)
-        assertTrue(TargetRepository.getAllRecords().none { it.isMasked })
+        assertEquals(25, record("140.199.238.221")?.firewall)
+        assertEquals(27, record("140.199.238.221")?.encryptor)
+        assertEquals(33, record("148.130.96.85")?.firewall) // last row
+        assertTrue(TargetRepository.getAllRecords().none { it.isMasked }) // incl. the partly masked 226.217.xxx.xxx
     }
 
     @Test
@@ -206,7 +211,23 @@ class RealDataRegressionTest {
 
         assertEquals(32, record("241.118.225.244")?.firewall)
         assertEquals(40, record("241.118.225.244")?.encryptor)
-        assertEquals(1, TargetRepository.getAllRecords().size)
+        assertEquals(7, TargetRepository.getAllRecords().size)
+    }
+
+    @Test
+    fun defaultScanRowsUpdateFirewallAndKeepKnownEncryptor() {
+        // Raw Dump #153: a Ghost reboot's scan, no ENC column (the default row format), 12 rows with the crew Uplink
+        TargetRepository.update { listOf(TargetRecord(ip = "84.161.233.248", username = "Known", firewall = 4, encryptor = 6)) }
+        val result = scrape("scan_ghost_2026-11-27.txt")
+        assertEquals(ScreenType.BYPASS, result.detectedType)
+        assertEquals(12, TargetRepository.getAllRecords().size)
+        assertEquals(5, record("78.4.246.30")?.firewall)
+        assertNull(record("78.4.246.30")?.encryptor)
+        assertNull(record("78.4.246.30")?.lastValidated) // new scan IPs go to the front of the VALIDATE queue
+        // A known target: FW updated from the scan, the rest kept
+        assertEquals(1, record("84.161.233.248")?.firewall)
+        assertEquals(6, record("84.161.233.248")?.encryptor)
+        assertEquals("Known", record("84.161.233.248")?.username)
     }
 
     // ---- Own screens ----------------------------------------------------------------------------

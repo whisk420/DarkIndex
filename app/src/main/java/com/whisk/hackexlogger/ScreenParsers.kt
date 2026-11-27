@@ -789,12 +789,17 @@ object StoreScreenParser {
 // ----------------------------------------
 // BypassScreen
 // ----------------------------------------
+/** One `// SCAN RESULTS` row: `1.2.3.4 FW Lv.5 >`, plus `ENC Lv.N` only on an Apex reboot (Null Route perk). */
+data class ScanRow(val ip: String, val firewall: Int, val encryptor: Int?)
+
 data class BypassScreen(
     val targetIp: String?,
     val firewall: Int?,
     val encryptor: Int?,
     val playerBypasser: Int?,
-    val apexBonus: Int?
+    val apexBonus: Int?,
+    /** Every unmasked scan row, in screen order (empty on the Bypass screen itself). */
+    val scanRows: List<ScanRow> = emptyList()
 )
 
 object BypassScreenParser {
@@ -808,19 +813,27 @@ object BypassScreenParser {
         val lower = text.lowercase()
         if (!lower.contains("using bypasser") && !lower.contains("// bypass firewall") && !lower.contains("// scan results")) return null
 
-        // Scan list: one row per target ("1.2.3.4 FW Lv.32 ENC Lv.40 >"), masked rows included. Take the IP and
-        // its levels from the same row, so a masked row above can't lend its FW/ENC to the next real IP.
-        val scanRow = if (lower.contains("// scan results")) {
+        // Scan list: one row per target ("1.2.3.4 FW Lv.32 ENC Lv.40 >"), masked rows included. Each row's IP and
+        // levels come from that row, so a masked row can't lend its FW/ENC to the next real IP. Masked rows are skipped.
+        // The row count ("12 targets") includes the crew Uplink bonus rows, so it isn't assumed to be 10.
+        val scanRows = if (lower.contains("// scan results")) {
             text.lineSequence().mapNotNull { REGEX_SCAN_ROW.find(it.trim()) }
-                .firstOrNull { !CommonParserUtil.isMaskedIp(it.groupValues[1]) && !it.groupValues[1].startsWith("0.0.") }
-        } else null
+                .filter { !CommonParserUtil.isMaskedIp(it.groupValues[1]) && !it.groupValues[1].startsWith("0.0.") }
+                .mapNotNull { m ->
+                    val fw = m.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                    ScanRow(m.groupValues[1], fw, m.groupValues[3].toIntOrNull()) // ENC only on an Apex reboot
+                }
+                .distinctBy { it.ip }
+                .toList()
+        } else emptyList()
+        val scanRow = scanRows.firstOrNull()
         val ip: String?
         val firewall: Int?
         val encryptor: Int?
         if (scanRow != null) {
-            ip = scanRow.groupValues[1]
-            firewall = scanRow.groupValues[2].toIntOrNull()
-            encryptor = scanRow.groupValues[3].toIntOrNull() // ENC shows only on an Apex reboot, not by default
+            ip = scanRow.ip
+            firewall = scanRow.firewall
+            encryptor = scanRow.encryptor
         } else {
             ip = CommonParserUtil.extractIp(text)
             firewall = REGEX_FW.find(text)?.groupValues?.get(1)?.toIntOrNull()
@@ -831,7 +844,7 @@ object BypassScreenParser {
 
         if (ip == null && firewall == null && playerBypasser == null) return null
 
-        return BypassScreen(ip, firewall, encryptor, playerBypasser, apexBonus)
+        return BypassScreen(ip, firewall, encryptor, playerBypasser, apexBonus, scanRows)
     }
 }
 

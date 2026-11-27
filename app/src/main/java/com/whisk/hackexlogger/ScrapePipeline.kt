@@ -149,7 +149,7 @@ object ScrapePipeline {
         val parsed = BypassScreenParser.parse(text) ?: return
         s?.matched("Bypass", parsed)
         DatabaseManager.processBypassScreen(parsed)
-        saved.add("Bypass / Target Info")
+        saved.add(if (parsed.scanRows.isNotEmpty()) "Scan (${parsed.scanRows.size} targets)" else "Bypass / Target Info")
     }
 
     private fun process(lines: List<String>, saved: MutableList<String>, s: DumpSession?) {
