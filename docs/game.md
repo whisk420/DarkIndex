@@ -30,13 +30,13 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **Crew OPSEC (developer, 2026-11-24):** hacking any member shows the attacker the crew roster with every member's IP, and the crew chat unless the **hacked** member owns Message Encryptor (the Store's E2E item). Each roster IP is masked by that member's **own** Proxy. **Trace never rolls on crew screens**, so a masked roster IP stays masked.
 
 ### Software (11 apps)
-| App | Role | Guide base price | Notes |
+| App | Role | Base price (= Lv1, verified 2026-11-27) | Notes |
 |---|---|---|---|
 | Firewall | defence vs Bypass | 800 (×0.85) | Upgrading it invalidates incoming bypass and crack rows. Lv3+ "hardening" blocks Backdoors 3%/lvl above 2, max 90% |
 | Password Encryptor | defence vs Crack | 1100 (×0.85) | Upgrading invalidates cracks. Hardening blocks Exploit Kits the same way |
 | Antivirus | removes viruses | 1000 (×0.85) | Restores 90% of rep drained. Removal odds use their own table (§3) |
-| Proxy | masking / Stealth | 900 (×0.85 **verified**, dump #6: Lv21 = 40,046) | |
-| Trace | unmasks proxies | 900 (×0.85 **verified**, dump #6) | Defensive roll on every entry, offensive roll at bypass |
+| Proxy | masking / Stealth | 900 (×0.85) | |
+| Trace | unmasks proxies | 900 (×0.85) | Defensive roll on every entry, offensive roll at bypass |
 | Bypasser | offence vs Firewall | 800 | |
 | Password Cracker | offence vs Encryptor | 1100 | |
 | Spam | virus, passive income | 1800 | ≤100 Crypto/hr per victim, set at upload by victim level vs Spam level (CLAUDE.md §3.7). Full rate for 21 days, decays to a 10% floor around day 100 |
@@ -56,7 +56,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
   - **Upload defence (developer-confirmed, rigorous):** Raider, Raider II and Raider III upload identically, which gives the 10 defence tiers 0–9 used in code. The guide does not document upload defence.
 - **Network** affects your downloads and uploads.
   - Order: `DSL 1.0, Cable 1.5, Cable+ 2.25, 4G LTE 3.5, 5G 5, 5G+ 7, Fiber 9.5, Fiber+ 12, 10G Fiber 15, 10G Fiber+ 18, Quantum Link 21` (multipliers).
-- Upload time ≈ `base(target device) / your network boost`. Concurrent processes do get slower (guide: +75% per extra process). **Two separate pools** (developer, 2026-11-22): network (uploads + downloads slow each other) and processor (bypasses + cracks slow each other); a bypass does not slow an upload. The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
+- Upload time ≈ `base(target device) / your network boost`. Concurrent processes get slower by +75% per extra process in the same pool (measured 2026-11-27, §4 running processes). **Two separate pools** (developer, 2026-11-22): network (uploads + downloads slow each other) and processor (bypasses + cracks slow each other); a bypass does not slow an upload. The app **deliberately does not** model concurrency, because it can't know how many processes are running. Don't add it.
 - **Virus performance penalty:** each active virus *on a device* cuts that device's performance by 1%, capped at 40%. The guide says this applies to the infected player.
 - Stored as `TargetRecord.hardware = "<Device> • <Network>"`.
 
@@ -66,7 +66,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - The home screen shows `R1`.. above `LVL` and `<n> LIFETIME` under SCORE.
 - **R1–R5** must use each of 5 loadouts once. **R6+** can mix any device line with any network line.
 - Loadouts and perks per the guide:
-  - Ghost (Stealth): `[UNKNOWN]` in logs, Trace-immune. Proxy counts +5 vs Trace and lasts 2×.
+  - Ghost (Stealth): `[UNKNOWN]` in logs, Trace-immune, last octet hidden in scanners without a Proxy. Proxy counts +5 (vs Trace, and for masking: developer-confirmed 2026-11-27) and lasts 2× (24 h bought → `47h 58m`, Raw Dump #48).
     - **Backdoor exception (developer, Raw Dump #141, 2026-11-27):** on a Ghost device every victim-log line shows `[UNKNOWN]` except the Backdoor one, `Firewall bypassed via backdoor from 78.78.xxx.xxx`, which carries the attacker's IP masked only by their Proxy. Without a Proxy it would show the full IP. The mask there was 2 octets from a Proxy Lv1 (+5): **the Ghost +5 also counts for masking** (Lv6 = 2 octets), not only vs Trace (developer-confirmed 2026-11-27, although the in-game perk text, Raw Dump #146, only mentions Trace). The parser ignores this line (`NO_PATTERN`).
   - Vector (Efficiency): 50% OC discounts and consumable perks.
   - Scythe (Economy): 2× siphon drain, half spam decay. Uploads 50% faster, viruses count +2 vs AV.
@@ -129,9 +129,9 @@ Found from the Keygen Lv1–6 prices of the R4 run (600, 1,478, 2,503, 3,638, 4,
 **Keygen XP:** a Keygen unlock pays the full XP of that level (same as buying it), per the formula above. Device upgrades give 0.25 XP/crypto, networks 0.20, botnets 1/6 (all R4-verified). The old flat ≈ 0.1717 XP/crypto was the formula's rate around Lv 20–30.
 
 **Hack (bypass/crack) success — measured from the developer's logged attempts, in code (`TargetRecord.calculateSuccessProbability`):** modifiers (Apex +3, Rootkit −N, Cipher +3) just add up, order doesn't matter.
-`delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5.
+`delta = offence − defence`: ≥+6 → 95, +5 → 90, +4 → 82, +3 → 74, +2 → 66, +1 → 58, 0 → 50, −1 → 42, −2 → 34, −3 → 18, ≤−4 → 5. ⚠ A running crack at −3 showed the game's own `26% chance` (Raw Dump #166, §4), not 18%; running bypass/crack rows show the game's odds, so check the table against them.
 
-**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%; matches the game at Lv 27: 104/297/562/1,061, Raw Dump #34, which also shows Stealth reserve `90h / 170h`, refill +1 h per 1.5 h off, activations stack with no cap); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))`; Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, CLAUDE.md §3.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. (The Store cubic and its rounding notes here are superseded by the exact L^1.3 formula above.)
+**Guide-derived exact fits (2026-11-21, reproduce every published cell):** Proxy activation `ceil(10 × √ProxyLv × hours × (1 − disc))` (2/6/12/24 h, 0/5/10/15%; matches the game at Lv 27: 104/297/562/1,061, Raw Dump #34, which also shows Stealth reserve `90h / 170h`, refill +1 h per 1.5 h off, activations stack with no cap); Spam slot fee `min(30%, 0.5% × (activeSpam − 2))` (confirmed in game 2026-11-27, Q-01 closed); Spam decay `100 − (day − 21) × 90/79` %, floor 10%; Spam income: the guide curve `8.85 + 2.89L + 0.0415L²` × gap multiplier (×1.41 at +10, ×0.5 at −10) hits all 17 guide cells, **but in the game the gap is victim level − Spam level and the curve is different** (measured 2026-11-22, CLAUDE.md §3.7). Store prices: offensive round to nearest (Bypasser 21 = 41,877.33 → 41,877), defensive ×0.85 round up (Proxy 21 = 40,045.2 → 40,046); Encryptor 19 → 42,975 vs the recorded "42,973/4" is unresolved. All in `GameFormulas`. (The Store cubic and its rounding notes here are superseded by the exact L^1.3 formula above.)
 
 **Siphon % (measured 2026-11-22, Raw Dump #16, all 122 deployments):** `0.75 + 0.25 × L` fits Lv1/2/5/6/13/17/20; Lv25 = 6% (not 7%), so `GameFormulas.siphonPercent` caps at 6% from Lv21 (the line reaches 6% at Lv21; developer-accepted). **Max 700 siphon deployments** (developer). A siphon removed by the victim's AV vanishes from SIPHON EARNINGS with all its info; the game keeps no history.
 
@@ -176,7 +176,7 @@ Parser-facing descriptions of each game screen's accessibility text, mostly lear
 
 **Store:** `// STORE`, `Notepad`, `Wallet:`/`<crypto>`, `Credits: <n>`, `UPGRADES/CREDITS/MARKET`; `// NEXT DEVICE`, `Apex VII`, `LVL 7`, specs, price; `// NEXT NETWORK`, `Null Route X`, `LVL 10`. **When maxed, the header drops NEXT** (`// NETWORK`), shows the item you own, and has `MAX TIER` instead of a price (dump #6: `Null Route XI` / `LVL 11` / `MAX TIER`). Software rows have view ids `sw-<n>`; `// BOTNET`, `Botnet - Nexus`, `64 slots`, `MAX TIER`; `// SOFTWARE`, then `<App>` `LVL <next>` description, price, `UPGRADE`. Keygen's description contains the STORE signature. **Botnet not maxed** (Raw Dump #41): the section shows the NEXT tier, `Botnet - Node`, `4 SLOTS` (upper case), the requirement line `Requires Level 3 • Up to 1% fee at max slots`, a description, `800 Crypto`, `BUY`. The parser stores it as `Botnet - Free (2 slots), next: Botnet - Node (4 slots)`. After a purchase (Raw Dumps #62–#66) the button reads `UPGRADE`, the requirement line becomes just the fee (`Up to 3% fee at max slots`), and a confirmation line `Upgraded to Botnet - Node.` follows the price.
 
-**Scan (Raw Dump #24, fixture `scan_2026-11-22.txt`):** `// SCAN`, Notepad, `Wallet:`/`<crypto>`, `Credits:`/`<n>`, `SCAN`, `REFRESH SCAN`, `// SCAN RESULTS`, `12 targets` (10 default + crew Uplink +2), then one row per target `1.2.3.4 FW Lv.23 ENC Lv.24 >`; rows can be masked (`xxx.xxx.xxx.xxx`, `226.217.xxx.xxx`); **ENC is not default**: it shows because the developer is on an Apex reboot (guide: Null Route perk), so default rows are presumably `<ip> FW Lv.N >` (unseen; the row regex makes ENC optional); ends with the bottom nav. **Default rows confirmed** (Raw Dump #153, Ghost reboot, fixture `scan_ghost_2026-11-27.txt`): `134.42.179.100 FW Lv.1 >`, no ENC; while scanning the button reads `SCANNING ...` and the old results stay listed. `BypassScreenParser` stores **every** unmasked row with its own FW (and ENC when shown) since 2026-11-27; masked and partly masked rows are skipped, and the row count includes the crew Uplink rows.
+**Scan (Raw Dump #24, fixture `scan_2026-11-22.txt`):** `// SCAN`, Notepad, `Wallet:`/`<crypto>`, `Credits:`/`<n>`, `SCAN`, `REFRESH SCAN`, `// SCAN RESULTS`, `12 targets` (10 default + crew Uplink +2), then one row per target `1.2.3.4 FW Lv.23 ENC Lv.24 >`; rows can be masked (`xxx.xxx.xxx.xxx`, `226.217.xxx.xxx`); **ENC is not default**: it shows because the developer is on an Apex reboot (guide: Null Route perk), ends with the bottom nav. **Default rows confirmed** (Raw Dump #153, Ghost reboot, fixture `scan_ghost_2026-11-27.txt`): `134.42.179.100 FW Lv.1 >`, no ENC; while scanning the button reads `SCANNING ...` and the old results stay listed. `BypassScreenParser` stores **every** unmasked row with its own FW (and ENC when shown) since 2026-11-27; masked and partly masked rows are skipped, and the row count includes the crew Uplink rows.
 
 **Own Wallet → Transaction History (Raw Dump #123, 2026-11-27):** expanding `// Transaction History −` lists the full ledger, newest first, 3–5 lines per entry: category (`SPAM`, `KEYGEN`, `PURCHASE`, `PROXY`, `THEFT`, `MISSION`, `TRANSFER`, `CREW TREASURY`, `SIPHON`), description (`Collected spam earnings (5 deployments)`, `Siphon activation (Lv.1)` = a Keygen unlock, `Keygen upgrade (Lv.3)`, `Device upgrade (Lv.2)`, `Network upgrade (Lv.3)`, `Botnet upgrade: Botnet - Grid`, `Proxy activation (24hr)`, `Crypto stolen from another player`, `Daily mission reward`, `Crypto Stash (10K) from Black Market`, `Contributed to crew treasury`, `Siphon skimmed crypto`), an optional wallet (`hxd442...cba5`) and `Network (Gas) Fee: -34 Crypto` line, the signed amount (`+309`, `-240`), and an age (`just now`, `8m ago`), then `LOAD MORE`. Saves nothing today. It confirmed every R4 price and fee recorded above to the crypto, the 24 h Proxy activation (204), gas = floor(10%) on 343 → 34 and 428 → 42 (4 → none), and that Spam collects in small automatic batches.
 
@@ -231,7 +231,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 **Game**
 1. "Stole N" = what the **victim lost** (pre-gas-fee). Consistent across targets, so fine.
 2. Raider / II / III targets **upload equally fast**. Rigorously confirmed.
-3. Concurrent processes do get slower, but it's unknown whether that's overhead or bandwidth sharing. Not modelled (the app can't count processes).
+3. Concurrent processes do get slower, but it's unknown whether that's overhead or bandwidth sharing. Not modelled (the app can't count processes). → **Measured 2026-11-27:** +75% of the base time per extra process in the same pool, exactly (§4).
 4. Prestige names: see §2 (from the guide).
 5. Player's own rebirth/hardware: not relevant to code; changes over time.
 6. At max tier the Store shows the tier-11 network with **`MAX TIER`** instead of a price.
@@ -254,7 +254,7 @@ The last two could feed the player profile automatically (TODO: profile from own
 20. Keep the Good Spam slider behaviour as is.
 21. **Remove search entirely while Recon or Good Spam is on** (done).
 22. Crew: "if they're on that screen, they're in the crew" (see follow-up F4).
-23. Knowledge Base will be built out. To-do.
+23. Knowledge Base will be built out. → Built 2026-11-21 (25 topics).
 24. CI should run tests.
 25. Test device: **the developer's phone (Android 17)**.
 
