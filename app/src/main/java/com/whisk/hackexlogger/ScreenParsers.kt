@@ -7,7 +7,7 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, OWN_DEVICE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, OWN_DEVICE, STORE_OTHER, UNKNOWN
 }
 
 object ScreenClassifier {
@@ -25,6 +25,9 @@ object ScreenClassifier {
         // Your own device/settings page (Raw Dump #146): saves nothing. It has an IP, hardware and "> IP Address", so the
         // UNKNOWN fallback used to save it as a target named "IP Address" and rename your profile.
         if (lines.any { it.trim().equals("// MY DEVICE", ignoreCase = true) }) return ScreenType.OWN_DEVICE
+        // The Store's Black Market and Credits tabs (Raw Dumps #156, #157): save nothing. Item descriptions mention
+        // "firewall" and "device", which made the Black Market look like a target's Home; the Credits tab fell to UNKNOWN.
+        if (lines.any { val t = it.trim().uppercase(); t.startsWith("// BLACK MARKET") || t == "// CREDITS PACKS" }) return ScreenType.STORE_OTHER
         if (lowerText.contains("using bypasser") || lowerText.contains("// bypass firewall") || (lowerText.contains("// scan results") && lowerText.contains("fw lv"))) return ScreenType.BYPASS
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE

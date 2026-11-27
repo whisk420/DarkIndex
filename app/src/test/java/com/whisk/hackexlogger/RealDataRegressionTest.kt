@@ -255,6 +255,20 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun storeBlackMarketAndCreditsTabsSaveNothing() {
+        // Raw Dumps #156 (Black Market, was classified HOME) and #157 (Credits tab, was UNKNOWN: every parser ran)
+        scrape("own_home_2026-11-20.txt")
+        val before = PlayerProfileRepository.getProfile()
+        for (fixture in listOf("store_black_market_2026-11-27.txt", "store_credits_2026-11-27.txt")) {
+            val result = scrape(fixture)
+            assertEquals(fixture, ScreenType.STORE_OTHER, result.detectedType)
+            assertTrue(fixture, result.savedItems.isEmpty())
+        }
+        assertEquals(before, PlayerProfileRepository.getProfile())
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
     fun ownAppsPageSetsInstalledLevels() {
         // Raw Dump #29: your own Apps page. Levels are stored as installed + 1 (the Store's NEXT convention).
         val result = scrape("own_apps_2026-11-24.txt")

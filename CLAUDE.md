@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 174 tests, all passing as of 2026-11-27
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 175 tests, all passing as of 2026-11-27
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -103,7 +103,7 @@ TargetRepository.update { list → new list }   (one write path at a time; recon
 | `KnowledgeBaseActivity.kt` / `KnowledgeTopicActivity.kt` | 📖 button left of Siphon Alerts → index (search, badge legend, topic cards with source tallies) → topic page (facts, tables, tips, warnings, live calculators, open questions, related chips). `KbViews` = shared view factories |
 
 ### 3.1 Classifier (first match wins, case-insensitive substring)
-1. `OWN_PROFILE`: "my device" AND ("daily missions" OR "login streak"); then `OWN_DEVICE`: a `// MY DEVICE` line (your own device/settings page, saves nothing; before 2026-11-27 it fell to UNKNOWN and saved a target named "IP Address", Raw Dump #146)
+1. `OWN_PROFILE`: "my device" AND ("daily missions" OR "login streak"); then `OWN_DEVICE`: a `// MY DEVICE` line (your own device/settings page, saves nothing; before 2026-11-27 it fell to UNKNOWN and saved a target named "IP Address", Raw Dump #146); then `STORE_OTHER`: a `// BLACK MARKET…` or `// CREDITS PACKS` line (the Store's other tabs, save nothing; Raw Dumps #156, #157)
 2. `BYPASS`: "using bypasser" OR "// bypass firewall" OR ("// scan results" AND "fw lv")
 3. `STORE`: "proprietary key generator built for your device"
 4. `SOFTWARE`: "installed software"
@@ -237,7 +237,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 4. Test suite (174 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22 and 2026-11-24)
+## 4. Test suite (175 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22 and 2026-11-24)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 **2026-11-24 duplicate trim (213 → 165):** removed tests that a real-data test already covers (synthetic "simulated" parser screens next to their real-logcat twins, classifier checks repeated by parser tests, masked-IP checks on the same fixtures as `RealDataRegressionTest`, `decrementHardwareName` cases that only call `HardwareCatalog.previous`, `parse() == parseDetailed().updates` which can't fail since one calls the other, a Gson-only bundle read). Small checks were folded into the test that covers the same thing. Before adding a test, check `RealDataRegressionTest` and the class's own file for one that already runs that path.
@@ -250,7 +250,7 @@ handling and conflict logging) now fails 6 tests; before, the old Unmasking test
 
 | Class | What it covers |
 |---|---|
-| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: scan list (every real row stored with its own FW/ENC, masked rows skipped, default no-ENC rows keep a known ENC), double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, own device page saves nothing (#146), own Apps → installed levels (+ the Apps page is not a siphon scrape; newest scrape wins), Bypass screen doesn't count the Apex +3 twice (B12), prestiged target Home level (`R1` between label and value), Processes, Siphons (masked row skipped), the 6 known log discards |
+| **RealDataRegressionTest** (new) | Real Raw Dump screens through `ScrapePipeline.run` → DB: scan list (every real row stored with its own FW/ENC, masked rows skipped, default no-ENC rows keep a known ENC), double-steal attribution, a missing Accessed line can't steal another target's wallet (conflict logged), the same steal seen on two days is stored once, one target built from Home + Wallet + Software + Log, crew clan spreading, own Home → player level, own device page and the Store's Black Market/Credits tabs save nothing (#146, #156, #157), own Apps → installed levels (+ the Apps page is not a siphon scrape; newest scrape wins), Bypass screen doesn't count the Apex +3 twice (B12), prestiged target Home level (`R1` between label and value), Processes, Siphons (masked row skipped), the 6 known log discards |
 | **DatabaseCoverageTest** (new) | Processes (create/keep/invalidated/downloads only if higher/no 0.0.0.0), Crew (known clan spreads, unknown → nothing saved), Bypass (target defences + stored bypasser), Import (merge by IP/username, siphon state, raw ingests) |
 | **WalletAuthorityTest**, **SaveQueueAndBackupTest**, **HardwareCatalogTest**, **ScreenFixesTest**, **LogTimeTest** (new) | Wallet-page authority rules; save queue order, debounced backup, `targets.json` format, migration from prefs, downgrade merge, unreadable records/files kept aside, profile in backups; every hardware name; masked IPs, nav bar, Spam Earnings, entities, failed crack; UTC log times + migration |
 | HackExParserTest | Real logcat fixtures for every parser, the 3-min cap, the blank-line barrier, accented names |

@@ -841,10 +841,10 @@ object KnowledgeBaseContent {
             ),
             h("Watch & Earn"),
             facts(
-                f("Where", "Store → Credits tab, bottom", GUIDE),
-                f("Credits", "3 × 4 per day = 12", GUIDE),
-                f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", GUIDE),
-                f("Overclocks", "5 × 4 per day = 20", GUIDE),
+                f("Where", "Store → Credits tab, bottom", MEASURED),
+                f("Credits", "3 × 4 per day = 12", MEASURED),
+                f("Crypto", "250 × 4 per day = 1,000 (to cold storage)", MEASURED),
+                f("Overclocks", "5 × 4 per day = 20", MEASURED),
             ),
         ),
         related = listOf("leveling", "premium")
@@ -998,11 +998,11 @@ object KnowledgeBaseContent {
         listOf(
             facts(
                 f("Free Credits", "+10 per level, streak days 4 and 7, 12/day from ads, Crypto exchange (750/month)", GUIDE),
-                f("Black Market", "5–6 random items a day; per-item daily limits; flash sales", GUIDE),
-                f("Crypto Stash", "10K for 100 Cr, 40K for 400 Cr; 1/day each; straight to cold storage", GUIDE),
-                f("OC packs (Store)", "50 for 55 Cr · 150 for 125 · 400 for 250 · 1,000 for 500", GUIDE),
+                f("Black Market", "A daily rotation with per-item daily limits (4 of most items) and flash sales; a sale can show the full stock", MEASURED),
+                f("Crypto Stash", "10K for 100 Cr, 40K for 400 Cr, straight to cold storage; daily limits vary (2 × 10K and 1 × 40K seen)", GUIDE),
+                f("OC packs (Store)", "50 for 55 Cr · 150 for 125 · 400 for 250 · 1,000 for 500", MEASURED),
                 f("Username change", "First free, then 200 Cr with a 30-day cooldown", GUIDE),
-                f("Credit packs", "$0.99 = 100 Cr up to $49.99 = 6,000 Cr (+20%)", GUIDE),
+                f("Credit packs", "$0.99 = 100 Cr up to $49.99 = 6,000 Cr (+20%)", MEASURED),
                 f("Starter Kit", "$2.99 one-off, 48 h after first disconnect at Lv 2+", GUIDE),
                 f("Hacker Pass", "$4.99/mo: 5 Cr + 5 OC + 500 Crypto daily, weekly consumables, −25% Spam fee, 2× streak", GUIDE),
                 f("Elite Pass", "$9.99/mo: 10 Cr + 10 OC + 1,000 Crypto daily, more drops, −50% Spam fee, pause any process", GUIDE),
