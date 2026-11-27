@@ -9,9 +9,11 @@ Rebuilt on 2026-11-22 from the open items recorded in the docs and code (the ear
 ## Open
 
 ### Your profile from own-log lines
-`Purchased Keygen LvN` and `Upgraded network to <name>` are parsed but ignored. Plan: in `ScrapePipeline`, when the
-log is your own, feed them to `PlayerProfileRepository` (Store stores NEXT levels, so store N + 1; network via
-`HardwareCatalog`). Only move levels forward. Needs fixtures with both lines.
+`Purchased Keygen LvN`, `Upgraded network to <name>` and `Upgraded device to <name>` are parsed but ignored. Plan: in
+`ScrapePipeline`, when the log is your own, feed them to `PlayerProfileRepository` (Store stores NEXT levels, so store
+N + 1; hardware via `HardwareCatalog`). Only move levels forward. Fixtures exist: own logs of Raw Dumps #78 and #144
+(2026-11-27) have all three lines. Botnet purchases and Keygen unlocks write no log line, so those still need the
+Store or Apps page.
 
 ### Spam tracker
 Planned alongside the Siphon tracker (SPAM EARNINGS is already parsed, not stored). Plan: track known Spam
