@@ -22,7 +22,7 @@ class KnowledgeBaseTest {
             (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42,
             (7 to 13) to 38, (7 to 20) to 30, (19 to 10) to 58,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
-            (3 to 1) to 13, // 2026-11-27, Raw Dump #83 (R4 run, first upload)
+            (3 to 1) to 13, (4 to 1) to 14, // 2026-11-27, Raw Dumps #83, #113 (R4 run)
         )
         measured.forEach { (key, v) ->
             val (victim, spam) = key
