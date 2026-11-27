@@ -1,0 +1,94 @@
+// STORE
+Notepad
+Wallet:
+30,120
+Credits: 1,267
+UPGRADES
+CREDITS
+! MARKET
+// NEXT DEVICE
+Ghost II
+LVL 2
+5.0 GHz 16 Core
+Ghost II. Refined stealth architecture. Runs cold and quiet.... read more
+4,000 Crypto
+UPGRADE
+// NEXT NETWORK
+Ghost Link II
+LVL 2
+DL: 40 gbps
+UL: 8 gbps
+Higher bandwidth speeds up all download and upload processes.
+3,000 Crypto
+UPGRADE
+// BOTNET
+Botnet - Farm
+28 SLOTS
+Up to 13% fee at max slots
+A massive server farm for spam operations. Unlocks 28 slots.... read more
+42,000 Crypto
+UPGRADE
+Upgraded to Botnet - Grid.
+// SOFTWARE
+Firewall
+LVL 2
+Defends your device from bypass attempts. Higher levels increase hack time and reduce attacker success rate. Hardening:... read more
+1,675 Crypto
+UPGRADE
+Bypasser
+LVL 3
+Breaks through a target's Firewall. Higher levels increase success rate and reduce hack time.... read more
+3,337 Crypto
+UPGRADE
+Password Encryptor
+LVL 2
+Defends against password crack attempts. Higher levels increase crack time and reduce attacker success rate. Hardening:... read more
+2,303 Crypto
+UPGRADE
+Password Cracker
+LVL 3
+Decrypts a target's password after bypassing their Firewall. Cracked passwords must be re-cracked if the victim... read more
+4,589 Crypto
+UPGRADE
+Spam
+LVL 2
+A virus that earns passive Crypto from a victim's device. Higher spam levels, higher-level victims, and higher-tier... read more
+4,433 Crypto
+UPGRADE
+Siphon
+LVL 1
+A parasitic virus that silently skims Crypto flowing through the victim's account. Quantity is king — deploy on as many... read more
+1,600 Crypto
+BUY
+Rootkit
+LVL 2
+A virus that weakens a victim's defenses, reducing their effective Firewall and Password Encryptor levels for you and... read more
+3,448 Crypto
+UPGRADE
+Antivirus
+LVL 1
+Scans your device to remove viruses. Removal chance depends on your AV level vs. each virus level. Viruses on your... read more
+850 Crypto
+BUY
+Proxy
+LVL 2
+Routes traffic through proxy hops to mask your IP in scan results and victim logs. Must be manually activated from Apps... read more
+1,885 Crypto
+UPGRADE
+Trace
+LVL 1
+Traces connections back through proxy hops to reveal masked IPs during scans. Higher levels have a greater chance of... read more
+765 Crypto
+BUY
+Keygen
+LVL 3
+Proprietary key generator built for your device. Cracks license protection on downloaded software, allowing you to... read more
+2,503 Crypto
+UPGRADE
+⚡ 4-Day Black Hat Sale — 30% OFF 17:46:55
+HOME
+SCAN
+PROCESSES
+APPS
+STORE !
+CREWS

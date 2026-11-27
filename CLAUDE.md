@@ -21,7 +21,7 @@ Context for Claude working in this repo. Last full review: **2026-11-19**, updat
 
 ```bash
 ./gradlew assembleDebug          # build APK
-./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 170 tests, all passing as of 2026-11-27
+./gradlew testDebugUnitTest      # JVM unit tests (app/src/test) — 171 tests, all passing as of 2026-11-27
 ./gradlew connectedAndroidTest   # instrumented tests (device/emulator); read-only, never touch saved data
 ./gradlew assembleRelease -PversionName=1.6   # versionCode is automatic
 ```
@@ -237,7 +237,7 @@ Every write path runs inside `TargetRepository.update { list -> newList }`: upda
 - Rows are **per wallet** (developer: match by wallet). Rate = card maths (sum after the first steal ÷ span), but with any span ≥ 1 min instead of the cards' 0.1 h minimum. Rated rows first by rate; single-steal rows after, by amount. Label: log IP, else the wallet owner's concrete IP from the DB, else username, else wallet. Tap a row to copy. Each run's panel is independent (no cross-run ranking, owner).
 - In memory only: a marathon does not survive a service/app restart (developer). Tests: `MarathonTest` (fixture `own_log_2026-11-21.txt`, Raw Dump #15).
 
-## 4. Test suite (170 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22 and 2026-11-24)
+## 4. Test suite (171 JVM + 2 instrumented; audited 2026-11-20, trimmed 2026-11-22 and 2026-11-24)
 **Developer rule (2026-11-22): every test must be able to catch a real bug.** No tests that restate a table or formula (guide cells, lookup tables, arithmetic, pinned numbers from a formula) or that test test helpers: 31 such tests were deleted, including all guide-number checks. A test passing against the guide proves nothing about the game (the Spam model passed 17 guide-cell tests while wrong). Keep: real in-game data (measurements, dumps, verified prices), parsing, DB/merge rules, edge cases, crash guards, content integrity.
 
 **2026-11-24 duplicate trim (213 → 165):** removed tests that a real-data test already covers (synthetic "simulated" parser screens next to their real-logcat twins, classifier checks repeated by parser tests, masked-IP checks on the same fixtures as `RealDataRegressionTest`, `decrementHardwareName` cases that only call `HardwareCatalog.previous`, `parse() == parseDetailed().updates` which can't fail since one calls the other, a Gson-only bundle read). Small checks were folded into the test that covers the same thing. Before adding a test, check `RealDataRegressionTest` and the class's own file for one that already runs that path.
