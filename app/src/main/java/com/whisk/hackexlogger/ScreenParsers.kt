@@ -7,7 +7,7 @@ object SharedRegex {
 }
 
 enum class ScreenType {
-    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, UNKNOWN
+    HOME, SOFTWARE, WALLET, LOGS, SIPHON, SPAM_EARNINGS, APPS, CREW, PROCESS, STORE, BYPASS, OWN_PROFILE, OWN_DEVICE, UNKNOWN
 }
 
 object ScreenClassifier {
@@ -22,6 +22,9 @@ object ScreenClassifier {
     fun detectScreenType(text: String, lines: List<String>): ScreenType {
         val lowerText = text.lowercase()
         if (lowerText.contains("my device") && (lowerText.contains("daily missions") || lowerText.contains("login streak"))) return ScreenType.OWN_PROFILE
+        // Your own device/settings page (Raw Dump #146): saves nothing. It has an IP, hardware and "> IP Address", so the
+        // UNKNOWN fallback used to save it as a target named "IP Address" and rename your profile.
+        if (lines.any { it.trim().equals("// MY DEVICE", ignoreCase = true) }) return ScreenType.OWN_DEVICE
         if (lowerText.contains("using bypasser") || lowerText.contains("// bypass firewall") || (lowerText.contains("// scan results") && lowerText.contains("fw lv"))) return ScreenType.BYPASS
         if (lowerText.contains("proprietary key generator built for your device")) return ScreenType.STORE
         if (lowerText.contains("installed software")) return ScreenType.SOFTWARE

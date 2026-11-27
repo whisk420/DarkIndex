@@ -222,6 +222,18 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun ownDevicePageSavesNothing() {
+        // Raw Dump #146 (email and IP redacted): the own My Device / settings page. As UNKNOWN it ran every parser,
+        // saved a target named "IP Address" and renamed the player profile.
+        scrape("own_home_2026-11-20.txt")
+        val result = scrape("own_device_2026-11-27.txt")
+        assertEquals(ScreenType.OWN_DEVICE, result.detectedType)
+        assertTrue(result.savedItems.isEmpty())
+        assertEquals("Seamus", PlayerProfileRepository.getProfile().username)
+        assertTrue(TargetRepository.getAllRecords().isEmpty())
+    }
+
+    @Test
     fun ownAppsPageSetsInstalledLevels() {
         // Raw Dump #29: your own Apps page. Levels are stored as installed + 1 (the Store's NEXT convention).
         val result = scrape("own_apps_2026-11-24.txt")

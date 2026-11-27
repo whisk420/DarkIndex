@@ -22,7 +22,7 @@ class KnowledgeBaseTest {
             (28 to 1) to 18, (28 to 2) to 23, (28 to 6) to 42,
             (7 to 13) to 38, (7 to 20) to 30, (19 to 10) to 58,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
-            (3 to 1) to 13, (4 to 1) to 14, (6 to 1) to 15, // 2026-11-27, Raw Dumps #83, #113, #129 (R4 run)
+            (3 to 1) to 13, (4 to 1) to 14, (6 to 1) to 15, (12 to 1) to 18, // 2026-11-27, Raw Dumps #83–#148 (R4 run)
         )
         measured.forEach { (key, v) ->
             val (victim, spam) = key
@@ -113,6 +113,7 @@ class KnowledgeBaseTest {
             Triple("Keygen", 5, 897), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
+            Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
         )
         for ((name, level, xp) in seen) {
             val app = GameFormulas.App.values().first { it.displayName == name }

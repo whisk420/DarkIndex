@@ -41,6 +41,7 @@ object ScrapePipeline {
             ScreenType.STORE -> store(allLines, savedItems, session)
             ScreenType.BYPASS -> bypass(combinedText, savedItems, session)
             ScreenType.PROCESS -> process(allLines, savedItems, session)
+            ScreenType.OWN_DEVICE -> {} // your own device/settings page: nothing to save
             ScreenType.UNKNOWN -> {
                 // Fallback: evaluate every parser (same order as the original service code)
                 home(combinedText, savedItems, session)
