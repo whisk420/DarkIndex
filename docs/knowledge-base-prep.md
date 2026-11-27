@@ -102,7 +102,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* your level and the levels of everyone in a few scans.
 
 ### Leveling
-- **Q-13 XP needed for every level.** Known at Lv 1, 5, 10, 20, 30, 35, 38 and 44.
+- **Q-13 XP needed for every level.** Known at Lv 1, 2, 5, 10, 20, 30, 35, 38 and 44.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
 ---

@@ -83,7 +83,7 @@ Scan → **bypass Firewall** with Bypasser → **crack Encryptor** with Password
 - **Changing your wallet address** (`regen`) costs 50 Credits (guide); old log lines keep the old address.
 - **Gas fee (measured, Raw Dump #31, 10 thefts):** gas = floor(10% of the steal); the victim loses the full amount, the thief receives the rest (e.g. 993 → 99 gas, +894). The "Stole N" log shows **what the victim lost** (developer). That's fine because income is only compared across targets.
 - **Cold storage cap** by level: 3,000 (L1), 8,841 (L5), 29,124 (L10), 121,891 (L20), 294,147+ (L30+). The developer's own Wallet showed `Max Limit: 755,519` on 2026-11-24 (level not recorded; the developer will measure Q-10 after their next reboot).
-- **XP to next level:** L1 589, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
+- **XP to next level:** L1 589, L2 1,019, L5 2,605, L10 5,919, L20 14,209, L30 24,079, L35 29,484, L38 32,860, L44 39,888.
 - **Over-levelling hurts:** scans find targets near your level (exact window unknown, Q-12). (Spam income ignores your level: CLAUDE.md §3.7.) Hack rep falls off at a +6..+9 **software** gap (your offence vs their defence software, not player levels) and is zero at +10 (guide).
 - **Botnet** tiers (spam slots): Free 2, Node 4, Cluster 8, Grid 16, Farm 28, Hive 44, Nexus 64. There is a scaling fee on spam income up to 30% at Nexus. The Store shows e.g. `Botnet - Nexus / 64 slots / MAX TIER`.
 - **Downloaded apps are activated manually** (developer, 2026-11-20). Activation writes **no log line**, so installed levels can rise with no `Purchased`/log evidence. **Both the Apps screen and the Store are reliable for your levels** (developer, 2026-11-20): Apps shows the installed level directly (plus `LOCKEDLVL N available <price> Crypto` for a downloaded version waiting to be activated, and `(+N)` bonuses); the Store shows next level, so subtract 1. They only disagree when one is stale (in dump #8 the developer had upgraded since the last Store scrape). Since 2026-11-24 the app reads both (`OwnAppsParser`, Raw Dump #29); the newest scrape wins.
@@ -116,7 +116,9 @@ The cubic is only valid at higher levels (verified L19–25). **Above L25 it run
 
 **Leaderboard score — VERIFIED on 6 profiles:** `Score = floor(Level × Rep^0.75)`.
 
-**Low-level XP (2026-11-27, Raw Dumps #43/#45):** Keygen Lv1 (600) → +120 XP, and the Keygen unlock of a downloaded Proxy Lv1 (fee 115 = ceil(15% × 765)) → +153 XP = 0.20 × the full Store price. So at Lv1 software XP is 0.20 XP/crypto, not 0.1717.
+**Low-level XP (2026-11-27, Raw Dumps #43/#45):** Keygen Lv1 (600) → +120 XP, and the Keygen unlock of a downloaded Proxy Lv1 (fee 115 = ceil(15% × 765)) → +153 XP = 0.20 × the full Store price. So at Lv1 software XP is 0.20 XP/crypto, not 0.1717. Spam Lv1 unlock (fee 270 = ceil(15% × 1,800)) → +360 XP = 0.20 × 1,800 again (Raw Dump #48). The Rootkit Lv1 LOCKED fee is 210 = ceil(15% × 1,400) (#49).
+
+**Proxy activation on Ghost (Raw Dumps #45→#48):** 24 h at Proxy Lv1 cost 204 = ceil(10 × √1 × 24 × 0.85), so the price uses the real Proxy level, not Lv1 + the Ghost (+5). The Apps page then showed `ACTIVE` / `47h 58m`: the Ghost perk doubles the duration (guide's "lasts 2×" confirmed). Activation gave no XP. Reaching Lv2 coincided with +10 OC and +10 Credits (likely a level-up reward; one data point).
 
 **Keygen XP (measured, developer logs; badged MEASURED in the KB):** software XP is ≈ 0.1717 XP per full Store crypto, awarded in full on Keygen unlocks. Device upgrades give 0.25 XP/crypto, older hardware/network 0.20.
 
