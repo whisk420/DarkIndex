@@ -502,8 +502,8 @@ object KnowledgeBaseContent {
                 GUIDE,
                 "An activation keeps the level it started with. Upgrading Proxy mid-activation doesn't apply until you re-activate, which forfeits the time left.",
                 "Successful hack chains (download/upload) while proxied give +10 rep, once per victim per process type per 24 h.",
-                "Ghost Link network: Proxy lasts twice as long and counts +5 vs Trace.",
             ),
+            p("Ghost Link network: your Proxy lasts twice as long and counts as 5 levels higher, both against Trace and for how much of your IP it hides.", CONFIRMED),
             h("Stealth (Proxy 20+)"),
             facts(
                 f("Effect", "Hidden from random scans; people with your IP can still look you up", GUIDE),
@@ -629,16 +629,17 @@ object KnowledgeBaseContent {
             ),
             h("Cold storage cap"),
             table(
-                GUIDE, listOf("Level", "Cap"),
+                MEASURED, listOf("Level", "Cap"),
                 GameFormulas.COLD_STORAGE_KNOWN.entries.map { listOf("Lv ${it.key}", n(it.value) + if (it.key == 30) "+" else "") },
-                "Grows faster with level. Missions, streaks, ads and stashes ignore the cap."
+                "Grows faster with level. Lv 10, 20 and 30 are from the guide. Black Market stashes go in even above the cap."
             ),
+            warn("When your cold storage is at its cap, new Crypto lands in your hot wallet, where it can be stolen. Spend it, or use a Wallet Shield."),
             h("Crypto → Credits"),
             facts(
                 f("Rate", "250 Crypto per Credit", CONFIRMED),
                 f("Minimum", "5 Credits (1,250 Crypto)", GUIDE),
                 f("Monthly cap", "750 Credits, resets on the 1st", CONFIRMED),
-                f("Drains", "Hot wallet first, then cold storage", GUIDE),
+                f("Drains", "Hot wallet first, then cold storage (purchases too)", MEASURED),
             ),
             facts(
                 f("Per steal", "No minimum or maximum: take any amount, up to the whole hot wallet", CONFIRMED),
@@ -771,23 +772,26 @@ object KnowledgeBaseContent {
         listOf(
             h("XP sources"),
             facts(
-                f("Software (Store or Keygen)", "≈0.17 XP per Store crypto", MEASURED),
+                f("Software (Store or Keygen)", "0.2 × base × level^1.25: 0.20 XP per crypto at Lv 1, about 0.17 by Lv 26", MEASURED),
                 f("Device", "0.25 XP per crypto", MEASURED),
+                f("Network", "0.20 XP per crypto", MEASURED),
+                f("Botnet", "1/6 XP per crypto", MEASURED),
                 f("Missions", "100 / 150 / 200 XP", GUIDE),
                 f("Login streak day 1", "100 XP (200 with a subscription)", GUIDE),
             ),
             h("XP to next level"),
             table(
-                GUIDE, listOf("Level", "XP to next"),
+                MEASURED, listOf("Level", "XP to next"),
                 GameFormulas.XP_TO_NEXT_KNOWN.entries.map { listOf("Lv ${it.key}", n(it.value)) },
-                "Cumulative: Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940 (guide). Lv 35/38/44 confirmed in-game."
+                "Lv 10, 20 and 30 are from the guide; the rest seen in game. Cumulative (guide): Lv 5 7,752 · Lv 10 30,437 · Lv 20 133,683 · Lv 30 328,940."
             ),
             h("Level-up rewards"),
             facts(
-                f("Overclocks", "+10", GUIDE),
-                f("Credits", "+10", GUIDE),
-                f("Cold storage", "Bigger cap (see Wallet)", GUIDE),
-                f("Node botnet", "Needs Lv 3", GUIDE),
+                f("Overclocks", "+10", MEASURED),
+                f("Credits", "+10", MEASURED),
+                f("Cold storage", "Bigger cap (see Wallet)", MEASURED),
+                f("Node botnet", "Needs Lv 3", MEASURED),
+                f("Big purchases", "One purchase can pass two levels at once; you get both rewards", MEASURED),
                 f("Reboot", "Invitation at Lv 50", GUIDE),
             ),
             h("Over-levelling"),
@@ -870,7 +874,8 @@ object KnowledgeBaseContent {
                 }
             ),
             facts(
-                f("Device XP", "0.25 XP per crypto", GUIDE),
+                f("Device XP", "0.25 XP per crypto", MEASURED),
+                f("Network XP", "0.20 XP per crypto", MEASURED),
                 f("Virus penalty", "−1% per virus on your device, max −40%", GUIDE),
             ),
             h("Prestige hardware"),

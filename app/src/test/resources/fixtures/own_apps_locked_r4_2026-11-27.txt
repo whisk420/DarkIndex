@@ -1,0 +1,94 @@
+// APPS
+Notepad
+Wallet:
+5,235
+Credits:
+1,247
+SPAM
+7
+/ 20
++4
+Botnet - Grid
+99/hr
+2,376/day
+>
+SIPHON
+1
+3
+DEPLOYED EARNED
+>
+▼ Installed Applications
+List view
+Grid view
+[-]
+Antivirus
+LVL 2
+LOCKEDLVL 5 available1,288 Crypto
+Firewall
+LVL 4
+Password Encryptor
+LVL 2
+LOCKEDLVL 5 available1,416 Crypto
+Proxy 
+ACTIVE
+39h 42m
+LVL 1
+(+5)
+LOCKEDLVL 4 available867 Crypto
+Trace
+LVL 1
+LOCKEDLVL 5 available1,273 Crypto
+Bypasser
+LVL 2
+LOCKEDLVL 5 available1,212 Crypto
+Password Cracker
+LVL 2
+LOCKEDLVL 5 available1,666 Crypto
+Spam 
+99/hr
+LVL 1
+LOCKEDLVL 5 available2,994 Crypto
+Rootkit
+LVL 1
+Siphon 
+3 siphoned
+LVL 1
+LOCKEDLVL 3 available1,125 Crypto
+Keygen
+LVL 5
+Notepad
+Message Encryptor
+▼ Consumables
+[-]
+IP Scrambler
+New identity, who dis? Generates a fresh random IP. Current active bypasses against you will fail.
+Use
+x6
+System Purge
+Nuke every virus on your device. No scan, no wait, just gone. Restores 90% of lost reputation.
+Use
+x16
+EMP Pulse
+Kill switch. Cancels all pending processes against you and blocks new ones for 1 hour. 2hr cooldown.
+Use
+x15
+Wallet Shield
+Blocks crypto theft for 24 hours. 48hr cooldown between uses.
+Use
+x18
+Backdoor
+Instantly bypass the firewall. Targets with Firewall Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x40
+Exploit Kit
+Skip the password crack entirely. Targets with Encryptor Hardening (Lv.3+) have a chance to block it. Consumed on use.
+x12
+Log Lock
+Locks your device log for 8 hours so attackers can't edit it. Trap a traced attacker's IP — they can't scrub their tracks. 12hr cooldown between uses. Requires app v1.3.0 or later to use.
+Use
+x9
+HOME
+SCAN
+PROCESSES
+APPS
+STORE !
+CREWS

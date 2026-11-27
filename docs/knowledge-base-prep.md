@@ -1,7 +1,7 @@
 # Knowledge Base review
 
 Where the in-app Knowledge Base (📖) stands, what we're still checking, and what to measure next.
-Last updated 2026-11-22.
+Last updated 2026-11-27.
 
 ## How it works
 
@@ -31,28 +31,28 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 - Rootkit virus
 - Virus rules (all types)
 - Crews & the crew server (fully measured from the crew's whole server log)
+- Keygen & Store prices: the exact price formula, key fees and XP are all measured (2026-11-27)
 
 **Partly done**
-- Botnet & Spam fees: the fee is guide
-- Uploads & downloads: upload times measured; uploads and downloads slow each other, not hacks
-- Bypass & crack: success odds measured; bonuses just add up
-- Processes: network and processor jobs slow down only their own kind
+- Botnet & Spam fees: fee, Elite −50% and the Node–Farm prices measured; Hive and Nexus prices still guide
+- Uploads & downloads: upload times measured; first download times (Q-03)
+- Bypass & crack: success odds measured, but one on-screen crack chance disagrees (26% vs 18% at −3)
+- Processes: +75% per extra process measured; network and processor pools confirmed
 - Antivirus: one scan lists every virus on you, removed or not
-- Keygen & Store prices: XP per Crypto measured
-- Wallet, theft & gas: no minimum or maximum per steal
+- Wallet, theft & gas: no minimum or maximum per steal; hot wallet pays first; cold cap by level (Q-10)
 - Scanning: 10 targets by default (12 with our +2 Uplink); Encryptor only shows on an Apex reboot
-- Leveling & XP: XP per Crypto measured
+- Leveling & XP: software XP formula measured; XP per level Lv 1–8 (Q-13)
+- Reputation & score: score formula measured; rep loss 25 per Lv1 virus seen
+- Missions, streaks & Watch & Earn: Watch & Earn measured
+- Premium (Credits, OC, passes): Credit packs, OC packs and the Black Market rotation measured
+- Consumables & hardening: Black Market prices match the guide; effects and hardening still guide
+- Reboot Protocol: Ghost perks seen (Proxy +5 for masking, 2× duration; Backdoor still logs your IP)
 
 **Not started**
-- Consumables & hardening
 - Proxy, Stealth & Trace
 - Software
 - Logs
-- Reputation & score
-- Missions, streaks & Watch & Earn
 - Hardware
-- Reboot Protocol
-- Premium (Credits, OC, passes)
 - How DarkIndex works
 
 ---
@@ -91,7 +91,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* your level and the levels of everyone in a few scans.
 
 ### Leveling
-- **Q-13 XP needed for every level.** Known at Lv 1–8, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
+- **Q-13 XP needed for every level.** Known at Lv 1–9, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
 ---
