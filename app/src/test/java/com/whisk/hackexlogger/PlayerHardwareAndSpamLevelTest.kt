@@ -122,6 +122,18 @@ CREWS 3"""
     }
 
     @Test
+    fun storeParserReadsBotnetForSaleAfterReboot() {
+        // Raw Dump #41: level 1 after a Ghost reboot. The Botnet section shows the NEXT tier with its requirement,
+        // description, price and BUY; the description used to be glued onto the status.
+        val store = StoreScreenParser.parse(TestEnv.fixture("store_reboot_lv1_2026-11-27.txt").split("\n"))!!
+        assertEquals("Botnet - Free (2 slots), next: Botnet - Node (4 slots)", store.botnetStatus)
+        assertEquals("Ghost II", store.nextDevice)
+        assertEquals("Ghost Link II", store.nextNetwork)
+        assertEquals(2, store.nextSoftwareLevels["Keygen"])
+        assertEquals(1, store.nextSoftwareLevels["Spam"])
+    }
+
+    @Test
     fun profileStoresCurrentHardwareWhenMaxed() {
         PlayerProfileRepository.updateProfile(StoreScreenParser.parse(maxedStoreRaw.split("\n"))!!)
         val p = PlayerProfileRepository.getProfile()

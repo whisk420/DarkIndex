@@ -681,6 +681,8 @@ data class StoreScreen(
 
 object StoreScreenParser {
     private enum class Section { DEVICE, NETWORK, BOTNET, SOFTWARE, OTHER }
+    private val BOTNET_SLOTS = Regex("""\d+\s+slots""", RegexOption.IGNORE_CASE)
+    private val PRICE_LINE = Regex("""[\d,]+\s+Crypto""", RegexOption.IGNORE_CASE)
 
     /**
      * Section headers differ by state: `// NEXT DEVICE` / `// NEXT NETWORK` normally, but once maxed the game shows
@@ -703,7 +705,10 @@ object StoreScreenParser {
 
         var nextDevice: String? = null
         var nextNetwork: String? = null
-        var botnetStatus: String? = null
+        var botnetName: String? = null
+        var botnetSlots: String? = null
+        var botnetMaxed = false
+        var botnetForSale = false
         var deviceMaxed = false
         var networkMaxed = false
         val softwareLevels = mutableMapOf<String, Int>()
@@ -733,12 +738,17 @@ object StoreScreenParser {
                     else if (nextNetwork == null && line.isNotEmpty()) nextNetwork = line
                 }
                 Section.BOTNET -> {
-                    if (botnetStatus == null && line.isNotEmpty()) {
-                        botnetStatus = line // e.g. "Botnet - Nexus"
-                    } else if (botnetStatus != null && line.contains("slots")) {
-                        botnetStatus = "$botnetStatus ($line)"
-                    } else if (botnetStatus != null && line.contains("MAX TIER")) {
-                        botnetStatus = "$botnetStatus [MAX]"
+                    // Maxed: "Botnet - Nexus" / "64 slots" / "MAX TIER" (the tier you own).
+                    // Otherwise the NEXT tier: "Botnet - Node" / "4 SLOTS" / requirement / description /
+                    // "800 Crypto" / "BUY" (reboot, Raw Dump #41), so the tier you own is the one before it.
+                    if (botnetName == null && line.isNotEmpty()) {
+                        botnetName = line
+                    } else if (botnetName != null && botnetSlots == null && BOTNET_SLOTS.matches(line)) {
+                        botnetSlots = line.lowercase()
+                    } else if (line.equals("MAX TIER", ignoreCase = true)) {
+                        botnetMaxed = true
+                    } else if (line.equals("BUY", ignoreCase = true) || PRICE_LINE.matches(line)) {
+                        botnetForSale = true
                     }
                 }
                 Section.SOFTWARE -> {
@@ -756,6 +766,19 @@ object StoreScreenParser {
             }
         }
 
+        val botnetStatus = botnetName?.let { name ->
+            val shown = if (botnetSlots != null) "$name ($botnetSlots)" else name
+            when {
+                botnetMaxed -> "$shown [MAX]"
+                botnetForSale -> {
+                    val tiers = GameFormulas.BOTNET_TIERS
+                    val idx = tiers.indexOfFirst { name.endsWith(it.name, ignoreCase = true) }
+                    val owned = if (idx > 0) tiers[idx - 1] else null
+                    if (owned != null) "Botnet - ${owned.name} (${owned.slots} slots), next: $shown" else "Next: $shown"
+                }
+                else -> shown
+            }
+        }
         return StoreScreen(nextDevice, nextNetwork, botnetStatus, softwareLevels, deviceMaxed, networkMaxed)
     }
 }
