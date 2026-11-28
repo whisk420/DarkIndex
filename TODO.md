@@ -8,11 +8,8 @@ Rebuilt on 2026-11-22 from the open items recorded in the docs and code (the ear
 
 ## Open
 
-### Thin out MainActivity and OverlayService
-Both are about 650 lines. Plan: move menu actions (export, import, maintenance, wipe) and the toolbars into small
-helpers. Readability only; needs on-device testing.
-
 ## Done
+- 2026-11-28: MainActivity 706 → 414 lines (`DashboardDataActions`, `PermissionOnboarding`) and OverlayService 627 → 373 (`QueueToolbars`); no behaviour change except the Recon toolbar now closes with the service.
 - 2026-11-28: Your own log keeps the profile current: Keygen purchases and device/network upgrades, forward only unless the reboot lines are on screen (Raw Dumps #121, #144).
 - 2026-11-28: Dropped (developer): Spam tracker, unknown-hardware fallbacks (every name in 679 targets parses), the Downloads-backup switch.
 - 2026-11-27: The Scan screen stores every unmasked row (FW, and ENC when shown), Raw Dumps #24 and #153.
