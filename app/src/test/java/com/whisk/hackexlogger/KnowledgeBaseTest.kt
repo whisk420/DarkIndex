@@ -85,15 +85,15 @@ class KnowledgeBaseTest {
 
     @Test
     fun storePricesMatchEveryRealStorePrice() {
-        // Every real Store price recorded: Raw Dumps #6 and #38 (Lv 19–35) and the R4 reboot run #41–#134 (Lv 1–7)
+        // Every real Store price recorded: Raw Dumps #6 and #38 (Lv 19–35) and the R4 reboot run #41–#190 (Lv 1–7)
         val real = listOf(
             "Keygen" to listOf(1 to 600, 2 to 1_478, 3 to 2_503, 4 to 3_638, 5 to 4_862, 6 to 6_163, 21 to 31_408, 25 to 39_398, 35 to 61_016),
-            "Bypasser" to listOf(2 to 1_970, 3 to 3_337, 21 to 41_877, 34 to 78_346),
-            "Password Cracker" to listOf(2 to 2_709, 3 to 4_589, 35 to 111_862),
-            "Firewall" to listOf(2 to 1_675, 3 to 2_837, 21 to 35_596, 32 to 61_547),
+            "Bypasser" to listOf(2 to 1_970, 3 to 3_337, 6 to 8_217, 21 to 41_877, 34 to 78_346),
+            "Password Cracker" to listOf(2 to 2_709, 3 to 4_589, 6 to 11_298, 35 to 111_862),
+            "Firewall" to listOf(2 to 1_675, 3 to 2_837, 5 to 5_511, 21 to 35_596, 32 to 61_547),
             "Password Encryptor" to listOf(2 to 2_303, 19 to 42_973, 34 to 91_567),
-            "Spam" to listOf(1 to 1_800, 2 to 4_433, 21 to 94_224),
-            "Siphon" to listOf(1 to 1_600, 2 to 3_940, 26 to 110_557),
+            "Spam" to listOf(1 to 1_800, 2 to 4_433, 6 to 18_488, 21 to 94_224),
+            "Siphon" to listOf(1 to 1_600, 2 to 3_940, 4 to 9_701, 26 to 110_557),
             "Rootkit" to listOf(1 to 1_400, 2 to 3_448, 7 to 17_570),
             "Antivirus" to listOf(1 to 850, 2 to 2_094, 31 to 73_824),
             "Proxy" to listOf(1 to 765, 2 to 1_885, 21 to 40_046, 28 to 58_207),
@@ -114,7 +114,7 @@ class KnowledgeBaseTest {
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
             Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
-            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), Triple("Siphon", 3, 1_263), // Keygen unlocks, #174–#183
+            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), Triple("Siphon", 3, 1_263), Triple("Password Cracker", 5, 1_645), // Keygen unlocks, #174–#189
         )
         for ((name, level, xp) in seen) {
             val app = GameFormulas.App.values().first { it.displayName == name }
