@@ -111,7 +111,7 @@ class KnowledgeBaseTest {
         // 2026-11-27 own-Home XP readings around each purchase/unlock (Raw Dumps #43–#120), plus Keygen 26 (older log)
         val seen = listOf(
             Triple("Keygen", 1, 120), Triple("Keygen", 2, 285), Triple("Keygen", 3, 473), Triple("Keygen", 4, 679),
-            Triple("Keygen", 5, 897), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
+            Triple("Keygen", 5, 897), Triple("Keygen", 6, 1_127), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
             Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
