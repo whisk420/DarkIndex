@@ -125,6 +125,20 @@ class KnowledgeBaseTest {
     }
 
     @Test
+    fun hackOddsMatchTheGamesOwnProcessRows() {
+        // Running and finished bypass/crack rows show the game's own chance (2026-11-27/28, Raw Dumps #166, #202, #236):
+        // (your offence level, their defence level) to the chance on screen
+        val seen = listOf(
+            Triple(2, 2, 50), Triple(2, 1, 58), Triple(5, 3, 66), Triple(5, 4, 58), // bypasses, #202
+            Triple(5, 4, 58), Triple(5, 1, 82),                                     // cracks, #236
+            Triple(2, 5, 26),                                                       // crack at −3, #166
+        )
+        for ((offence, defence, chance) in seen) {
+            assertEquals("$offence vs $defence", chance, GameFormulas.hackSuccessChance(offence, defence))
+        }
+    }
+
+    @Test
     fun proxyActivationMatchesTheGame() {
         // Raw Dump #34: Proxy Lv 27 "Select Duration" panel
         assertEquals(listOf(104, 297, 562, 1_061), listOf(2, 6, 12, 24).map { GameFormulas.proxyActivationCost(27, it) })

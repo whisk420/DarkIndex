@@ -36,7 +36,7 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 **Partly done**
 - Botnet & Spam fees: fee, Elite −50% and the Node–Hive prices measured; only the Nexus price is still guide
 - Uploads & downloads: upload times measured; first download times (Q-03)
-- Bypass & crack: success odds measured, but one on-screen crack chance disagrees (26% vs 18% at −3)
+- Bypass & crack: success odds checked against the game's own on-screen chances (−3 corrected to 26%); −4 and below unchecked
 - Processes: +75% per extra process measured; network and processor pools confirmed
 - Antivirus: one scan lists every virus on you, removed or not
 - Wallet, theft & gas: no minimum or maximum per steal; hot wallet pays first; cold cap by level (Q-10)
@@ -81,7 +81,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* every `[TRACED]` vs masked line in your victim log, with your Trace level.
 
 ### Wallet
-- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5–11, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
+- **Q-10 Cold storage cap at every level.** Known at Lv 1–11, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
 - **Q-11 Daily steal maximum.** A single steal has no limit, but there seems to be a cap per day. How much?
   Hard to pin down.
