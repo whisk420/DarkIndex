@@ -229,7 +229,7 @@ Lines seen in real data but **ignored**:
 - `Upgraded network to Harvest Node X`
 - `Upgraded device to Ghost II` (Raw Dump #78). Botnet purchases and Keygen unlocks of downloads write **no** log line; buying Keygen does (`Purchased Keygen LvN`).
 
-The last two could feed the player profile automatically (TODO: profile from own-log lines).
+Since 2026-11-28 the Keygen and upgrade lines update the player profile (CLAUDE.md §3.4).
 
 ## 5. Developer Q&A (answered 2026-11-19)
 
