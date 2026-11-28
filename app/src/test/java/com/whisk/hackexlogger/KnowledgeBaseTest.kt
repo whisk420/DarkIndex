@@ -115,7 +115,7 @@ class KnowledgeBaseTest {
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
             Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
-            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), Triple("Siphon", 3, 1_263), Triple("Password Cracker", 5, 1_645), // Keygen unlocks, #174–#189
+            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), Triple("Siphon", 3, 1_263), Triple("Password Cracker", 5, 1_645), Triple("Antivirus", 5, 1_271), // Keygen unlocks, #174–#189
         )
         for ((name, level, xp) in seen) {
             val app = GameFormulas.App.values().first { it.displayName == name }

@@ -74,6 +74,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 
 ### Antivirus
 - **Q-06 Scan time.** The guide's text and table disagree at device Lv 10 (55 vs 53 min) and Lv 12 (48 vs 45 min).
+  First reading (2026-11-28): device Lv 3 = 120 min exactly, the same at Antivirus Lv 2 and 5 (the AV level doesn't matter). Next: device Lv 4 after the Ghost IV upgrade (the table interpolates 105 min).
   *To measure:* your device and the scan duration, with nothing else running.
 
 ### Proxy & Trace

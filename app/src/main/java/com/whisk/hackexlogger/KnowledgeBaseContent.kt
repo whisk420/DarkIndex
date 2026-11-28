@@ -373,7 +373,7 @@ object KnowledgeBaseContent {
                 f("Statuses", "Pending, Completed, Failed, Invalidated, EMP Killed", GUIDE),
                 f("Concurrency", "Each extra process adds +75% of base time: 2 → 1.75×, 3 → 2.5×, 4 → 3.25×", MEASURED),
                 f("Two pools", "Network (uploads, downloads) and processor (bypasses, cracks) slow down only their own kind. A bypass doesn't slow an upload", CONFIRMED),
-                f("Overclock", "Skips 90 s each", GUIDE),
+                f("Overclock", "Skips 90 s each", MEASURED),
                 f("Ads", "Up to 4 per process: −10%, −9%, −8%, −7% (34% total)", GUIDE),
                 f("Running limit", "500 in progress", GUIDE),
                 f("List limit", "1,000 rows including finished ones; hard cap, delete to start more", GUIDE),
@@ -430,6 +430,7 @@ object KnowledgeBaseContent {
                 },
                 "A scan shares your device with bypasses and cracks, so it slows down while they run"
             ),
+            p("Your Antivirus level doesn't change how long a scan takes, only your device does. A device Lv 3 scan takes exactly 2 hours.", MEASURED),
             warn("The guide gives two times for device Lv 10 (55 or 53 min) and Lv 12 (48 or 45 min). This table uses the lower ones (Q-06)."),
             calc(KbCalculators.ANTIVIRUS),
             tip("Scan when you aren't hacking: one running bypass or crack makes the scan take 75% longer."),

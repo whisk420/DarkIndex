@@ -201,6 +201,8 @@ Parser-facing descriptions of each game screen's accessibility text, mostly lear
 
 **Bypass durations (Q-04, first reading, Raw Dump #241):** 6 bypasses running at once (×4.75 concurrency), developer's Bypasser 5 on Ghost III; solo ≈ time left ÷ (1 − progress) ÷ 4.75: FW 3 (+2) ≈ 8 min, FW 5 (0) ≈ 24 min, FW 7 (−2) ≈ 1 h 36 min, FW 9 (−4) ≈ 5 h 16 min (shown `25h 0m 1s` at 0%, `OC (1000)`). Roughly ×3–4 per 2 levels of their Firewall. Targets' devices unknown.
 
+**Antivirus scan time (Q-06, Raw Dumps #259, #264):** with nothing else running on a Ghost III (device Lv 3), an Antivirus Lv2 scan and an Antivirus Lv5 scan both showed `2h 0m 0s`: the AV level doesn't matter, and device Lv 3 = 120 min matches the guide table. **Overclocks skip exactly 90 s each:** the 2 h scan shows `OC (80)`, the 25 h bypass `OC (1000)`.
+
 **Process rows show the game's own hack odds:** `Password Crack` `Lv.5` (H1k4run, Encryptor 5) with the developer's Cracker Lv2, no Rootkit: `26% chance`, which corrected the table's −3 entry (§3).
 
 **Process:** `// PROCESSES`, `109 active tasks`, then blocks `Password Crack `/`Lv.8`/`DONE|INVALIDATED`/`<ip>`; downloads are `Download `/`Lv.6`/`DONE`/`DL:`/`Rootkit`/`<ip>`.
