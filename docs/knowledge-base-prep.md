@@ -69,7 +69,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
 ### Bypass & crack
 - **Q-04 ⭐ Bypass and crack durations** by level and gap. First reading (2026-11-28): Bypasser 5 vs FW 3/5/7/9 ≈ 8 min / 24 min / 1 h 36 min / 5 h 16 min solo.
   *To measure:* duration shown, your device, both levels, with nothing else running.
-- **Q-05 Rep from a hack.** The guide says up to about 105, scaling with the victim's defence. First readings (2026-11-28, one Lv8 target): bypass at +3 = +10, crack at +2 = +25, a Lv1 Rootkit landing = +15.
+- **Q-05 Rep from a hack.** The guide says up to about 105, scaling with the victim's defence. First readings (2026-11-28, one Lv8 target): bypass at +3 = +10, crack at +2 = +25, a Lv1 Rootkit landing = +15, a steal = 0.
   *To measure:* your rep before and after a bypass and a crack, with both software levels.
 
 ### Antivirus
