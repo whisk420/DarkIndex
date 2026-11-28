@@ -23,6 +23,7 @@ class KnowledgeBaseTest {
             (7 to 13) to 38, (7 to 20) to 30, (19 to 10) to 58,
             (2 to 1) to 13, (2 to 3) to 18, (2 to 7) to 24, (2 to 11) to 26,
             (3 to 1) to 13, (4 to 1) to 14, (6 to 1) to 15, (12 to 1) to 18, // 2026-11-27, Raw Dumps #83–#148 (R4 run)
+            (2 to 5) to 21, // Spam 3 levels above the victim (b1r9gm0d, Lv2), Raw Dump #200: the first above-victim reading
         )
         measured.forEach { (key, v) ->
             val (victim, spam) = key
@@ -85,15 +86,15 @@ class KnowledgeBaseTest {
 
     @Test
     fun storePricesMatchEveryRealStorePrice() {
-        // Every real Store price recorded: Raw Dumps #6 and #38 (Lv 19–35) and the R4 reboot run #41–#134 (Lv 1–7)
+        // Every real Store price recorded: Raw Dumps #6 and #38 (Lv 19–35) and the R4 reboot run #41–#190 (Lv 1–7)
         val real = listOf(
             "Keygen" to listOf(1 to 600, 2 to 1_478, 3 to 2_503, 4 to 3_638, 5 to 4_862, 6 to 6_163, 21 to 31_408, 25 to 39_398, 35 to 61_016),
-            "Bypasser" to listOf(2 to 1_970, 3 to 3_337, 21 to 41_877, 34 to 78_346),
-            "Password Cracker" to listOf(2 to 2_709, 3 to 4_589, 35 to 111_862),
-            "Firewall" to listOf(2 to 1_675, 3 to 2_837, 21 to 35_596, 32 to 61_547),
+            "Bypasser" to listOf(2 to 1_970, 3 to 3_337, 6 to 8_217, 21 to 41_877, 34 to 78_346),
+            "Password Cracker" to listOf(2 to 2_709, 3 to 4_589, 6 to 11_298, 35 to 111_862),
+            "Firewall" to listOf(2 to 1_675, 3 to 2_837, 5 to 5_511, 21 to 35_596, 32 to 61_547),
             "Password Encryptor" to listOf(2 to 2_303, 19 to 42_973, 34 to 91_567),
-            "Spam" to listOf(1 to 1_800, 2 to 4_433, 21 to 94_224),
-            "Siphon" to listOf(1 to 1_600, 2 to 3_940, 26 to 110_557),
+            "Spam" to listOf(1 to 1_800, 2 to 4_433, 6 to 18_488, 21 to 94_224),
+            "Siphon" to listOf(1 to 1_600, 2 to 3_940, 4 to 9_701, 26 to 110_557),
             "Rootkit" to listOf(1 to 1_400, 2 to 3_448, 7 to 17_570),
             "Antivirus" to listOf(1 to 850, 2 to 2_094, 31 to 73_824),
             "Proxy" to listOf(1 to 765, 2 to 1_885, 21 to 40_046, 28 to 58_207),
@@ -110,16 +111,31 @@ class KnowledgeBaseTest {
         // 2026-11-27 own-Home XP readings around each purchase/unlock (Raw Dumps #43–#120), plus Keygen 26 (older log)
         val seen = listOf(
             Triple("Keygen", 1, 120), Triple("Keygen", 2, 285), Triple("Keygen", 3, 473), Triple("Keygen", 4, 679),
-            Triple("Keygen", 5, 897), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
+            Triple("Keygen", 5, 897), Triple("Keygen", 6, 1_127), Triple("Keygen", 26, 7_045), Triple("Proxy", 1, 153), Triple("Spam", 1, 360),
             Triple("Rootkit", 1, 280), Triple("Bypasser", 2, 380), Triple("Password Cracker", 2, 523),
             Triple("Antivirus", 1, 170), Triple("Firewall", 2, 323), Triple("Trace", 1, 153), Triple("Siphon", 1, 320),
             Triple("Antivirus", 2, 404), Triple("Password Encryptor", 2, 445),
-            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), // Keygen unlocks, Raw Dumps #174–#177
+            Triple("Spam", 5, 2_691), Triple("Bypasser", 5, 1_196), Triple("Siphon", 3, 1_263), Triple("Password Cracker", 5, 1_645), // Keygen unlocks, #174–#189
         )
         for ((name, level, xp) in seen) {
             val app = GameFormulas.App.values().first { it.displayName == name }
             // The game keeps XP fractions, so a reading is within 1 of the exact value
             assertEquals("$name Lv$level", xp.toDouble(), GameFormulas.softwareXp(app, level), 1.0)
+        }
+    }
+
+    @Test
+    fun hackOddsMatchTheGamesOwnProcessRows() {
+        // Running and finished bypass/crack rows show the game's own chance (2026-11-27/28, Raw Dumps #166, #202, #236):
+        // (your offence level, their defence level) to the chance on screen
+        val seen = listOf(
+            Triple(2, 2, 50), Triple(2, 1, 58), Triple(5, 3, 66), Triple(5, 4, 58), // bypasses, #202
+            Triple(5, 4, 58), Triple(5, 1, 82),                                     // cracks, #236
+            Triple(2, 5, 26),                                                       // crack at −3, #166
+            Triple(5, 5, 50), Triple(5, 3, 66), Triple(5, 7, 34), Triple(5, 9, 18), // running bypasses, #241
+        )
+        for ((offence, defence, chance) in seen) {
+            assertEquals("$offence vs $defence", chance, GameFormulas.hackSuccessChance(offence, defence))
         }
     }
 

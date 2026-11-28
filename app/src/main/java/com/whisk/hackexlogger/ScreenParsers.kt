@@ -555,6 +555,8 @@ data class ProcessDownloadedSoftware(val ip: String, val name: String, val level
 data class ProcessScreen(val ips: List<String>, val invalidatedIps: List<String>, val downloads: List<ProcessDownloadedSoftware>)
 
 object ProcessScreenParser {
+    private val PROCESS_GROUP_HEADER = Regex("""\S+\s+PROCESS(?:ES)?""", RegexOption.IGNORE_CASE)
+
     fun parse(allLines: List<String>): ProcessScreen? {
         // Requires the real header; "PROCESSES" alone is also a nav bar button on your own screens.
         val rawLines = CommonParserUtil.stripNavBar(allLines)
@@ -597,8 +599,9 @@ object ProcessScreenParser {
                 }
             }
 
-            // The filter header glues the IP to the row count ("205.79.204.42" + "9 PROCESSES"): never an IP to save
-            if (trimmed.endsWith("PROCESSES", ignoreCase = true) && trimmed.length > "PROCESSES".length) continue
+            // Group headers glue the IP to the row count: "205.79.204.42" + "9 PROCESSES" (filtered view, Raw Dump #166),
+            // "234.227.242.4" + "1 PROCESS" (grouped view, #202). Never an IP to save; the rows below carry the real IP.
+            if (PROCESS_GROUP_HEADER.matches(trimmed)) continue
             val ip = CommonParserUtil.extractIp(trimmed)
             if (ip != null && !ip.startsWith("0.0.")) {
                 if (isInvalidated) {

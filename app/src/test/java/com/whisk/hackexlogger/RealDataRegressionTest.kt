@@ -243,6 +243,15 @@ class RealDataRegressionTest {
         assertEquals(4, record("205.79.204.42")?.downloads?.get("Firewall")?.level)
     }
 
+    @Test
+    fun groupedProcessesHeaderIsNotAnIp() {
+        // Raw Dump #202: grouped by target, each group header is "<ip><count> PROCESS[ES]" ("234.227.242.41 PROCESS" =
+        // 234.227.242.4 + "1 PROCESS"), which created a junk record 234.227.242.41
+        scrape("processes_grouped_2026-11-28.txt")
+        val ips = TargetRepository.getAllRecords().map { it.ip }.toSet()
+        assertEquals(setOf("232.149.127.160", "234.227.242.4", "243.99.126.190", "254.102.70.194", "255.158.209.227"), ips)
+    }
+
     // ---- Own screens ----------------------------------------------------------------------------
 
     @Test

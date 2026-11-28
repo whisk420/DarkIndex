@@ -59,7 +59,19 @@ class TargetAdapter(
 ) : ListAdapter<ListItem, RecyclerView.ViewHolder>(ListItemDiffCallback()) {
 
     var currentValidatingIp: String? = null
-    private var activeOverlayPosition: Int = -1
+    /**
+     * The card whose EDIT / SHARE / DELETE overlay is open, by IP. It used to be the adapter position captured at
+     * bind time, which goes stale when DiffUtil inserts, removes or moves rows without rebinding (new records arriving,
+     * Spam priority re-sorts): long-press then opened the overlay on a neighbouring card, further off the more the
+     * list had changed (developer report, 2026-11-28).
+     */
+    private var activeOverlayIp: String? = null
+
+    private fun notifyTargetChanged(ip: String?) {
+        if (ip == null) return
+        val index = currentList.indexOfFirst { it is ListItem.Target && it.target.ip == ip }
+        if (index >= 0) notifyItemChanged(index)
+    }
 
     companion object {
         private const val TYPE_HEADER = 0
@@ -98,19 +110,19 @@ class TargetAdapter(
                     playerCracker = playerCracker,
                     playerNetwork = PlayerProfileRepository.getCurrentNetwork(),
                     currentSpamLevel = currentSpamLevel,
-                    isOverlayActive = (activeOverlayPosition == position),
+                    isOverlayActive = (activeOverlayIp == item.target.ip),
                     onToggleOverlay = {
-                        val prev = activeOverlayPosition
-                        activeOverlayPosition = if (activeOverlayPosition == position) -1 else position
-                        if (prev != -1 && prev != position) notifyItemChanged(prev)
-                        notifyItemChanged(position)
+                        // Keyed by the IP of the card that was long-pressed, never by a remembered position
+                        val ip = item.target.ip
+                        val prev = activeOverlayIp
+                        activeOverlayIp = if (prev == ip) null else ip
+                        if (prev != null && prev != ip) notifyTargetChanged(prev)
+                        notifyTargetChanged(ip)
                     },
                     onDismissOverlay = {
-                        if (activeOverlayPosition != -1) {
-                            val prev = activeOverlayPosition
-                            activeOverlayPosition = -1
-                            notifyItemChanged(prev)
-                        }
+                        val prev = activeOverlayIp
+                        activeOverlayIp = null
+                        notifyTargetChanged(prev)
                     }
                 )
             }

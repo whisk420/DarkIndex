@@ -34,9 +34,9 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 - Keygen & Store prices: the exact price formula, key fees and XP are all measured (2026-11-27)
 
 **Partly done**
-- Botnet & Spam fees: fee, Elite −50% and the Node–Farm prices measured; Hive and Nexus prices still guide
+- Botnet & Spam fees: fee, Elite −50% and the Node–Hive prices measured; only the Nexus price is still guide
 - Uploads & downloads: upload times measured; first download times (Q-03)
-- Bypass & crack: success odds measured, but one on-screen crack chance disagrees (26% vs 18% at −3)
+- Bypass & crack: success odds checked against 11 of the game's own on-screen chances (−3 and −4 corrected; −5 assumed by symmetry)
 - Processes: +75% per extra process measured; network and processor pools confirmed
 - Antivirus: one scan lists every virus on you, removed or not
 - Wallet, theft & gas: no minimum or maximum per steal; hot wallet pays first; cold cap by level (Q-10)
@@ -67,7 +67,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* software and level, your network, and the duration shown.
 
 ### Bypass & crack
-- **Q-04 ⭐ Bypass and crack durations** by level and gap.
+- **Q-04 ⭐ Bypass and crack durations** by level and gap. First reading (2026-11-28): Bypasser 5 vs FW 3/5/7/9 ≈ 8 min / 24 min / 1 h 36 min / 5 h 16 min solo.
   *To measure:* duration shown, your device, both levels, with nothing else running.
 - **Q-05 Rep from a hack.** The guide says up to about 105, scaling with the victim's defence.
   *To measure:* your rep before and after a bypass and a crack, with both software levels.
@@ -81,7 +81,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* every `[TRACED]` vs masked line in your victim log, with your Trace level.
 
 ### Wallet
-- **Q-10 Cold storage cap at every level.** Known at Lv 1, 2, 3, 5, 6, 7, 8, 10, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
+- **Q-10 Cold storage cap at every level.** Known at Lv 1–11, 20 and 30. Targets' wallet pages show `<cold> / <cap> max` for the target's level, so any target's Home + Wallet fills a level.
   *To measure:* your own Wallet shows `/ N max`; dump it once per level.
 - **Q-11 Daily steal maximum.** A single steal has no limit, but there seems to be a cap per day. How much?
   Hard to pin down.
@@ -91,7 +91,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* your level and the levels of everyone in a few scans.
 
 ### Leveling
-- **Q-13 XP needed for every level.** Known at Lv 1–9, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
+- **Q-13 XP needed for every level.** Known at Lv 1–12, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
 ---
