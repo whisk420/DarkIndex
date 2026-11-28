@@ -128,6 +128,39 @@ object PlayerProfileRepository {
         save(current.copy(softwareLevels = merged))
     }
 
+    /**
+     * Progress from your own log. Levels only move forward, so an old line can't undo a newer Store or Apps scrape;
+     * a different prestige line, or the reboot lines on screen, mean a reboot happened and the log wins.
+     * Returns true when the profile changed.
+     */
+    fun updateFromOwnLog(progress: OwnLogProgress): Boolean {
+        val current = getProfile()
+        var updated = current
+
+        progress.keygenLevel?.let { installed ->
+            val stored = current.softwareLevels["Keygen"] // Store convention: installed + 1
+            if (progress.rebooted || stored == null || installed + 1 > stored) {
+                updated = updated.copy(softwareLevels = updated.softwareLevels + ("Keygen" to installed + 1))
+            }
+        }
+        HardwareCatalog.device(progress.device)?.let { hw ->
+            val owned = HardwareCatalog.device(current.currentDevice ?: decrementHardwareName(current.nextDevice))
+            if (progress.rebooted || owned == null || owned.line != hw.line || hw.level > owned.level) {
+                updated = updated.copy(currentDevice = hw.name, nextDevice = HardwareCatalog.nameFor(hw.kind, hw.line, hw.level + 1))
+            }
+        }
+        HardwareCatalog.network(progress.network)?.let { hw ->
+            val owned = HardwareCatalog.network(current.currentNetwork ?: decrementHardwareName(current.nextNetwork))
+            if (progress.rebooted || owned == null || owned.line != hw.line || hw.level > owned.level) {
+                updated = updated.copy(currentNetwork = hw.name, nextNetwork = HardwareCatalog.nameFor(hw.kind, hw.line, hw.level + 1))
+            }
+        }
+
+        if (updated == current) return false
+        save(updated)
+        return true
+    }
+
     /** [installedBypasserLevel] = the Bypass screen's "Using Bypasser Lv.N", without any "(+N)" bonus. */
     fun updateBypasserLevel(installedBypasserLevel: Int) {
         val current = getProfile()

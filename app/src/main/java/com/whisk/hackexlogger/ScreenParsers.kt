@@ -857,3 +857,36 @@ object BypassScreenParser {
     }
 }
 
+
+// ----------------------------------------
+// Own log: your own progress lines
+// ----------------------------------------
+/**
+ * What your own log says about your own progress: the newest Keygen purchase, device and network upgrade, and whether
+ * the reboot lines are on screen. Botnet purchases and Keygen unlocks of downloads write no log line.
+ */
+data class OwnLogProgress(val keygenLevel: Int?, val device: String?, val network: String?, val rebooted: Boolean) {
+    val isEmpty: Boolean get() = keygenLevel == null && device == null && network == null
+}
+
+object OwnLogProgressParser {
+    private val KEYGEN = Regex("""^\[[^\]]+]\s+Purchased Keygen Lv\.?\s*(\d+)\s*$""", RegexOption.IGNORE_CASE)
+    private val DEVICE = Regex("""^\[[^\]]+]\s+Upgraded device to (.+?)\s*$""", RegexOption.IGNORE_CASE)
+    private val NETWORK = Regex("""^\[[^\]]+]\s+Upgraded network to (.+?)\s*$""", RegexOption.IGNORE_CASE)
+
+    /** The log lists the newest line first, so the first match of each kind is the latest. */
+    fun parse(lines: List<String>): OwnLogProgress {
+        var keygen: Int? = null
+        var device: String? = null
+        var network: String? = null
+        var rebooted = false
+        for (raw in lines) {
+            val line = raw.trim()
+            if (keygen == null) KEYGEN.find(line)?.let { keygen = it.groupValues[1].toIntOrNull() }
+            if (device == null) DEVICE.find(line)?.let { device = it.groupValues[1] }
+            if (network == null) NETWORK.find(line)?.let { network = it.groupValues[1] }
+            if (line.contains("REBOOT PROTOCOL INITIATED", ignoreCase = true)) rebooted = true
+        }
+        return OwnLogProgress(keygen, device, network, rebooted)
+    }
+}

@@ -291,6 +291,42 @@ class RealDataRegressionTest {
     }
 
     @Test
+    fun ownLogUpdatesProfileFromPurchasesAndUpgrades() {
+        // Raw Dump #144: own log with "Purchased Keygen Lv5", "Upgraded device to Ghost II", "Upgraded network to Ghost Link III"
+        val result = scrape("own_log_upgrades_2026-11-27.txt")
+        assertTrue(result.savedItems.contains("Profile from log"))
+        val p = PlayerProfileRepository.getProfile()
+        assertEquals(6, p.softwareLevels["Keygen"]) // installed 5, Store convention + 1
+        assertEquals("Ghost II", p.currentDevice)
+        assertEquals("Ghost III", p.nextDevice)
+        assertEquals("Ghost Link III", p.currentNetwork)
+        assertEquals("Ghost Link IV", p.nextNetwork)
+        assertTrue(TargetRepository.getAllRecords().none { it.ip == "Ghost" })
+    }
+
+    @Test
+    fun ownLogNeverMovesTheProfileBackwards() {
+        // A newer Store scrape already says Keygen 7 installed and Ghost III / Ghost Link IV; the older log must not undo it
+        PlayerProfileRepository.updateFromOwnLog(OwnLogProgress(7, "Ghost III", "Ghost Link IV", rebooted = false))
+        val before = PlayerProfileRepository.getProfile()
+        val result = scrape("own_log_upgrades_2026-11-27.txt")
+        assertFalse(result.savedItems.contains("Profile from log"))
+        assertEquals(before, PlayerProfileRepository.getProfile())
+    }
+
+    @Test
+    fun ownLogWithTheRebootLinesResetsTheProfile() {
+        // Raw Dump #121: the log still shows "REBOOT PROTOCOL INITIATED". A pre-reboot profile (Apex, Keygen 35)
+        // is replaced by the new run's Keygen 3, Ghost II and Ghost Link III
+        PlayerProfileRepository.updateFromOwnLog(OwnLogProgress(35, "Apex VIII", "Null Route XI", rebooted = false))
+        scrape("own_log_reboot_2026-11-27.txt")
+        val p = PlayerProfileRepository.getProfile()
+        assertEquals(4, p.softwareLevels["Keygen"])
+        assertEquals("Ghost II", p.currentDevice)
+        assertEquals("Ghost Link III", p.currentNetwork)
+    }
+
+    @Test
     fun ownAppsPageSetsInstalledLevels() {
         // Raw Dump #29: your own Apps page. Levels are stored as installed + 1 (the Store's NEXT convention).
         val result = scrape("own_apps_2026-11-24.txt")

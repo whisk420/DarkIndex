@@ -4,8 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -13,7 +11,6 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.animation.AlphaAnimation
 import android.os.Handler
@@ -26,7 +23,6 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 
 /**
@@ -52,13 +48,9 @@ class OverlayService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var cameraFloatingButton: Button
     
-    private var isValidating = false
-    private var currentValidatingTarget: TargetRecord? = null
-    private var validationView: View? = null
-    
-    private var isTargetingMode = false
-    private var currentTargetingTarget: TargetRecord? = null
-    private var targetingView: View? = null
+    // The VALIDATE and RECON queue toolbars (QueueToolbars.kt)
+    private var validationToolbar: ValidationToolbar? = null
+    private var reconToolbar: ReconToolbar? = null
 
     private var isCloseTargetVisible = false
     private var closeTargetView: TextView? = null
@@ -90,6 +82,8 @@ class OverlayService : Service() {
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         setupCameraFloatingButton()
         marathonOverlay = MarathonOverlay(this, windowManager) { showMinimalToast(it) }
+        validationToolbar = ValidationToolbar(this, windowManager) { notifyDataUpdated() }
+        reconToolbar = ReconToolbar(this, windowManager) { showMinimalToast(it) }
 
         settingsPrefs = getSharedPreferences(RawDumpSettings.PREFS_NAME, Context.MODE_PRIVATE).also {
             it.registerOnSharedPreferenceChangeListener(settingsListener)
@@ -107,16 +101,19 @@ class OverlayService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_TOGGLE_VALIDATION -> {
-                if (isValidating) stopValidationMode() else startValidationMode()
+                val toolbar = validationToolbar
+                if (toolbar?.isShowing == true) toolbar.stop() else toolbar?.start()
             }
-            ACTION_START_VALIDATION -> {
-                startValidationMode()
-            }
-            ACTION_STOP_VALIDATION -> {
-                stopValidationMode()
-            }
+            ACTION_START_VALIDATION -> validationToolbar?.start()
+            ACTION_STOP_VALIDATION -> validationToolbar?.stop()
             ACTION_TOGGLE_ADVANCED_TARGETING -> {
-                if (isTargetingMode) stopTargetingMode() else startTargetingMode()
+                val recon = reconToolbar
+                if (recon?.isShowing == true) {
+                    recon.stop()
+                } else {
+                    validationToolbar?.stop() // only one queue toolbar at a time
+                    recon?.start()
+                }
             }
             ACTION_START_MARATHON -> {
                 val minutes = intent.getIntExtra(EXTRA_MARATHON_MINUTES, 0)
@@ -249,258 +246,6 @@ class OverlayService : Service() {
         }
     }
 
-    /**
-     * Activates the floating target validation toolbar overlay.
-     */
-    private fun startValidationMode() {
-        if (isValidating) {
-            loadNextValidationTarget()
-            return
-        }
-
-        isValidating = true
-
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.overlay_validation, null)
-        validationView = view
-
-        val validBtn = view.findViewById<Button>(R.id.overlayValidBtn)
-        val invalidBtn = view.findViewById<Button>(R.id.overlayInvalidBtn)
-        val closeBtn = view.findViewById<Button>(R.id.overlayCloseBtn)
-
-        validBtn.setOnClickListener {
-            currentValidatingTarget?.let { target ->
-                DatabaseManager.markValidated(target.ip)
-                notifyDataUpdated()
-            }
-            loadNextValidationTarget()
-        }
-
-        invalidBtn.setOnClickListener {
-            currentValidatingTarget?.let { target ->
-                DatabaseManager.deleteTarget(target.ip)
-                notifyDataUpdated()
-            }
-            loadNextValidationTarget()
-        }
-
-        closeBtn.setOnClickListener {
-            stopValidationMode()
-        }
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 250
-        }
-
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-
-        val ipBadge = view.findViewById<TextView>(R.id.overlayIpBadge)
-        ipBadge.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(view, params)
-                    true
-                }
-                else -> false
-            }
-        }
-
-        windowManager.addView(view, params)
-        loadNextValidationTarget()
-    }
-
-    /**
-     * Loads the next target record to validate and automatically copies its IP address to clipboard.
-     */
-    private fun loadNextValidationTarget() {
-        val next = DatabaseManager.getNextRecordToValidate()
-        if (next == null) {
-            Toast.makeText(this, "All unmasked targets validated!", Toast.LENGTH_SHORT).show()
-            stopValidationMode()
-            return
-        }
-
-        currentValidatingTarget = next
-
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Target IP", next.ip)
-        clipboard.setPrimaryClip(clip)
-
-        validationView?.findViewById<TextView>(R.id.overlayIpBadge)?.text = next.ip
-        Toast.makeText(this, "Copied IP: ${next.ip}", Toast.LENGTH_SHORT).show()
-    }
-
-    /**
-     * Dismisses the validation toolbar and restores the quick-scrape button.
-     */
-    private fun stopValidationMode() {
-        isValidating = false
-        currentValidatingTarget = null
-
-        validationView?.let {
-            try {
-                windowManager.removeView(it)
-            } catch (e: Exception) {
-                // Ignore if view was already removed
-            }
-            validationView = null
-        }
-    }
-
-    private fun startTargetingMode() {
-        if (isTargetingMode) return
-        isTargetingMode = true
-        if (isValidating) stopValidationMode()
-
-        showTargetingUI()
-    }
-
-    private fun stopTargetingMode() {
-        if (!isTargetingMode) return
-        isTargetingMode = false
-        targetingView?.let {
-            try { windowManager.removeView(it) } catch (e: Exception) {}
-        }
-        targetingView = null
-        currentTargetingTarget = null
-    }
-
-    private fun showTargetingUI() {
-        if (targetingView != null) return
-
-        val inflater = LayoutInflater.from(this)
-        val view = inflater.inflate(R.layout.overlay_targeting, null)
-        targetingView = view
-
-        val closeBtn = view.findViewById<View>(R.id.overlayCloseBtn)
-        val ipBadge = view.findViewById<TextView>(R.id.overlayIpBadge)
-        val skipBtn = view.findViewById<Button>(R.id.overlaySkipBtn)
-        val validBtn = view.findViewById<Button>(R.id.overlayValidBtn)
-        val invalidBtn = view.findViewById<Button>(R.id.overlayInvalidBtn)
-
-        closeBtn?.setOnClickListener {
-            stopTargetingMode()
-        }
-
-        ipBadge?.setOnClickListener {
-            currentTargetingTarget?.let { target ->
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("Target IP", target.ip)
-                clipboard.setPrimaryClip(clip)
-                showMinimalToast("Copied: ${target.ip}")
-            }
-        }
-
-        skipBtn?.setOnClickListener {
-            val target = currentTargetingTarget
-            if (target != null) {
-                DatabaseManager.markTargetValidated(target.ip)
-                val playerBypasser = PlayerProfileRepository.getEffectiveBypasserLevel()
-                val fw = target.firewall
-                if (fw != null && fw > playerBypasser) {
-                    showMinimalToast("FW Lv.$fw > Bypasser Lv.$playerBypasser - Skipped to back")
-                } else {
-                    showMinimalToast("Skipped: ${target.ip}")
-                }
-                loadNextTargetingTarget()
-            }
-        }
-
-        validBtn.setOnClickListener {
-            val ip = currentTargetingTarget?.ip
-            if (ip != null) {
-                DatabaseManager.markTargetValidated(ip)
-                showMinimalToast("Completed: $ip")
-                loadNextTargetingTarget()
-            }
-        }
-
-        invalidBtn.setOnClickListener {
-            val ip = currentTargetingTarget?.ip
-            if (ip != null) {
-                DatabaseManager.deleteTarget(ip)
-                showMinimalToast("Deleted (Not Found): $ip")
-                loadNextTargetingTarget()
-            }
-        }
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 20
-            y = 250
-        }
-
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-
-        ipBadge.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(view, params)
-                    true
-                }
-                else -> false
-            }
-        }
-
-        windowManager.addView(view, params)
-        loadNextTargetingTarget()
-    }
-
-    private fun loadNextTargetingTarget() {
-        val next = DatabaseManager.getNextTargetForAdvancedTargeting()
-        if (next == null) {
-            Toast.makeText(this, "Queue Empty: All targets have info!", Toast.LENGTH_SHORT).show()
-            stopTargetingMode()
-            return
-        }
-
-        currentTargetingTarget = next
-        val ipBadge = targetingView?.findViewById<TextView>(R.id.overlayIpBadge)
-        ipBadge?.text = next.ip
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Target IP", next.ip)
-        clipboard.setPrimaryClip(clip)
-        showMinimalToast("Copied Target: ${next.ip}")
-    }
-
     private fun showMinimalToast(text: String) {
         if (toastView == null) {
             toastView = TextView(this).apply {
@@ -621,7 +366,8 @@ class OverlayService : Service() {
         if (::cameraFloatingButton.isInitialized) {
             try { windowManager.removeView(cameraFloatingButton) } catch (e: Exception) {}
         }
-        stopValidationMode()
+        validationToolbar?.stop()
+        reconToolbar?.stop() // was left on screen when the service stopped
         marathonOverlay?.destroy()
         marathonOverlay = null
     }

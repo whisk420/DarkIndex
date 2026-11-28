@@ -151,8 +151,9 @@ class RawDumpTest {
     @Test
     fun pipelineWithoutSessionBehavesAsBefore() {
         val result = ScrapePipeline.run(mixedLog, mixedLog.lines(), null)
-        assertEquals(listOf("3 Log Events"), result.savedItems)
-        assertEquals("Saved: 3 Log Events", ScrapePipeline.toastMessage(result.savedItems))
+        // The sample is an own log with "Purchased Keygen Lv26", so the profile is updated from it too
+        assertEquals(listOf("3 Log Events", "Profile from log"), result.savedItems)
+        assertEquals("Saved: 3 Log Events, Profile from log", ScrapePipeline.toastMessage(result.savedItems))
         assertEquals("Nothing found to save", ScrapePipeline.toastMessage(emptyList()))
     }
 

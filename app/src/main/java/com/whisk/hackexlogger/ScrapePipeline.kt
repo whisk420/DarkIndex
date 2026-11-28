@@ -96,6 +96,11 @@ object ScrapePipeline {
             DatabaseManager.processUpdates(updates, result.lastSavedUtcMs)
             saved.add("${updates.size} Log Events")
         }
+        // Your own log also records your Keygen purchases and hardware upgrades: keep the profile current from them
+        if (Marathon.isOwnLogScreen(lines)) {
+            val progress = OwnLogProgressParser.parse(lines)
+            if (!progress.isEmpty && PlayerProfileRepository.updateFromOwnLog(progress)) saved.add("Profile from log")
+        }
         // Marathon Mode: every own-log grab feeds the run, even an empty (wiped) log, which still
         // counts as "log grabbed" for advancing the flow. Runs after the DB save so wallet owners resolve.
         if (Marathon.isActive && Marathon.isOwnLogScreen(lines)) {
@@ -111,7 +116,7 @@ object ScrapePipeline {
         saved.add("Siphons")
     }
 
-    /** Recognised and parsed so Raw Dump shows it; nothing is stored yet (the Spam tracker will use it). */
+    /** Recognised and parsed so Raw Dump shows it; nothing is stored (the developer decided against a Spam tracker, 2026-11-28). */
     private fun spamEarnings(text: String, saved: MutableList<String>, s: DumpSession?) {
         val parsed = SpamEarningsParser.parse(text) ?: return
         s?.matched("SpamEarnings", parsed)
