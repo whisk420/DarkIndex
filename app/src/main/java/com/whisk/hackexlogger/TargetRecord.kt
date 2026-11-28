@@ -240,6 +240,8 @@ data class TargetRecord(
                 delta == -1 -> 42
                 delta == -2 -> 34
                 delta == -3 -> 26 // the game's own crack row showed 26% at −3 (Raw Dump #166); was 18
+                delta == -4 -> 18 // a bypass row showed 18% at −4 (Raw Dump #241); was 5
+                delta == -5 -> 10 // assumed: mirror of +5 → 90 (the table is symmetric everywhere it has been checked)
                 else -> 5
             }
         }

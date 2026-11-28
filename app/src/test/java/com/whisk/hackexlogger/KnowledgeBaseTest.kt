@@ -132,6 +132,7 @@ class KnowledgeBaseTest {
             Triple(2, 2, 50), Triple(2, 1, 58), Triple(5, 3, 66), Triple(5, 4, 58), // bypasses, #202
             Triple(5, 4, 58), Triple(5, 1, 82),                                     // cracks, #236
             Triple(2, 5, 26),                                                       // crack at −3, #166
+            Triple(5, 5, 50), Triple(5, 3, 66), Triple(5, 7, 34), Triple(5, 9, 18), // running bypasses, #241
         )
         for ((offence, defence, chance) in seen) {
             assertEquals("$offence vs $defence", chance, GameFormulas.hackSuccessChance(offence, defence))

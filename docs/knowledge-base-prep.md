@@ -36,7 +36,7 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 **Partly done**
 - Botnet & Spam fees: fee, Elite −50% and the Node–Hive prices measured; only the Nexus price is still guide
 - Uploads & downloads: upload times measured; first download times (Q-03)
-- Bypass & crack: success odds checked against the game's own on-screen chances (−3 corrected to 26%); −4 and below unchecked
+- Bypass & crack: success odds checked against 11 of the game's own on-screen chances (−3 and −4 corrected; −5 assumed by symmetry)
 - Processes: +75% per extra process measured; network and processor pools confirmed
 - Antivirus: one scan lists every virus on you, removed or not
 - Wallet, theft & gas: no minimum or maximum per steal; hot wallet pays first; cold cap by level (Q-10)
@@ -67,7 +67,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* software and level, your network, and the duration shown.
 
 ### Bypass & crack
-- **Q-04 ⭐ Bypass and crack durations** by level and gap.
+- **Q-04 ⭐ Bypass and crack durations** by level and gap. First reading (2026-11-28): Bypasser 5 vs FW 3/5/7/9 ≈ 8 min / 24 min / 1 h 36 min / 5 h 16 min solo.
   *To measure:* duration shown, your device, both levels, with nothing else running.
 - **Q-05 Rep from a hack.** The guide says up to about 105, scaling with the victim's defence.
   *To measure:* your rep before and after a bypass and a crack, with both software levels.
