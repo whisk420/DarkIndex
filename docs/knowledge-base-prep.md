@@ -34,7 +34,7 @@ show at the bottom of each topic page with the same numbers as here. Answered qu
 - Keygen & Store prices: the exact price formula, key fees and XP are all measured (2026-11-27)
 
 **Partly done**
-- Botnet & Spam fees: fee, Elite −50% and the Node–Farm prices measured; Hive and Nexus prices still guide
+- Botnet & Spam fees: fee, Elite −50% and the Node–Hive prices measured; only the Nexus price is still guide
 - Uploads & downloads: upload times measured; first download times (Q-03)
 - Bypass & crack: success odds measured, but one on-screen crack chance disagrees (26% vs 18% at −3)
 - Processes: +75% per extra process measured; network and processor pools confirmed
@@ -91,7 +91,7 @@ times, prices), so they're worth the most. A 📼 Raw Dump of the screen is alwa
   *To measure:* your level and the levels of everyone in a few scans.
 
 ### Leveling
-- **Q-13 XP needed for every level.** Known at Lv 1–9, 10, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
+- **Q-13 XP needed for every level.** Known at Lv 1–11, 20, 30, 35, 38 and 44. Targets' Home screens show `xp / next` too, so any target fills a level.
   *To measure:* own Home shows `xp / next`; dump it once per level.
 
 ---
